@@ -1,17 +1,38 @@
-# Integration Tests
+# Integration API Tests
 
-This directory contains tests that verify interactions between different components of the Traffic Prediction and Intelligent Congestion Management system.
+This directory contains automated integration tests for backend APIs.
 
-## Planned Integration Areas
+## Planned API Test Areas
 
-- Backend API integration
-- Database integration
-- Authentication and RBAC
-- Traffic monitoring
-- Traffic prediction
-- Intelligent routing
-- Frontend and backend integration
+- Authentication
+- Role-Based Access Control (RBAC)
+- Traffic Monitoring
+- Traffic Prediction
+- Intelligent Routing
+
+## Test Requirements
+
+Integration tests require the backend application services to be available.
+
+The tests should validate:
+
+- HTTP status codes
+- Response structure
+- Required fields
+- Input validation
+- Authentication
+- Authorization
+- Error handling
 
 ## Current Status
 
-Integration tests will be added once the corresponding application services and APIs are available in the Team-3 repository.
+API endpoints are not yet available.
+
+Placeholder integration tests may be skipped until the backend services are implemented.
+
+## Execution
+
+Run all tests:
+
+```bash
+pytest -v
