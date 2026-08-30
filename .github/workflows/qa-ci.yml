@@ -1,0 +1,38 @@
+name: QA CI
+
+on:
+  push:
+    branches:
+      - Team-3
+  pull_request:
+    branches:
+      - Team-3
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: Gargi_QA-DevOps-Release-Engineering
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install QA dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Black
+        run: black --check tests
+
+      - name: Run Flake8
+        run: flake8 tests
+
+      - name: Run Pytest
+        run: pytest -v
