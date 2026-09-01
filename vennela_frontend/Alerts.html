@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Alerts - TrafficVision AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="api.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#e8deff",
+                        "on-primary": "#1b247f",
+                        "on-secondary-fixed": "#001e30",
+                        "surface-tint": "#bdc2ff",
+                        "surface-container-low": "#131b2e",
+                        "secondary-fixed-dim": "#8dcdff",
+                        "outline-variant": "#454652",
+                        "primary-fixed": "#e0e0ff",
+                        "on-surface": "#dae2fd",
+                        "on-secondary": "#00344f",
+                        "outline": "#908f9d",
+                        "secondary-fixed": "#cae6ff",
+                        "inverse-on-surface": "#283044",
+                        "secondary": "#8dcdff",
+                        "on-secondary-fixed-variant": "#004b70",
+                        "surface-container-lowest": "#060e20",
+                        "primary-fixed-dim": "#bdc2ff",
+                        "secondary-container": "#00affe",
+                        "on-surface-variant": "#c6c5d4",
+                        "primary-container": "#1a237e",
+                        "tertiary-fixed-dim": "#cdbdff",
+                        "surface-container-high": "#222a3d",
+                        "primary": "#bdc2ff",
+                        "on-error-container": "#ffdad6",
+                        "background": "#0b1326",
+                        "tertiary": "#cdbdff",
+                        "on-primary-fixed-variant": "#343d96",
+                        "on-tertiary-fixed": "#20005f",
+                        "tertiary-container": "#360094",
+                        "surface-dim": "#0b1326",
+                        "error": "#ffb4ab",
+                        "on-secondary-container": "#003f5f",
+                        "inverse-surface": "#dae2fd",
+                        "on-primary-container": "#8690ee",
+                        "surface-variant": "#2d3449",
+                        "on-primary-fixed": "#000767",
+                        "surface-container": "#171f33",
+                        "surface-bright": "#31394d",
+                        "surface": "#0b1326",
+                        "on-tertiary-fixed-variant": "#4f00d0",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#370096",
+                        "inverse-primary": "#4c56af",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-container": "#a084ff",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#2d3449"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-gap": "12px",
+                        "base": "8px",
+                        "container-padding-desktop": "32px",
+                        "gutter": "16px",
+                        "container-padding-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["JetBrains Mono"],
+                        "data-lg": ["JetBrains Mono"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "data-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        /* Custom scrollbar for data feeds */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.surface-variant');
+            border-radius: 4px;
+        }
+        
+        .glass-panel {
+            background: rgba(19, 27, 46, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .severity-critical { border-left-color: theme('colors.error'); }
+        .severity-warning { border-left-color: #FFA726; } /* Custom warning for deep tech */
+        .severity-info { border-left-color: theme('colors.primary'); }
+        
+        .map-bg {
+            background-color: theme('colors.surface-container-lowest');
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(189, 194, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col pt-16 pb-20 md:pb-0">
+<script>
+(function(){
+    AuthManager.guardPage();
+})();
+</script>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container/60 dark:bg-surface-container/60 backdrop-blur-xl shadow-24px-blur dark:shadow-none border-b border-white/10 flex justify-between items-center px-container-padding-mobile md:px-container-padding-desktop h-16">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary dark:text-primary">analytics</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg font-bold tracking-tight text-on-surface dark:text-on-surface">TrafficVision AI</h1>
+</div>
+<!-- Desktop Nav -->
+<nav class="hidden md:flex gap-6 items-center">
+<a class="nav-home-link text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors font-label-sm text-label-sm px-3 py-2 rounded-lg flex items-center gap-2" href="#">
+<span class="material-symbols-outlined">dashboard</span> Home
+</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors font-label-sm text-label-sm px-3 py-2 rounded-lg flex items-center gap-2" href="live maps.html">
+<span class="material-symbols-outlined">traffic</span> Traffic
+</a>
+<a class="text-secondary dark:text-secondary bg-white/5 transition-colors font-label-sm text-label-sm px-3 py-2 rounded-lg flex items-center gap-2 scale-95 duration-100" href="Alerts.html">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span> Alerts
+</a>
+<button class="text-on-surface-variant hover:text-error transition-colors font-label-sm text-label-sm px-3 py-2 rounded-lg flex items-center gap-2" onclick="logout()">
+<span class="material-symbols-outlined">logout</span> Logout
+</button>
+</nav>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Operator avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_vKZ-W8rS4Rl5-APyDQZxRP3Y0x9m2ol4C9A65IeVluV0OSoIc_gkzxT3IDV4WdwcF-i4qlOZvK3FUWZvfzhonx-qSMF-4nTsBHkYfROuYTDE6rF-stHBsDDf4UngSGqnljUJDx8R1W5AIi1Gl8hm8q3uz1G8k2uoPgVYusFxadrnbNF7pOw-cZay0vPPtIw6HtTtrwpEwA7zAiEKRkEZ5RK1e5_LOPUY3t2WFiVmZ7kmQignKD3r"/>
+</div>
+</header>
+<!-- Main Layout -->
+<main class="flex-grow flex flex-col md:flex-row relative">
+<!-- Background Map Simulation -->
+<div class="absolute inset-0 z-0 map-bg">
+<div class="w-full h-full opacity-30" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCXexdUWmb7g46LknK9X-NZ-JTD-6JnL-b_m94XLr7PvJde56PkJh8tWK-Pqf7m1bqacBkUcNvfp9dgpecZ_qNOkdrYBub0eKnNtBtLI0peOCuO6FAT2uAI9ai_pPM9ZLt2Pcc10OSTMawEHnPQq9XorDAMs45Qe_H2j8adigZngg6kBGi3_7fNBORA5D0-RdqAMc1q6tg0tjSE_wUom8DSx1hG-R0GoHSCOO7trfcziyaVTkriSBt8')"></div>
+</div>
+<!-- Content Area -->
+<div class="relative z-10 flex-grow p-container-padding-mobile md:p-container-padding-desktop flex flex-col gap-6">
+<!-- Filter & Action Bar -->
+<div class="glass-panel rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
+<button class="alert-filter-btn active bg-primary-container text-on-primary-container font-label-sm text-label-sm px-4 py-2 rounded-full whitespace-nowrap" data-filter="all" onclick="setAlertFilter('all', this)">All Alerts (<span id="count-all">--</span>)</button>
+<button class="alert-filter-btn bg-surface-variant text-rose-300 hover:bg-white/5 transition-colors border border-rose-500/30 font-label-sm text-label-sm px-4 py-2 rounded-full whitespace-nowrap" data-filter="severe" onclick="setAlertFilter('severe', this)">Severe Gridlock (<span id="count-severe">--</span>)</button>
+<button class="alert-filter-btn bg-surface-variant text-on-surface-variant hover:bg-white/5 transition-colors border border-outline-variant font-label-sm text-label-sm px-4 py-2 rounded-full whitespace-nowrap" data-filter="critical" onclick="setAlertFilter('critical', this)">High/Critical</button>
+<button class="alert-filter-btn bg-surface-variant text-on-surface-variant hover:bg-white/5 transition-colors border border-outline-variant font-label-sm text-label-sm px-4 py-2 rounded-full whitespace-nowrap" data-filter="accident" onclick="setAlertFilter('accident', this)">Accidents</button>
+<button class="alert-filter-btn bg-surface-variant text-on-surface-variant hover:bg-white/5 transition-colors border border-outline-variant font-label-sm text-label-sm px-4 py-2 rounded-full whitespace-nowrap" data-filter="roadworks" onclick="setAlertFilter('roadworks', this)">Roadworks</button>
+</div>
+<div class="flex items-center gap-3 w-full md:w-auto">
+<div class="relative flex-grow md:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full bg-surface-container-high border border-outline-variant rounded-lg pl-9 pr-3 py-2 text-on-surface font-label-sm text-label-sm focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all placeholder:text-on-surface-variant/50" id="alert-search-input" oninput="filterAlertList()" placeholder="Search ID or Location..." type="text"/>
+</div>
+</div>
+</div>
+<!-- Bento Grid for Alerts -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 flex-grow">
+<!-- Alert List (Left Column) -->
+<div class="md:col-span-5 lg:col-span-4 flex flex-col gap-4 overflow-y-auto pr-2" id="alert-list-container" style="max-height: calc(100vh - 220px);">
+<div class="text-center py-8 text-on-surface-variant font-label-sm">Loading incident alerts...</div>
+</div>
+<!-- Alert Details / Context Overlay (Right Column) -->
+<div class="md:col-span-7 lg:col-span-8 flex flex-col min-h-[400px] md:h-auto rounded-xl overflow-hidden border border-white/10 relative p-6 glass-panel">
+<div class="z-20 w-full max-w-lg pointer-events-auto">
+<div class="flex items-center gap-2 mb-2">
+<span class="text-xs font-label-sm text-secondary tracking-wider uppercase">SELECTED INCIDENT CONTEXT</span>
+<span class="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded font-label-sm" id="detail-road-ref">Live Node</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-bold mb-1" id="detail-alert-title">Multi-vehicle collision</div>
+<p class="text-sm text-on-surface-variant mb-4 flex items-center gap-1.5" id="detail-alert-location">
+<span class="material-symbols-outlined text-sm text-secondary">location_on</span> Airport Road (R006), High Congestion Zone
+</p>
+
+<div class="grid grid-cols-2 gap-3 mb-4">
+<div class="bg-surface-container-high p-3 rounded-xl border border-white/5">
+<div class="font-label-sm text-label-sm text-on-surface-variant text-[11px]">SEVERITY STATUS</div>
+<div class="font-data-lg text-data-lg text-error text-base font-bold mt-0.5" id="detail-alert-severity">CRITICAL</div>
+</div>
+<div class="bg-surface-container-high p-3 rounded-xl border border-white/5">
+<div class="font-label-sm text-label-sm text-on-surface-variant text-[11px]">NETWORK IMPACT</div>
+<div class="font-data-lg text-data-lg text-secondary text-base font-bold mt-0.5" id="detail-alert-impact">-45% FLOW</div>
+</div>
+</div>
+
+<div class="bg-surface-container/50 border border-white/10 rounded-xl p-4 mb-6">
+<div class="font-label-sm text-xs text-on-surface-variant uppercase tracking-wider mb-1">INCIDENT NOTES & AI MITIGATION</div>
+<p class="text-sm text-on-surface font-body-md" id="detail-alert-notes">Heuristic analysis reports high vehicle density (22.4 veh/km). Recommend dynamic signal offset adjustments and commercial reroute deployment.</p>
+</div>
+
+<div class="flex flex-col sm:flex-row gap-3">
+<button class="bg-primary text-on-primary font-label-sm text-label-sm px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2" onclick="dispatchUnit()">
+<span class="material-symbols-outlined text-sm">local_shipping</span> Dispatch Unit
+</button>
+<button class="bg-transparent border border-secondary text-secondary font-label-sm text-label-sm px-4 py-2.5 rounded-xl hover:bg-secondary/10 transition-colors flex justify-center items-center gap-2" onclick="updateIncidentStatus()">
+<span class="material-symbols-outlined text-sm">edit_note</span> Update Status
+</button>
+<a class="bg-surface-variant text-on-surface hover:bg-surface-bright font-label-sm text-label-sm px-4 py-2.5 rounded-xl transition-colors flex justify-center items-center gap-2" href="live maps.html">
+<span class="material-symbols-outlined text-sm">map</span> View on Map
+</a>
+</div>
+
+<div class="mt-4 hidden p-3 rounded-xl bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs font-label-sm flex items-center gap-2" id="action-banner">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+<span id="action-banner-text">Action executed successfully.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-20 px-4 pb-safe bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl shadow-24px-blur dark:shadow-none z-50 rounded-t-xl border-t border-white/10">
+<a class="nav-home-link flex flex-col items-center justify-center text-on-surface-variant font-label-sm text-label-sm hover:text-secondary transition-all w-16" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span>Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant font-label-sm text-label-sm hover:text-secondary transition-all w-16" href="live maps.html">
+<span class="material-symbols-outlined mb-1">traffic</span>
+<span>Traffic</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container font-label-sm text-label-sm rounded-full py-1.5 transition-all w-20 scale-95 duration-100" href="Alerts.html">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span>Alerts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant font-label-sm text-label-sm hover:text-error transition-all w-16" onclick="logout(); return false;" href="#">
+<span class="material-symbols-outlined mb-1">logout</span>
+<span>Logout</span>
+</a>
+</nav>
+
+<script>
+let alertsData = [];
+let activeAlertFilter = 'all';
+
+async function loadAlerts() {
+    try {
+        const [roads, density] = await Promise.all([
+            trafficAPI.getLiveTraffic(),
+            trafficAPI.getDensitySummary()
+        ]);
+
+        // Generate alert feed correlated to Day 6 backend road congestion
+        alertsData = [];
+
+        // Add alerts for Severe or High roads
+        roads.forEach((road, idx) => {
+            const level = (road.congestion_level || 'Low').toLowerCase();
+            if (level.includes('severe') || road.density >= 28) {
+                alertsData.push({
+                    id: `SEV-${road.road_id}-99`,
+                    type: "severe-congestion",
+                    severity: "severe",
+                    title: `Severe Gridlock: ${road.road_name}`,
+                    location: `${road.road_name} (${road.road_id}), Critical Bottleneck`,
+                    time: "Just Now",
+                    impact: "-75% FLOW",
+                    road_id: road.road_id,
+                    notes: `Road capacity exceeded (Density ${road.density} veh/km, Avg Speed ${road.speed || `${road.avg_speed_kmph} km/h`}). Automated diversion routes triggered.`
+                });
+            } else if (level.includes('high') || road.density >= 20) {
+                alertsData.push({
+                    id: `ACC-${road.road_id}-42`,
+                    type: "accident",
+                    severity: "critical",
+                    title: `Heavy Congestion Buildup on ${road.road_name}`,
+                    location: `${road.road_name} (${road.road_id}), Sector Alert`,
+                    time: "5m ago",
+                    impact: "-45% FLOW",
+                    road_id: road.road_id,
+                    notes: `High density detected (${road.density} veh/km, ${road.vehicle_count} veh/hr). Traffic speed slowed to ${road.speed || `${road.avg_speed_kmph} km/h`}. Tactical rerouting suggested.`
+                });
+            } else if (level.includes('med') || road.density >= 10) {
+                alertsData.push({
+                    id: `WRN-${road.road_id}-18`,
+                    type: "roadworks",
+                    severity: "warning",
+                    title: `Moderate Delay on ${road.road_name}`,
+                    location: `${road.road_name} (${road.road_id}), Sector Corridor`,
+                    time: "15m ago",
+                    impact: "-20% FLOW",
+                    road_id: road.road_id,
+                    notes: `Rising traffic volume (${road.density} veh/km). Signal timing adjustments recommended.`
+                });
+            }
+        });
+
+        // Ensure at least fallback alerts exist if all roads are low
+        if (alertsData.length === 0) {
+            alertsData.push({
+                id: "INF-SYS-01",
+                type: "system",
+                severity: "info",
+                title: "Network Flow Nominal",
+                location: "All Monitored Arterials",
+                time: "Live",
+                impact: "OPTIMAL",
+                road_id: "ALL",
+                notes: "All 7 monitored segments are operating under capacity with green status."
+            });
+        }
+
+        document.getElementById('count-all').textContent = alertsData.length;
+        document.getElementById('count-severe').textContent = alertsData.filter(a => a.severity === 'severe').length;
+
+        filterAlertList();
+        selectAlert(alertsData[0]);
+    } catch (e) {
+        console.error('Error loading alerts:', e);
+    }
+}
+
+function setAlertFilter(filter, btn) {
+    activeAlertFilter = filter;
+    document.querySelectorAll('.alert-filter-btn').forEach(b => {
+        b.classList.remove('bg-primary-container', 'text-on-primary-container', 'active');
+        b.classList.add('bg-surface-variant', 'text-on-surface-variant');
+    });
+    btn.classList.remove('bg-surface-variant', 'text-on-surface-variant');
+    btn.classList.add('bg-primary-container', 'text-on-primary-container', 'active');
+    filterAlertList();
+}
+
+function filterAlertList() {
+    const search = (document.getElementById('alert-search-input').value || '').toLowerCase();
+    const container = document.getElementById('alert-list-container');
+
+    const filtered = alertsData.filter(item => {
+        const matchSearch = item.title.toLowerCase().includes(search) || item.location.toLowerCase().includes(search) || item.id.toLowerCase().includes(search);
+        if (!matchSearch) return false;
+        if (activeAlertFilter === 'severe') return item.severity === 'severe';
+        if (activeAlertFilter === 'critical') return item.severity === 'critical' || item.severity === 'severe';
+        if (activeAlertFilter === 'accident') return item.type === 'accident';
+        if (activeAlertFilter === 'roadworks') return item.type === 'roadworks';
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-on-surface-variant font-label-sm">No matching alerts found.</div>`;
+        return;
+    }
+
+    container.innerHTML = filtered.map(alert => {
+        let borderClass = 'severity-info';
+        let badgeColor = 'text-primary';
+        let icon = 'info';
+
+        if (alert.severity === 'severe') {
+            borderClass = 'border-l-4 border-l-rose-500 shadow-[0_0_15px_rgba(225,29,72,0.3)] bg-rose-950/20';
+            badgeColor = 'text-rose-400 font-bold';
+            icon = 'emergency';
+        } else if (alert.severity === 'critical') {
+            borderClass = 'severity-critical shadow-24px-blur';
+            badgeColor = 'text-error font-bold';
+            icon = 'error';
+        } else if (alert.severity === 'warning') {
+            borderClass = 'severity-warning';
+            badgeColor = 'text-[#FFA726]';
+            icon = 'construction';
+        }
+
+        return `
+        <div class="glass-panel rounded-xl p-4 border-l-4 ${borderClass} hover:bg-white/5 transition-all cursor-pointer" onclick="selectAlertById('${alert.id}')">
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined ${badgeColor} text-lg">${icon}</span>
+                    <span class="font-label-sm text-label-sm ${badgeColor} uppercase tracking-wider">${alert.severity} • ${alert.type}</span>
+                </div>
+                <span class="font-label-sm text-label-sm text-on-surface-variant">${alert.time}</span>
+            </div>
+            <h3 class="font-body-md text-body-md font-semibold text-on-surface mb-1">${alert.title}</h3>
+            <p class="font-label-sm text-label-sm text-on-surface-variant mb-3 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">location_on</span> ${alert.location}
+            </p>
+            <div class="flex items-center justify-between">
+                <span class="text-xs text-secondary font-label-sm font-semibold">${alert.id}</span>
+                <span class="text-xs font-label-sm font-semibold ${alert.severity === 'severe' ? 'text-rose-400' : 'text-on-surface-variant'}">${alert.impact}</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function selectAlertById(id) {
+    const alert = alertsData.find(a => a.id === id);
+    if (alert) selectAlert(alert);
+}
+
+function selectAlert(alert) {
+    document.getElementById('detail-road-ref').textContent = `Node ${alert.road_id || 'Active'}`;
+    document.getElementById('detail-alert-title').textContent = alert.title;
+    document.getElementById('detail-alert-location').innerHTML = `<span class="material-symbols-outlined text-sm text-secondary">location_on</span> ${alert.location}`;
+    document.getElementById('detail-alert-severity').textContent = alert.severity.toUpperCase();
+    
+    let sevColor = 'text-primary';
+    if (alert.severity === 'severe') sevColor = 'text-rose-400 animate-pulse';
+    else if (alert.severity === 'critical') sevColor = 'text-error';
+    else if (alert.severity === 'warning') sevColor = 'text-[#FFA726]';
+
+    document.getElementById('detail-alert-severity').className = `font-data-lg text-data-lg ${sevColor} text-base font-bold mt-0.5`;
+    document.getElementById('detail-alert-impact').textContent = alert.impact;
+    document.getElementById('detail-alert-notes').textContent = alert.notes;
+}
+
+function dispatchUnit() {
+    showActionBanner('Emergency response unit dispatched to scene. Sector notified.');
+}
+
+function updateIncidentStatus() {
+    showActionBanner('Incident status updated to [IN PROGRESS]. Monitoring telemetry.');
+}
+
+function showActionBanner(msg) {
+    const banner = document.getElementById('action-banner');
+    document.getElementById('action-banner-text').textContent = msg;
+    banner.classList.remove('hidden');
+    setTimeout(() => {
+        banner.classList.add('hidden');
+    }, 4000);
+}
+
+document.addEventListener('DOMContentLoaded', loadAlerts);
+</script>
+</body></html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TrafficVision AI - Dashboard</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="api.js"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#454652",
+                    "surface-container-high": "#222a3d",
+                    "on-error": "#690005",
+                    "background": "#0b1326",
+                    "secondary-fixed": "#cae6ff",
+                    "tertiary": "#cdbdff",
+                    "surface-container-low": "#131b2e",
+                    "error-container": "#93000a",
+                    "surface-container-highest": "#2d3449",
+                    "on-tertiary": "#370096",
+                    "inverse-primary": "#4c56af",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed-variant": "#4f00d0",
+                    "surface-dim": "#0b1326",
+                    "on-secondary": "#00344f",
+                    "on-tertiary-fixed": "#20005f",
+                    "secondary-container": "#00affe",
+                    "on-secondary-container": "#003f5f",
+                    "primary-container": "#1a237e",
+                    "outline": "#908f9d",
+                    "on-surface": "#dae2fd",
+                    "on-tertiary-container": "#a084ff",
+                    "inverse-on-surface": "#283044",
+                    "on-error-container": "#ffdad6",
+                    "on-background": "#dae2fd",
+                    "surface": "#0b1326",
+                    "primary-fixed": "#e0e0ff",
+                    "surface-variant": "#2d3449",
+                    "inverse-surface": "#dae2fd",
+                    "primary-fixed-dim": "#bdc2ff",
+                    "on-primary-fixed": "#000767",
+                    "tertiary-container": "#360094",
+                    "tertiary-fixed": "#e8deff",
+                    "on-primary-fixed-variant": "#343d96",
+                    "on-secondary-fixed": "#001e30",
+                    "on-surface-variant": "#c6c5d4",
+                    "on-secondary-fixed-variant": "#004b70",
+                    "surface-container": "#171f33",
+                    "secondary-fixed-dim": "#8dcdff",
+                    "surface-container-lowest": "#060e20",
+                    "primary": "#bdc2ff",
+                    "secondary": "#8dcdff",
+                    "on-primary-container": "#8690ee",
+                    "surface-tint": "#bdc2ff",
+                    "on-primary": "#1b247f",
+                    "tertiary-fixed-dim": "#cdbdff",
+                    "surface-bright": "#31394d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "stack-gap": "12px",
+                    "base": "8px",
+                    "container-padding-mobile": "16px",
+                    "gutter": "16px",
+                    "container-padding-desktop": "32px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "data-lg": ["JetBrains Mono"],
+                    "headline-lg-mobile": ["Inter"],
+                    "label-sm": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "data-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+            },
+            "boxShadow": {
+                "24px-blur": "0 8px 24px 0 rgba(0, 175, 254, 0.15)"
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2d3449; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #454652; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md antialiased min-h-screen pb-24 md:pb-8 flex flex-col relative overflow-x-hidden selection:bg-secondary-container selection:text-on-secondary-container">
+<script>
+(function(){
+    AuthManager.guardPage(['PUBLIC', 'OPERATOR', 'ADMIN']);
+})();
+</script>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container/60 dark:bg-surface-container/60 backdrop-blur-xl border-b border-white/10 shadow-24px-blur dark:shadow-none flex justify-between items-center px-container-padding-mobile md:px-container-padding-desktop h-16 w-full">
+<div class="flex items-center gap-base">
+<span class="material-symbols-outlined text-primary dark:text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tight text-on-surface dark:text-on-surface">TrafficVision AI</h1>
+</div>
+<!-- Desktop Navigation Bar -->
+<nav class="hidden md:flex gap-6 items-center">
+<a class="nav-home-link text-secondary dark:text-secondary hover:bg-white/5 transition-colors px-3 py-1.5 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5" href="public dashboard.html">
+<span class="material-symbols-outlined text-sm">dashboard</span> Home
+</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors px-3 py-1.5 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 hover:text-secondary" href="live maps.html">
+<span class="material-symbols-outlined text-sm">traffic</span> Traffic
+</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors px-3 py-1.5 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 hover:text-secondary" href="Alerts.html">
+<span class="material-symbols-outlined text-sm">warning</span> Alerts
+</a>
+</nav>
+<div class="flex items-center gap-3">
+<button class="text-on-surface-variant hover:text-error transition-colors flex items-center justify-center rounded-full" onclick="logout()" title="Logout">
+<span class="material-symbols-outlined">logout</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant hover:bg-white/5 transition-colors cursor-pointer">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLpHS_T91cL3faZWJnIl81dTWaXyDwPk140zz3Y2PeubUzLpFrdYMMzNnBHM5q7hEKMn6YxDmMMVWmGNKnZPV_oxy-_MplLQcms1bO39V7hfuwDfaAuXBnWq-JMK8iEeGkWavbnLYED4Xe4euv6fUNa40_gl8x9fcupazjpMaBWTtxq-YnIpRE1rj3Td2hmxQ5N4PGtqTaygvofVy583LkEjup0FrAiwpbIP6kMXLpLrF_RPKEnonK"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-7xl mx-auto pt-24 px-container-padding-mobile md:px-container-padding-desktop flex flex-col gap-stack-gap">
+<!-- Search Bar Area -->
+<form class="w-full relative group" id="route-search-form" onsubmit="handleRouteSearch(event)">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant">search</span>
+</div>
+<input class="w-full bg-surface-container-low border border-white/10 rounded-xl py-3 pl-10 pr-12 text-on-surface focus:outline-none focus:border-secondary-container focus:ring-1 focus:ring-secondary-container transition-all placeholder:text-on-surface-variant font-body-md text-body-md shadow-inner" id="route-search-input" placeholder="Check Your Route (e.g. Airport Road, Central Ave)..." type="text"/>
+<div class="absolute inset-y-0 right-0 pr-2 flex items-center">
+<button class="bg-primary-container text-on-primary-container h-8 w-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors" type="submit" title="Find Traffic">
+<span class="material-symbols-outlined text-sm">directions</span>
+</button>
+</div>
+</form>
+<!-- Primary KPI / Commute Status Card (Glassmorphism Bento) -->
+<div class="w-full bg-surface-container/40 backdrop-blur-xl border border-white/10 rounded-xl p-5 relative overflow-hidden shadow-24px-blur">
+<!-- Decorative gradient orb -->
+<div class="absolute -top-10 -right-10 w-32 h-32 bg-secondary/20 rounded-full blur-3xl pointer-events-none"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<div>
+<h2 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Current Commute</h2>
+<p class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface" id="commute-title">Downtown Corridor</p>
+</div>
+<div class="bg-surface-container-highest rounded-full px-3 py-1 border border-outline-variant flex items-center gap-1">
+<div class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]"></div>
+<span class="font-label-sm text-label-sm text-on-surface">Live Data</span>
+</div>
+</div>
+<div class="flex items-end gap-3 relative z-10">
+<span class="font-display-lg text-display-lg text-secondary font-data-lg" id="commute-eta">15<span class="text-2xl text-secondary/70">m</span></span>
+<div class="pb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">speed</span>
+<span class="text-primary font-body-md text-body-md" id="commute-status">Light Traffic • Optimal Speeds</span>
+</div>
+</div>
+<!-- Sparkline visualization mock -->
+<div class="mt-4 h-8 w-full flex items-end gap-1 opacity-60">
+<div class="w-1/12 bg-primary h-2/6 rounded-t-sm"></div>
+<div class="w-1/12 bg-primary h-3/6 rounded-t-sm"></div>
+<div class="w-1/12 bg-primary h-2/6 rounded-t-sm"></div>
+<div class="w-1/12 bg-primary h-4/6 rounded-t-sm"></div>
+<div class="w-1/12 bg-secondary h-6/6 rounded-t-sm shadow-[0_0_8px_rgba(141,205,255,0.5)]"></div>
+<div class="w-1/12 bg-primary h-3/6 rounded-t-sm"></div>
+<div class="w-1/12 bg-primary h-2/6 rounded-t-sm"></div>
+<div class="w-1/12 bg-primary h-2/6 rounded-t-sm"></div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-stack-gap w-full">
+<!-- Interactive Map Snippet -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center px-1">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Area Overview</h3>
+<a class="font-label-sm text-label-sm text-secondary hover:text-secondary-fixed transition-colors flex items-center gap-1" href="live maps.html">
+Expand Map <span class="material-symbols-outlined text-[14px]">open_in_full</span>
+</a>
+</div>
+<div class="w-full h-48 md:h-64 rounded-xl overflow-hidden border border-outline-variant relative group cursor-pointer" onclick="window.location.href='live maps.html'">
+<img alt="Map snippet" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-location="San Francisco" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl0fy9Y_ixIjW9rBvW0NSysZQeV5AHzBCkyQaacv8Hy1rGlapPqR1Kcd78prB-bhWdvMgVvbplcmL-nAekThYdEtnCSFZTQVkHYaOKbNIwDzTegn1gKZWCVYCgOXGzI5JnZJbGZwIjSGr0DLTKZ0qMTOVtFXw2HayyxZPNYPngQB2aAwA68In3IwtatRzVVcEdU5wWE0pvnk9W-ilLH3WCNv84UzIHeK7JmhxoaZC_M3dt-5b4gmlR"/>
+<!-- Map Controls Overlay -->
+<div class="absolute top-2 right-2 flex flex-col gap-1">
+<button class="w-10 h-10 bg-surface-container/60 backdrop-blur-md border border-white/10 rounded-lg flex items-center justify-center text-on-surface hover:bg-white/10 transition-colors" onclick="event.stopPropagation(); window.location.href='live maps.html';">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="w-10 h-10 bg-surface-container/60 backdrop-blur-md border border-white/10 rounded-lg flex items-center justify-center text-on-surface hover:bg-white/10 transition-colors" onclick="event.stopPropagation(); window.location.href='live maps.html';">
+<span class="material-symbols-outlined">remove</span>
+</button>
+</div>
+<div class="absolute bottom-2 left-2">
+<button class="px-3 py-1.5 bg-surface-container/80 backdrop-blur-md border border-white/10 rounded-lg flex items-center gap-1 text-on-surface text-sm hover:bg-white/10 transition-colors" onclick="event.stopPropagation(); window.location.href='live maps.html';">
+<span class="material-symbols-outlined text-[16px]">my_location</span> Center Live
+</button>
+</div>
+</div>
+</div>
+<!-- Saved Routes / Frequent Destinations -->
+<div class="flex flex-col gap-2">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider px-1">Saved Routes</h3>
+<div class="grid grid-cols-2 gap-2 h-full">
+<!-- Route Card 1 -->
+<div class="bg-surface-container border border-white/5 rounded-xl p-3 flex flex-col justify-between hover:bg-surface-container-high transition-colors cursor-pointer group" onclick="window.location.href='live maps.html?search=Main'">
+<div class="flex justify-between items-start">
+<div class="bg-primary-container/30 p-1.5 rounded-lg text-primary">
+<span class="material-symbols-outlined">home</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-secondary opacity-0 group-hover:opacity-100 transition-all text-sm">arrow_forward</span>
+</div>
+<div class="mt-4">
+<p class="font-body-md text-body-md text-on-surface font-medium leading-tight mb-1">Main Expressway</p>
+<p class="font-data-lg text-data-lg text-on-surface-variant text-sm">18m <span class="text-xs text-on-surface-variant/50">via R001</span></p>
+</div>
+</div>
+<!-- Route Card 2 -->
+<div class="bg-surface-container border border-white/5 rounded-xl p-3 flex flex-col justify-between hover:bg-surface-container-high transition-colors cursor-pointer group" onclick="window.location.href='live maps.html?search=Central'">
+<div class="flex justify-between items-start">
+<div class="bg-tertiary-container/30 p-1.5 rounded-lg text-tertiary">
+<span class="material-symbols-outlined">school</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-secondary opacity-0 group-hover:opacity-100 transition-all text-sm">arrow_forward</span>
+</div>
+<div class="mt-4">
+<p class="font-body-md text-body-md text-on-surface font-medium leading-tight mb-1">Central Avenue</p>
+<p class="font-data-lg text-data-lg text-on-surface-variant text-sm">12m <span class="text-xs text-on-surface-variant/50">via R002</span></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Nearby Alerts Section -->
+<div class="flex flex-col gap-2 mt-2">
+<div class="flex justify-between items-center px-1">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Nearby Alerts (5mi)</h3>
+<a class="bg-error-container text-on-error-container font-label-sm text-label-sm px-2 py-0.5 rounded-full hover:opacity-90" href="Alerts.html">View All Alerts</a>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Alert Item 1 (Severe) -->
+<div class="bg-surface-container-low border-y border-r border-white/5 border-l-4 border-l-error rounded-r-xl p-3 flex items-start gap-3 hover:bg-surface-container transition-colors cursor-pointer" onclick="window.location.href='Alerts.html'">
+<div class="mt-0.5 text-error">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md text-on-surface font-medium mb-0.5">Heavy Traffic on Airport Road</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Density peak detected. Expect 15m delay.</p>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant/60">Live</span>
+</div>
+<!-- Alert Item 2 (Moderate/Construction) -->
+<div class="bg-surface-container-low border-y border-r border-white/5 border-l-4 border-l-secondary rounded-r-xl p-3 flex items-start gap-3 hover:bg-surface-container transition-colors cursor-pointer" onclick="window.location.href='Alerts.html'">
+<div class="mt-0.5 text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">construction</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md text-on-surface font-medium mb-0.5">Scheduled Maintenance</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Industrial Highway lane restrictions active.</p>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant/60">Active</span>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center h-20 px-4 pb-safe bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl rounded-t-full border-t border-white/10 shadow-24px-blur dark:shadow-none z-50 md:hidden">
+<a class="nav-home-link flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-90 duration-150 group" href="public dashboard.html">
+<span class="material-symbols-outlined mb-0.5" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all group" href="live maps.html">
+<span class="material-symbols-outlined mb-0.5 group-hover:-translate-y-0.5 transition-transform">traffic</span>
+<span class="font-label-sm text-label-sm">Traffic</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all group" href="Alerts.html">
+<span class="material-symbols-outlined mb-0.5 group-hover:-translate-y-0.5 transition-transform">warning</span>
+<span class="font-label-sm text-label-sm">Alerts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-error transition-all group" onclick="logout(); return false;" href="#">
+<span class="material-symbols-outlined mb-0.5 group-hover:-translate-y-0.5 transition-transform">logout</span>
+<span class="font-label-sm text-label-sm">Logout</span>
+</a>
+</nav>
+
+<script>
+function handleRouteSearch(e) {
+    e.preventDefault();
+    const query = document.getElementById('route-search-input').value.trim();
+    if (query) {
+        window.location.href = `live maps.html?search=${encodeURIComponent(query)}`;
+    } else {
+        window.location.href = 'live maps.html';
+    }
+}
+
+async function loadPublicData() {
+    try {
+        const [roads, density] = await Promise.all([
+            trafficAPI.getLiveTraffic(),
+            trafficAPI.getDensitySummary()
+        ]);
+        const avg = density.average_density ?? density.average_network_density ?? 8.95;
+        const severeCount = density.severe_congestion_roads ?? 0;
+
+        if (severeCount > 0 || avg > 20) {
+            document.getElementById('commute-eta').innerHTML = `38<span class="text-2xl text-secondary/70">m</span>`;
+            document.getElementById('commute-status').innerHTML = `<span class="text-rose-400 font-semibold">Severe Gridlock Detected</span> • Major Delays`;
+        } else if (avg > 12) {
+            document.getElementById('commute-eta').innerHTML = `24<span class="text-2xl text-secondary/70">m</span>`;
+            document.getElementById('commute-status').textContent = 'Moderate Traffic • Minor Delays';
+        } else {
+            document.getElementById('commute-eta').innerHTML = `14<span class="text-2xl text-secondary/70">m</span>`;
+            document.getElementById('commute-status').textContent = 'Light Traffic • Optimal Speeds';
+        }
+    } catch (e) {
+        console.error('Error loading public data:', e);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadPublicData);
+</script>
+</body></html>

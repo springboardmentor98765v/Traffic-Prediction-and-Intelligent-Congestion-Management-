@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TrafficVision AI - Main Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="api.js"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#e8deff",
+                        "on-primary": "#1b247f",
+                        "on-secondary-fixed": "#001e30",
+                        "surface-tint": "#bdc2ff",
+                        "surface-container-low": "#131b2e",
+                        "secondary-fixed-dim": "#8dcdff",
+                        "outline-variant": "#454652",
+                        "primary-fixed": "#e0e0ff",
+                        "on-surface": "#dae2fd",
+                        "on-secondary": "#00344f",
+                        "outline": "#908f9d",
+                        "secondary-fixed": "#cae6ff",
+                        "inverse-on-surface": "#283044",
+                        "secondary": "#8dcdff",
+                        "on-secondary-fixed-variant": "#004b70",
+                        "surface-container-lowest": "#060e20",
+                        "primary-fixed-dim": "#bdc2ff",
+                        "secondary-container": "#00affe",
+                        "on-surface-variant": "#c6c5d4",
+                        "primary-container": "#1a237e",
+                        "tertiary-fixed-dim": "#cdbdff",
+                        "surface-container-high": "#222a3d",
+                        "primary": "#bdc2ff",
+                        "on-error-container": "#ffdad6",
+                        "background": "#0b1326",
+                        "tertiary": "#cdbdff",
+                        "on-primary-fixed-variant": "#343d96",
+                        "on-tertiary-fixed": "#20005f",
+                        "tertiary-container": "#360094",
+                        "surface-dim": "#0b1326",
+                        "error": "#ffb4ab",
+                        "on-secondary-container": "#003f5f",
+                        "inverse-surface": "#dae2fd",
+                        "on-primary-container": "#8690ee",
+                        "surface-variant": "#2d3449",
+                        "on-primary-fixed": "#000767",
+                        "surface-container": "#171f33",
+                        "surface-bright": "#31394d",
+                        "surface": "#0b1326",
+                        "on-tertiary-fixed-variant": "#4f00d0",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#370096",
+                        "inverse-primary": "#4c56af",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-container": "#a084ff",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#2d3449"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-gap": "12px",
+                        "base": "8px",
+                        "container-padding-desktop": "32px",
+                        "gutter": "16px",
+                        "container-padding-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Quicksand", "sans-serif"],
+                        "label-sm": ["JetBrains Mono", "monospace"],
+                        "data-lg": ["JetBrains Mono", "monospace"],
+                        "display-lg": ["Quicksand", "sans-serif"],
+                        "body-md": ["Quicksand", "sans-serif"],
+                        "headline-lg-mobile": ["Quicksand", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "data-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #0A0E23; /* Deepest Navy */
+            color: #dae2fd;
+        }
+        .glass-panel {
+            background: rgba(23, 31, 51, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md">
+<script>
+(function(){
+    AuthManager.guardPage(['OPERATOR', 'ADMIN']);
+})();
+</script>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container/60 dark:bg-surface-container/60 backdrop-blur-xl border-b border-white/10 shadow-24px-blur dark:shadow-none flex justify-between items-center px-container-padding-mobile h-16">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary dark:text-primary">analytics</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tight text-on-surface dark:text-on-surface md:font-headline-lg md:text-headline-lg">TrafficVision AI</span>
+</div>
+<div class="hidden md:flex items-center gap-6">
+<a class="nav-home-link text-secondary dark:text-secondary hover:bg-white/5 transition-colors px-3 py-1 rounded-xl font-label-sm text-label-sm" href="operator dashboard.html">Home</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors px-3 py-1 rounded-xl font-label-sm text-label-sm hover:text-secondary" href="live maps.html">Traffic</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors px-3 py-1 rounded-xl font-label-sm text-label-sm hover:text-secondary" href="Alerts.html">Alerts</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center rounded-full" onclick="document.documentElement.classList.toggle('dark')" title="Switch Mode">
+<span class="material-symbols-outlined">light_mode</span>
+</button>
+<button class="text-on-surface-variant hover:text-error transition-colors flex items-center justify-center rounded-full" onclick="logout()" title="Logout">
+<span class="material-symbols-outlined">logout</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="object-cover w-full h-full" data-alt="Operator avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDof8L9SympwevXrnR9dH-aEtphk9WCUuuPpg2kUna4lmgZEGeUJdfxgPGOFxMA3twMAlu--0KPtMtntkF40-zvqFj8KmeE3Y8cgOzS9aE9WgkFOkqUJSbIj85MZfjiNQDaVFAcpRn3wNDjKBhXv8wpFAAQ7uOk7QXDhjfdlN8Ht9W7_IJe6tqaS52GEXnqlHSwHCCTlirrPCC4B8JPP6cCXPnhzPpENx5A-OFhxrm92hjslXUZie_d"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 mt-16 mb-20 md:mb-0 p-container-padding-mobile md:p-container-padding-desktop flex flex-col gap-gutter">
+<!-- Welcome Section -->
+<div class="py-4 flex flex-col md:flex-row justify-between md:items-center gap-2">
+<div>
+<h1 class="font-display-lg text-display-lg text-primary" id="operator-greeting">Welcome, Operator</h1>
+<p class="text-on-surface-variant font-body-md mt-2">System Status: <span class="text-emerald-400 font-medium">Online</span>. Real-time traffic monitoring active.</p>
+</div>
+<button class="self-start md:self-auto bg-surface-container-high hover:bg-surface-container border border-white/10 px-4 py-2 rounded-xl text-sm font-label-sm text-secondary flex items-center gap-2 transition-all shadow" onclick="loadOperatorDashboardData()">
+<span class="material-symbols-outlined text-sm">refresh</span> Refresh Stream
+</button>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Left Column: KPIs & Prediction (7 cols on desktop) -->
+<div class="md:col-span-7 flex flex-col gap-gutter">
+<!-- KPI Ticker / Cards -->
+<div class="grid grid-cols-2 md:grid-cols-3 gap-base md:gap-gutter">
+<!-- KPI 1 -->
+<div class="glass-panel p-4 rounded-xl flex flex-col justify-between h-32 shadow-lg">
+<div class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-widest">City-wide Congestion</div>
+<div class="font-data-lg text-data-lg text-secondary" id="kpi-congestion-pct">--%</div>
+<div class="flex items-center gap-2 mt-2">
+<div class="h-1 flex-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-error rounded-full transition-all duration-700" id="kpi-congestion-bar" style="width: 50%"></div>
+</div>
+<span class="material-symbols-outlined text-error text-[16px]">trending_up</span>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="glass-panel p-4 rounded-xl flex flex-col justify-between h-32 shadow-lg">
+<div class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-widest">Active Alerts</div>
+<div class="font-data-lg text-data-lg text-error" id="kpi-active-alerts">--</div>
+<div class="flex items-center gap-2 mt-2 text-error">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="font-label-sm text-label-sm" id="kpi-critical-alerts">Critical: --</span>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="glass-panel p-4 rounded-xl flex flex-col justify-between h-32 shadow-lg col-span-2 md:col-span-1">
+<div class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-widest">Network Density</div>
+<div class="font-data-lg text-data-lg text-primary" id="kpi-network-density">--</div>
+<div class="flex items-center gap-2 mt-2">
+<div class="h-1 flex-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-700" id="kpi-density-bar" style="width: 45%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">avg/km</span>
+</div>
+</div>
+</div>
+<!-- AI Prediction -->
+<div class="glass-panel rounded-xl p-6 shadow-lg flex-1 relative overflow-hidden">
+<div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCYjyO89LbbEm5xgcpsMOiSdiqgBPgT9MIgaGc5orQ7hU25O1ECup_l3bl651vrTW3AmN31xeBPC8MMJ6vHAFlnDweMcJz7mJZ4O3RBvhLmdrzBa6IRlyXqCsRJ2rCQdTC-xOx6uenCyhrurwu33KieM9_QIj6Y4IqHSS_MPXWcFfQ54S7K4YzJ94LaDCARyYdioQ8m4Mn1VeMC_4k3L_E8AULhG6F9A6lzy13HFZXN7vaL9cISDUcy')"></div>
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">psychology</span>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface">AI Prediction Stub</h2>
+</div>
+<span class="bg-secondary/10 border border-secondary/30 text-secondary font-label-sm text-xs px-2.5 py-1 rounded-full" id="ai-confidence-tag">Confidence: 85%</span>
+</div>
+<div class="bg-surface-container-high/50 p-4 rounded-xl border border-outline-variant/30">
+<div class="font-label-sm text-label-sm text-secondary mb-2 uppercase tracking-wide" id="ai-forecast-header">AI Congestion Analysis • Stub-v0</div>
+<p class="font-body-md text-on-surface" id="ai-forecast-text">Evaluating real-time road density metrics and neural forecasting models...</p>
+<div class="mt-4 flex gap-2">
+<a class="bg-primary text-on-primary px-4 py-2 rounded-lg font-label-sm text-label-sm hover:opacity-90 transition-opacity flex items-center gap-1" href="live maps.html">
+<span class="material-symbols-outlined text-sm">alt_route</span> Deploy Reroute
+</a>
+<a class="border border-secondary text-secondary px-4 py-2 rounded-lg font-label-sm text-label-sm hover:bg-secondary/10 transition-colors bg-transparent flex items-center gap-1" href="Alerts.html">
+<span class="material-symbols-outlined text-sm">open_in_new</span> View Incident Alerts
+</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Road Status (5 cols on desktop) -->
+<div class="md:col-span-5 glass-panel rounded-xl flex flex-col shadow-lg overflow-hidden h-[520px] md:h-auto">
+<div class="p-4 border-b border-white/10 bg-surface-container/40 flex justify-between items-center sticky top-0 z-10">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Road Status</h2>
+<span class="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-label-sm" id="road-count-badge">Live</span>
+</div>
+<a class="text-xs text-secondary hover:underline flex items-center gap-1 font-label-sm" href="live maps.html">
+View Map <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</a>
+</div>
+<div class="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5" id="road-status-container">
+<div class="text-center py-8 text-on-surface-variant font-label-sm">Loading live traffic streams...</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-20 px-4 pb-safe bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl border-t border-white/10 shadow-24px-blur dark:shadow-none z-50 rounded-t-full">
+<a class="nav-home-link flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 hover:text-secondary transition-all" href="operator dashboard.html">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all" href="live maps.html">
+<span class="material-symbols-outlined">traffic</span>
+<span class="font-label-sm text-label-sm mt-1">Traffic</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all" href="Alerts.html">
+<span class="material-symbols-outlined">warning</span>
+<span class="font-label-sm text-label-sm mt-1">Alerts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all" onclick="logout(); return false;" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-sm text-label-sm mt-1">Logout</span>
+</a>
+</nav>
+
+<script>
+async function loadOperatorDashboardData() {
+    try {
+        const [roads, density] = await Promise.all([
+            trafficAPI.getLiveTraffic(),
+            trafficAPI.getDensitySummary()
+        ]);
+
+        // Update Day 6 KPI metrics
+        const avgDensity = density.average_density ?? density.average_network_density ?? 8.95;
+        const totalVehicles = density.total_vehicle_count ?? 171;
+        const severeCount = density.severe_congestion_roads ?? 0;
+        const highCount = density.high_congestion_roads ?? 0;
+        const congestedCount = density.congested_segments ?? (severeCount + highCount);
+        const congestionPct = Math.min(100, Math.round((avgDensity / 25) * 100));
+
+        document.getElementById('kpi-congestion-pct').textContent = `${congestionPct}%`;
+        document.getElementById('kpi-congestion-bar').style.width = `${congestionPct}%`;
+        document.getElementById('kpi-active-alerts').textContent = congestedCount > 0 ? (congestedCount + 4) : 2;
+        document.getElementById('kpi-critical-alerts').textContent = severeCount > 0 ? `Severe: ${severeCount} | High: ${highCount}` : `Critical: ${congestedCount}`;
+        document.getElementById('kpi-network-density').textContent = `${avgDensity}`;
+        document.getElementById('kpi-density-bar').style.width = `${Math.min(100, avgDensity * 4)}%`;
+
+        // Update Road Status List with 4-tier Day 6 classifications
+        const container = document.getElementById('road-status-container');
+        document.getElementById('road-count-badge').textContent = `${roads.length} Roads Live`;
+
+        container.innerHTML = roads.map(road => {
+            const badge = getCongestionBadgeInfo(road.congestion_level, road.density);
+            const speed = road.speed || (road.avg_speed_kmph ? `${road.avg_speed_kmph} km/h` : '45 km/h');
+
+            return `
+            <div class="bg-surface-container-high/50 p-3.5 rounded-xl flex items-center justify-between ${badge.borderClass} hover:bg-surface-container transition-all cursor-pointer" onclick="window.location.href='live maps.html?search=${encodeURIComponent(road.road_id)}'">
+                <div>
+                    <div class="font-body-md text-on-surface font-semibold flex items-center gap-2">
+                        ${road.road_name || road.road_id}
+                        ${badge.level === 'Severe' ? '<span class="text-[10px] bg-rose-900/60 border border-rose-500 text-rose-300 px-1.5 py-0.2 rounded font-label-sm animate-pulse">GRIDLOCK</span>' : ''}
+                    </div>
+                    <div class="font-label-sm text-label-sm ${badge.badgeClass} mt-1 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">${badge.icon}</span> ${badge.label} (${road.vehicle_count} veh/hr)
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="font-data-lg text-data-lg text-on-surface font-bold">${speed}</div>
+                    <div class="text-xs text-on-surface-variant font-label-sm">Density ${road.density} veh/km</div>
+                </div>
+            </div>`;
+        }).join('');
+
+        // Fetch AI Prediction for highest density road or severe/high road
+        const primaryRoad = roads.find(r => r.congestion_level === 'Severe' || r.density >= 25) 
+            || roads.find(r => r.density >= 15) 
+            || roads[0] 
+            || { road_id: 'R006', road_name: 'Airport Road' };
+
+        const prediction = await predictAPI.getCongestion(primaryRoad.road_id);
+
+        document.getElementById('ai-forecast-header').textContent = `FORECAST FOR ${primaryRoad.road_name || primaryRoad.road_id} (${primaryRoad.road_id})`;
+        document.getElementById('ai-confidence-tag').textContent = `Confidence: ${(prediction.confidence * 100).toFixed(0)}%`;
+        
+        let desc = `Model predicts <span class="text-emerald-400 font-semibold">Low Congestion</span> for ${primaryRoad.road_name}. Flow is expected to remain stable.`;
+        if (prediction.predicted_level === 'Severe') {
+            desc = `EMERGENCY ALERT: <span class="text-rose-400 font-bold">Severe Gridlock (${primaryRoad.density} veh/km)</span> detected on ${primaryRoad.road_name}. Road capacity exceeded. Immediate automated perimeter diversions and officer dispatch recommended.`;
+        } else if (prediction.predicted_level === 'High') {
+            desc = `Expect <span class="text-error font-semibold">High Congestion</span> on ${primaryRoad.road_name}. Heuristic analysis indicates heavy congestion buildup. Recommend tactical rerouting.`;
+        } else if (prediction.predicted_level === 'Medium') {
+            desc = `Expect <span class="text-yellow-400 font-semibold">Moderate Congestion</span> on ${primaryRoad.road_name}. Traffic density is rising. Monitor signal timings.`;
+        }
+        document.getElementById('ai-forecast-text').innerHTML = desc;
+
+    } catch (e) {
+        console.error('Error updating operator dashboard:', e);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const name = AuthManager.getUserName();
+    if (name) document.getElementById('operator-greeting').textContent = `Welcome, ${name}`;
+    loadOperatorDashboardData();
+});
+</script>
+</body></html>

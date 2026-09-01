@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TrafficVision AI - Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="api.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "outline-variant": "#454652",
+                            "surface-container-high": "#222a3d",
+                            "on-error": "#690005",
+                            "background": "#0b1326",
+                            "secondary-fixed": "#cae6ff",
+                            "tertiary": "#cdbdff",
+                            "surface-container-low": "#131b2e",
+                            "error-container": "#93000a",
+                            "surface-container-highest": "#2d3449",
+                            "on-tertiary": "#370096",
+                            "inverse-primary": "#4c56af",
+                            "error": "#ffb4ab",
+                            "on-tertiary-fixed-variant": "#4f00d0",
+                            "surface-dim": "#0b1326",
+                            "on-secondary": "#00344f",
+                            "on-tertiary-fixed": "#20005f",
+                            "secondary-container": "#00affe",
+                            "on-secondary-container": "#003f5f",
+                            "primary-container": "#1a237e",
+                            "outline": "#908f9d",
+                            "on-surface": "#dae2fd",
+                            "on-tertiary-container": "#a084ff",
+                            "inverse-on-surface": "#283044",
+                            "on-error-container": "#ffdad6",
+                            "on-background": "#dae2fd",
+                            "surface": "#0b1326",
+                            "primary-fixed": "#e0e0ff",
+                            "surface-variant": "#2d3449",
+                            "inverse-surface": "#dae2fd",
+                            "primary-fixed-dim": "#bdc2ff",
+                            "on-primary-fixed": "#000767",
+                            "tertiary-container": "#360094",
+                            "tertiary-fixed": "#e8deff",
+                            "on-primary-fixed-variant": "#343d96",
+                            "on-secondary-fixed": "#001e30",
+                            "on-surface-variant": "#c6c5d4",
+                            "on-secondary-fixed-variant": "#004b70",
+                            "surface-container": "#171f33",
+                            "secondary-fixed-dim": "#8dcdff",
+                            "surface-container-lowest": "#060e20",
+                            "primary": "#bdc2ff",
+                            "secondary": "#8dcdff",
+                            "on-primary-container": "#8690ee",
+                            "surface-tint": "#bdc2ff",
+                            "on-primary": "#1b247f",
+                            "tertiary-fixed-dim": "#cdbdff",
+                            "surface-bright": "#31394d"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.125rem",
+                            "lg": "0.25rem",
+                            "xl": "0.5rem",
+                            "full": "0.75rem"
+                    },
+                    "spacing": {
+                            "stack-gap": "12px",
+                            "base": "8px",
+                            "container-padding-mobile": "16px",
+                            "gutter": "16px",
+                            "container-padding-desktop": "32px"
+                    },
+                    "fontFamily": {
+                            "headline-lg": ["Inter"],
+                            "body-md": ["Inter"],
+                            "display-lg": ["Inter"],
+                            "data-lg": ["JetBrains Mono"],
+                            "headline-lg-mobile": ["Inter"],
+                            "label-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                            "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                            "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                            "data-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                            "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                            "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(23, 31, 51, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .text-glow {
+            text-shadow: 0 0 10px rgba(141, 205, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md overflow-x-hidden pb-32 md:pb-0 md:pt-20">
+<script>
+(function(){
+    AuthManager.guardPage(['ADMIN']);
+})();
+</script>
+<!-- TopAppBar (Web) -->
+<header class="hidden md:flex fixed top-0 w-full z-50 bg-surface-container/60 dark:bg-surface-container/60 backdrop-blur-xl border-b border-white/10 shadow-24px-blur dark:shadow-none justify-between items-center px-container-padding-desktop h-16 w-full">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary dark:text-primary text-2xl">analytics</span>
+<span class="font-headline-lg font-bold tracking-tight text-on-surface dark:text-on-surface">TrafficVision AI</span>
+</div>
+<nav class="flex gap-6">
+<a class="nav-home-link text-secondary dark:text-secondary hover:bg-white/5 transition-colors px-3 py-2 rounded font-label-sm text-label-sm" href="admin dashboard.html">Dashboard</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors px-3 py-2 rounded font-label-sm text-label-sm" href="live maps.html">Traffic</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors px-3 py-2 rounded font-label-sm text-label-sm" href="Alerts.html">Alerts</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors px-3 py-2 rounded font-label-sm text-label-sm" href="admin dashboard.html">Admin Console</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-error transition-colors flex items-center justify-center rounded-full" onclick="logout()" title="Logout">
+<span class="material-symbols-outlined">logout</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline">
+<img class="w-full h-full object-cover" data-alt="Admin avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCr0To9wUv0Kjn-dNz66GU04W-Z5I3nhNexRoHZitum1poBClNnf7qNwQxL_b3bYBVzVLBn2bhcneJ4hTSJTjif96ny2cxOmvJTXk1V1OvYzt0Z2HNg0WKIa2RK44HRfoR49QsHzers9FlfQTIjDcK-wEzCVD6nn6ndyeAIlkIAMz7ww-5luOOtvYmevwoZ2Q-GHEOdl52gJImPz27g-AimtkNXHLx6irYF-T2fExXGKwG2dy6LgzYz"/>
+</div>
+</div>
+</header>
+<!-- TopAppBar (Mobile) -->
+<header class="flex md:hidden fixed top-0 w-full z-50 bg-surface-container/60 dark:bg-surface-container/60 backdrop-blur-xl border-b border-white/10 shadow-24px-blur dark:shadow-none flex justify-between items-center px-container-padding-mobile h-16 w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary dark:text-primary text-xl">analytics</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tight text-on-surface dark:text-on-surface">TrafficVision AI</span>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline">
+<img class="w-full h-full object-cover" data-alt="Admin avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqu4IvIr2V8ABc9P9QxHnNwcz3Q7NP3TrXmliXCL7HOA_d6p3hYkGiwp0wZXxwBy6Kt4Q7HSkbmLIgDJUWfqSVm3fInPwiKMR9tvd475Zfqy-upLSFXl-vrq7bVAIKVqqaQI5q-FJyNcuYsaa_cNClji26B5kDQR2Ipi11891dYq-ueK9rxDCi4IFORFJyQWfp7TMBNUGcMVoprhzaocMZ81Q6o1qIBr7viXGTt2I3ZLvh0be25p_U"/>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-container-padding-mobile md:px-container-padding-desktop pt-24 md:pt-8 space-y-gutter">
+<!-- Dashboard Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+<div>
+<h1 class="font-headline-lg text-headline-lg mb-2">System Overview</h1>
+<p class="text-on-surface-variant">Real-time infrastructure health &amp; operational metrics.</p>
+</div>
+<div class="mt-4 md:mt-0 flex gap-4">
+<button class="bg-primary-container text-on-primary-container px-4 py-2 rounded flex items-center gap-2 hover:bg-primary-container/80 transition-colors shadow" id="btn-sync-data" onclick="syncAdminData()">
+<span class="material-symbols-outlined text-sm" id="sync-icon">refresh</span>
+<span class="font-label-sm text-label-sm" id="sync-text">Sync Data</span>
+</button>
+<button class="bg-primary text-on-primary px-4 py-2 rounded flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(189,194,255,0.3)]" onclick="window.location.href='Alerts.html'">
+<span class="material-symbols-outlined text-sm">warning</span>
+<span class="font-label-sm text-label-sm">View System Alerts</span>
+</button>
+</div>
+</div>
+<!-- High-level KPIs -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-base md:gap-gutter">
+<div class="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Server Status</span>
+<span class="material-symbols-outlined text-secondary">dns</span>
+</div>
+<div class="flex items-end gap-3 relative z-10">
+<span class="font-data-lg text-data-lg text-secondary text-glow" id="admin-server-status">Optimal</span>
+<div class="flex items-center text-green-400 mb-1">
+<span class="w-2 h-2 rounded-full bg-green-400 animate-pulse mr-2"></span>
+<span class="font-label-sm text-label-sm">99.9% Uptime</span>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Monitored Roads</span>
+<span class="material-symbols-outlined text-secondary">sensors</span>
+</div>
+<div class="flex items-end gap-3 relative z-10">
+<span class="font-data-lg text-data-lg text-secondary text-glow" id="admin-road-count">6 Roads</span>
+<div class="flex items-center text-green-400 mb-1">
+<span class="material-symbols-outlined text-sm">arrow_upward</span>
+<span class="font-label-sm text-label-sm" id="admin-vehicles-monitored">171 Vehicles</span>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Avg Network Density</span>
+<span class="material-symbols-outlined text-secondary">speed</span>
+</div>
+<div class="flex items-end gap-3 relative z-10">
+<span class="font-data-lg text-data-lg text-secondary text-glow" id="admin-avg-density">8.95</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mb-1">veh/km</span>
+<div class="flex items-center text-secondary mb-1 ml-auto">
+<svg class="stroke-secondary fill-none" height="20" stroke-width="2" viewbox="0 0 40 20" width="40">
+<path d="M0 15 Q 5 5, 10 10 T 20 8 T 30 12 T 40 5"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-base md:gap-gutter mt-8">
+<!-- City-Wide Congestion Index -->
+<div class="glass-panel rounded-xl p-6 col-span-1 lg:col-span-2 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile">City-Wide Congestion Index</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Real-time aggregate metric</span>
+</div>
+<div class="bg-surface-container px-3 py-1 rounded border border-outline-variant flex items-center gap-2" id="congestion-status-badge">
+<span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+<span class="font-label-sm text-label-sm" id="congestion-status-text">Moderate</span>
+</div>
+</div>
+<div class="flex-grow flex items-center justify-center min-h-[200px] border border-outline-variant/30 rounded bg-surface-container-lowest/50 relative overflow-hidden">
+<svg class="w-full h-full absolute inset-0 opacity-50" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M0,80 C20,60 40,90 60,40 C80,10 90,50 100,30 L100,100 L0,100 Z" fill="rgba(141, 205, 255, 0.1)"></path>
+<path d="M0,80 C20,60 40,90 60,40 C80,10 90,50 100,30" fill="none" stroke="#8dcdff" stroke-width="2"></path>
+</svg>
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+<div class="relative z-10 flex flex-col items-center">
+<span class="font-display-lg text-display-lg text-primary text-glow" id="congestion-index-score">68.4</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Index Score (0-100)</span>
+</div>
+</div>
+</div>
+<!-- AI Prediction Accuracy -->
+<div class="glass-panel rounded-xl p-6 col-span-1 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile">AI Accuracy</h2>
+<span class="material-symbols-outlined text-secondary">psychology</span>
+</div>
+<div class="space-y-6 flex-grow flex flex-col justify-center">
+<div>
+<div class="flex justify-between mb-2">
+<span class="font-label-sm text-label-sm">Volume Prediction</span>
+<span class="font-label-sm text-label-sm text-green-400">94.2%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded overflow-hidden">
+<div class="h-full bg-green-400 w-[94.2%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between mb-2">
+<span class="font-label-sm text-label-sm">Incident Detection</span>
+<span class="font-label-sm text-label-sm text-secondary">89.7%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded overflow-hidden">
+<div class="h-full bg-secondary w-[89.7%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between mb-2">
+<span class="font-label-sm text-label-sm">Signal Optimization</span>
+<span class="font-label-sm text-label-sm text-primary">91.5%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded overflow-hidden">
+<div class="h-full bg-primary w-[91.5%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Infrastructure Alerts -->
+<div class="glass-panel rounded-xl p-0 col-span-1 lg:col-span-2 overflow-hidden flex flex-col">
+<div class="p-6 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container/30">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile flex items-center gap-2 text-error">
+<span class="material-symbols-outlined">gpp_maybe</span>
+Infrastructure Alerts
+</h2>
+<a class="text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm flex items-center gap-1" href="Alerts.html">
+View All <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</a>
+</div>
+<div class="flex-grow flex flex-col">
+<div class="flex items-center gap-4 p-4 border-l-4 border-error bg-surface-container-lowest/50 hover:bg-surface-container/50 transition-colors border-b border-outline-variant/10">
+<span class="material-symbols-outlined text-error">videocam_off</span>
+<div class="flex-grow">
+<h3 class="font-label-sm text-label-sm font-semibold">Camera Outage - Node 42A</h3>
+<p class="text-sm text-on-surface-variant">No video feed detected for 15 minutes. Sector 7G.</p>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">10m ago</span>
+<button class="border border-outline-variant text-on-surface px-3 py-1 rounded font-label-sm text-label-sm hover:bg-surface-container" onclick="this.textContent='Acknowledged'; this.disabled=true;">Acknowledge</button>
+</div>
+<div class="flex items-center gap-4 p-4 border-l-4 border-yellow-500 bg-surface-container-lowest/50 hover:bg-surface-container/50 transition-colors border-b border-outline-variant/10">
+<span class="material-symbols-outlined text-yellow-500">wifi_tethering_error</span>
+<div class="flex-grow">
+<h3 class="font-label-sm text-label-sm font-semibold">Sensor Latency Spike</h3>
+<p class="text-sm text-on-surface-variant">LIDAR array L-12 reporting 500ms delay.</p>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">1h ago</span>
+<button class="border border-outline-variant text-on-surface px-3 py-1 rounded font-label-sm text-label-sm hover:bg-surface-container" onclick="window.location.href='Alerts.html'">Investigate</button>
+</div>
+<div class="flex items-center gap-4 p-4 border-l-4 border-outline-variant bg-surface-container-lowest/50 hover:bg-surface-container/50 transition-colors">
+<span class="material-symbols-outlined text-outline-variant">power_off</span>
+<div class="flex-grow">
+<h3 class="font-label-sm text-label-sm font-semibold">Scheduled Maintenance</h3>
+<p class="text-sm text-on-surface-variant">Server rack B reboot pending.</p>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2h ago</span>
+<span class="px-3 py-1 rounded font-label-sm text-label-sm text-outline-variant">Resolved</span>
+</div>
+</div>
+</div>
+<!-- Operator Activity & User Management -->
+<div class="glass-panel rounded-xl p-0 col-span-1 overflow-hidden flex flex-col">
+<div class="p-6 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container/30">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">group</span>
+Active Staff
+</h2>
+<span class="font-data-lg text-data-lg text-secondary">24</span>
+</div>
+<div class="p-4 bg-surface-container-lowest/30 flex gap-4 justify-around border-b border-outline-variant/30">
+<div class="text-center">
+<span class="font-data-lg text-data-lg text-primary block">3</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Admins</span>
+</div>
+<div class="text-center">
+<span class="font-data-lg text-data-lg text-secondary block">21</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Operators</span>
+</div>
+</div>
+<div class="flex-grow p-4 space-y-4">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Recent Activity</h3>
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-on-primary-container font-label-sm text-label-sm">JS</div>
+<div>
+<p class="text-sm"><span class="font-semibold text-secondary">J. Smith</span> overrode signal sequence at 5th &amp; Main.</p>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Just now</span>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center text-on-surface font-label-sm text-label-sm">AL</div>
+<div>
+<p class="text-sm"><span class="font-semibold text-secondary">A. Lee</span> dispatched unit to accident scene 4B.</p>
+<span class="font-label-sm text-label-sm text-on-surface-variant">15m ago</span>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center text-on-surface font-label-sm text-label-sm">MR</div>
+<div>
+<p class="text-sm"><span class="font-semibold text-secondary">M. Rossi</span> acknowledged Camera Outage - Node 42A.</p>
+<span class="font-label-sm text-label-sm text-on-surface-variant">1h ago</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 rounded-t-full bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl border-t border-white/10 shadow-24px-blur dark:shadow-none fixed bottom-0 left-0 w-full flex justify-around items-center h-20 px-4 pb-safe">
+<a class="nav-home-link flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all" href="admin dashboard.html">
+<span class="material-symbols-outlined text-2xl mb-1">dashboard</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all" href="live maps.html">
+<span class="material-symbols-outlined text-2xl mb-1">traffic</span>
+<span class="font-label-sm text-label-sm">Traffic</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all" href="Alerts.html">
+<span class="material-symbols-outlined text-2xl mb-1">warning</span>
+<span class="font-label-sm text-label-sm">Alerts</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 hover:text-secondary transition-all scale-90 duration-150" onclick="logout(); return false;" href="#">
+<span class="material-symbols-outlined text-2xl mb-1" style="font-variation-settings: 'FILL' 1;">logout</span>
+<span class="font-label-sm text-label-sm">Logout</span>
+</a>
+</nav>
+
+<script>
+async function syncAdminData() {
+    const syncBtn = document.getElementById('btn-sync-data');
+    const syncText = document.getElementById('sync-text');
+    const syncIcon = document.getElementById('sync-icon');
+    if (syncIcon) syncIcon.classList.add('animate-spin');
+    if (syncText) syncText.textContent = 'Syncing...';
+
+    try {
+        const density = await trafficAPI.getDensitySummary();
+        const totalRoads = density.total_roads ?? density.total_roads_monitored ?? 6;
+        const totalVehicles = density.total_vehicle_count ?? 171;
+        const avgDensity = density.average_density ?? density.average_network_density ?? 8.95;
+        const severeCount = density.severe_congestion_roads ?? 0;
+        const highCount = density.high_congestion_roads ?? 0;
+
+        document.getElementById('admin-road-count').textContent = `${totalRoads} Roads`;
+        document.getElementById('admin-vehicles-monitored').textContent = `${totalVehicles} Vehicles`;
+        document.getElementById('admin-avg-density').textContent = `${avgDensity}`;
+
+        const score = Math.min(99.9, Math.max(10, (avgDensity * 6.5))).toFixed(1);
+        document.getElementById('congestion-index-score').textContent = score;
+
+        const badgeText = document.getElementById('congestion-status-text');
+        if (severeCount > 0 || score > 85) {
+            badgeText.textContent = 'Severe Gridlock';
+            badgeText.previousElementSibling.className = 'w-2 h-2 rounded-full bg-rose-500 animate-ping';
+        } else if (score > 65 || highCount > 0) {
+            badgeText.textContent = 'High Congestion';
+            badgeText.previousElementSibling.className = 'w-2 h-2 rounded-full bg-error';
+        } else if (score > 35) {
+            badgeText.textContent = 'Moderate';
+            badgeText.previousElementSibling.className = 'w-2 h-2 rounded-full bg-yellow-400';
+        } else {
+            badgeText.textContent = 'Optimal';
+            badgeText.previousElementSibling.className = 'w-2 h-2 rounded-full bg-green-400';
+        }
+    } catch (e) {
+        console.error('Sync failed:', e);
+    } finally {
+        setTimeout(() => {
+            if (syncIcon) syncIcon.classList.remove('animate-spin');
+            if (syncText) syncText.textContent = 'Sync Data';
+        }, 500);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    syncAdminData();
+});
+</script>
+</body></html>
