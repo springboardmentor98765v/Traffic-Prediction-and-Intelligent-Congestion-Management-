@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+pydantic[email]
+PyJWT
+psycopg2-binary
+redis
+passlib
+bcrypt
