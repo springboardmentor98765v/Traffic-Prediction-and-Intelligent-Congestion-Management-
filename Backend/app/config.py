@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/trafficvision"
+        "sqlite:///./trafficvision.db"
     )
 
     # Redis

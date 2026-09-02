@@ -43,7 +43,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         user_id=str(new_user.id),
         name=new_user.name,
         email=new_user.email,
-        role=new_user.role.value
+        role=new_user.role
     )
 
 
@@ -71,7 +71,7 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        role=user.role.value
+        role=user.role
     )
 
 
@@ -122,7 +122,7 @@ def get_me(current_user: User = Depends(get_current_user)):
         user_id=str(current_user.id),
         name=current_user.name,
         email=current_user.email,
-        role=current_user.role.value
+        role=current_user.role
     )
 
 
@@ -137,7 +137,7 @@ def list_users(
             user_id=str(u.id),
             name=u.name,
             email=u.email,
-            role=u.role.value
+            role=u.role
         )
         for u in users
     ]
