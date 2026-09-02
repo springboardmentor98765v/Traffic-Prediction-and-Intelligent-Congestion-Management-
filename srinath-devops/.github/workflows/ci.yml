@@ -70,3 +70,25 @@ jobs:
 
 # Milestone 1: lint + build + test only.
 # No deployment stage is included.
+  api-tests:
+    name: API Automated Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: srinath-devops/API_TESTING_SKELETON
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install API test dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run API tests
+        run: pytest -q
