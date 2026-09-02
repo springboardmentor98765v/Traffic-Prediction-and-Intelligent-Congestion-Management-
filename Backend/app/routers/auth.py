@@ -13,7 +13,7 @@ from app.services.jwt_service import (
     get_password_hash, verify_password,
     create_access_token, create_refresh_token, decode_token
 )
-from app.middleware.auth_middleware import get_current_user
+from app.middleware.auth_middleware import get_current_user, require_role
 from app.config import get_settings
 
 settings = get_settings()
@@ -124,3 +124,20 @@ def get_me(current_user: User = Depends(get_current_user)):
         email=current_user.email,
         role=current_user.role.value
     )
+
+
+@router.get("/users", response_model=list[UserResponse])
+def list_users(
+    current_user: User = Depends(require_role(["admin"])),
+    db: Session = Depends(get_db)
+):
+    users = db.query(User).all()
+    return [
+        UserResponse(
+            user_id=str(u.id),
+            name=u.name,
+            email=u.email,
+            role=u.role.value
+        )
+        for u in users
+    ]
