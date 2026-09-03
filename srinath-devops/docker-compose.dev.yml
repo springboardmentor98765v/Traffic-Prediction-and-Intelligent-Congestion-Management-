@@ -1,0 +1,56 @@
+# TrafficVision AI - Milestone 1 Development Environment
+# Local development/integration only. Not a production deployment.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: trafficvision-postgres
+    environment:
+      POSTGRES_DB: trafficvision
+      POSTGRES_USER: trafficvision
+      POSTGRES_PASSWORD: trafficvision_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trafficvision -d trafficvision"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: trafficvision-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Enable this service when the team's FastAPI backend
+  # and Dockerfile are available.
+  #
+  # backend:
+  #   build:
+  #     context: ./backend
+  #   container_name: trafficvision-backend
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     DATABASE_URL: postgresql://trafficvision:trafficvision_dev_password@postgres:5432/trafficvision
+  #     REDIS_URL: redis://redis:6379/0
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+
+  # Auth, Traffic Monitoring and Prediction services should
+  # be added here when their actual service directories and
+  # Dockerfiles are provided by the development team.
+
+volumes:
+  postgres_data:
