@@ -1,11 +1,28 @@
-from fastapi import FastAPI, HTTPException
-from congestion_predictor import predict_congestion as get_prediction
+from pathlib import Path
 from typing import Optional
+
 import pandas as pd
+from fastapi import FastAPI, HTTPException
+
+from congestion_predictor import predict_congestion as get_prediction
+
 
 app = FastAPI(title="TrafficVision AI Engine")
 
-traffic_data = pd.read_csv("../data/processed_traffic.csv")
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+CSV_PATH = (
+    BASE_DIR
+    / "Komal_Data-Engineering-Traffic-Monitoring"
+    / "processed_traffic.csv"
+)
+
+try:
+    traffic_data = pd.read_csv(CSV_PATH)
+except FileNotFoundError:
+    raise RuntimeError(
+        f"processed_traffic.csv not found at: {CSV_PATH}"
+    )
 
 
 @app.get("/")
@@ -21,6 +38,7 @@ def predict_congestion(
     density: Optional[float] = None,
     hour: Optional[int] = None
 ):
+ 
     road_data = traffic_data[
         traffic_data["road_id"] == road_id
     ]
@@ -33,15 +51,19 @@ def predict_congestion(
     if density is None or hour is None:
         latest_record = road_data.iloc[-1]
 
-        density = float(latest_record["density"])
+        if density is None:
+            density = float(latest_record["density"])
 
-        timestamp = pd.to_datetime(
-            latest_record["timestamp"]
-        )
+        if hour is None:
+            timestamp = pd.to_datetime(
+                latest_record["timestamp"]
+            )
+            hour = int(timestamp.hour)
 
-        hour = int(timestamp.hour)
-
-    prediction = get_prediction(density, hour)
+    prediction = get_prediction(
+        density=density,
+        hour=hour
+    )
 
     return {
         "road_id": road_id,
