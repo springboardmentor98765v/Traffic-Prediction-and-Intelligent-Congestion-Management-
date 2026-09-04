@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
+import httpx
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 
@@ -22,6 +23,9 @@ CSV_PATH = (
     / "processed_traffic.csv"
 )
 
+TRAFFIC_API_URL = "http://127.0.0.1:8000/traffic/live"
+
+
 try:
     traffic_data = pd.read_csv(CSV_PATH)
 
@@ -33,17 +37,20 @@ except FileNotFoundError:
 
 @app.get(
     "/",
-    tags=["AI Engine"]
+    tags=["AI Engine"],
+    summary="Health Check"
 )
 def home():
     return {
-        "message": "TrafficVision AI Engine is running"
+        "message": "TrafficVision AI Engine is running",
+        "status": "success"
     }
 
 
 @app.get(
     "/api/v1/predict/congestion",
-    tags=["Congestion Prediction"]
+    tags=["AI Engine"],
+    summary="Congestion Prediction"
 )
 def predict_congestion(
     road_id: str,
@@ -62,22 +69,16 @@ def predict_congestion(
         )
 
     if density is None or hour is None:
-
         latest_record = road_data.iloc[-1]
 
         if density is None:
-            density = float(
-                latest_record["density"]
-            )
+            density = float(latest_record["density"])
 
         if hour is None:
             timestamp = pd.to_datetime(
                 latest_record["timestamp"]
             )
-
-            hour = int(
-                timestamp.hour
-            )
+            hour = int(timestamp.hour)
 
     if density < 0:
         raise HTTPException(
@@ -98,7 +99,77 @@ def predict_congestion(
 
     return {
         "road_id": road_id,
+        "density": density,
+        "hour": hour,
         "predicted_level": prediction,
         "confidence": 0.80,
         "generated_by": "heuristic-v0"
+    }
+
+
+@app.get(
+    "/api/v1/predict/live",
+    tags=["AI Engine"],
+    summary="Live Congestion Prediction"
+)
+def predict_live():
+
+    try:
+        response = httpx.get(
+            TRAFFIC_API_URL,
+            timeout=10
+        )
+
+        response.raise_for_status()
+        live_data = response.json()
+
+    except httpx.RequestError:
+        raise HTTPException(
+            status_code=503,
+            detail="Traffic monitoring API is unavailable"
+        )
+
+    except httpx.HTTPStatusError:
+        raise HTTPException(
+            status_code=502,
+            detail="Traffic monitoring API returned an error"
+        )
+
+    traffic_records = live_data.get("traffic", [])
+
+    predictions = []
+
+    for record in traffic_records:
+
+        road_id = record.get("road_id")
+        density = record.get("density")
+        timestamp = record.get("timestamp")
+
+        if road_id is None or density is None or timestamp is None:
+            continue
+
+        try:
+            hour = pd.to_datetime(timestamp).hour
+
+            prediction = get_prediction(
+                density=float(density),
+                hour=int(hour)
+            )
+
+            predictions.append({
+                "road_id": road_id,
+                "density": float(density),
+                "hour": int(hour),
+                "predicted_level": prediction,
+                "confidence": 0.80,
+                "generated_by": "heuristic-v0"
+            })
+
+        except (ValueError, TypeError):
+            continue
+
+    return {
+        "source": "Komal Traffic Monitoring API",
+        "total_records": len(predictions),
+        "predictions": predictions
     }
