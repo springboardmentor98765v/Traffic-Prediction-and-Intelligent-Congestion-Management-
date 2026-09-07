@@ -5,18 +5,31 @@ from passlib.context import CryptContext
 
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto"
+)
 
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def verify_password(password: str, password_hash: str) -> bool:
-    return pwd_context.verify(password, password_hash)
+def verify_password(
+    password: str,
+    password_hash: str
+) -> bool:
+    return pwd_context.verify(
+        password,
+        password_hash
+    )
 
 
-def create_access_token(user_id: int, role: str) -> str:
+def create_access_token(
+    user_id: int,
+    role: str
+) -> str:
+
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
@@ -35,7 +48,11 @@ def create_access_token(user_id: int, role: str) -> str:
     )
 
 
-def create_refresh_token(user_id: int, role: str) -> str:
+def create_refresh_token(
+    user_id: int,
+    role: str
+) -> str:
+
     expire = datetime.now(timezone.utc) + timedelta(
         days=settings.REFRESH_TOKEN_EXPIRE_DAYS
     )

@@ -1,6 +1,20 @@
+from pathlib import Path
+
+import joblib
+import pandas as pd
 from sqlalchemy.orm import Session
 
 from app.traffic.service import get_latest_traffic
+
+
+MODEL_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "Manasa-Maskan_AI-ML-Intelligent-Routing"
+    / "src"
+    / "traffic_model.pkl"
+)
+
+model = joblib.load(MODEL_PATH)
 
 
 def predict_congestion(
@@ -15,13 +29,24 @@ def predict_congestion(
     if not traffic:
         return None
 
-    density = traffic.density
+    recorded_at = traffic.recorded_at
 
-    if density >= 0.80:
+    input_data = pd.DataFrame(
+        {
+            "road_id": [road_id],
+            "hour": [recorded_at.hour],
+            "day_of_week": [recorded_at.weekday()],
+            "month": [recorded_at.month],
+        }
+    )
+
+    predicted_vehicles = model.predict(input_data)[0]
+
+    if predicted_vehicles >= 50:
         level = "HIGH"
         confidence = 0.88
 
-    elif density >= 0.50:
+    elif predicted_vehicles >= 25:
         level = "MEDIUM"
         confidence = 0.72
 
@@ -33,5 +58,5 @@ def predict_congestion(
         "road_id": road_id,
         "predicted_level": level,
         "confidence": confidence,
-        "generated_by": "heuristic-v0",
+        "generated_by": "random-forest-v1",
     }
