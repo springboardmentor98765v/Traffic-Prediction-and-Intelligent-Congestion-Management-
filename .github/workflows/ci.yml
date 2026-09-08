@@ -1,0 +1,85 @@
+name: TrafficVision AI - CI (Milestone 1)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  frontend:
+    name: Frontend Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Build Next.js Application
+        run: npm run build
+
+  backend:
+    name: Backend Lint & Automated Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install black flake8 pytest httpx
+
+      - name: Check Black formatting
+        run: black --check . --exclude "migrations|venv"
+
+      - name: Run Flake8
+        run: flake8 app/ --max-line-length=120 --ignore=E402,W503
+
+      - name: Run Backend Unit & Integration Tests
+        run: pytest tests/ -v
+
+  data-and-ai:
+    name: Data Pipeline & AI Heuristic Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pandas redis
+
+      - name: Run Data Engineering Tests
+        run: pytest Komal_Data-Engineering-Traffic-Monitoring/test_data_pipeline.py -v
+
+      - name: Run AI Heuristic Tests
+        run: pytest Sowjanya-ai-ml/src/test_congestion_predictor.py -v

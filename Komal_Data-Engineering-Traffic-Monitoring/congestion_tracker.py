@@ -1,7 +1,10 @@
 import csv
 from collections import defaultdict
 
-INPUT_FILE = "processed_traffic.csv"
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+INPUT_FILE = os.path.join(BASE_DIR, "processed_traffic.csv")
 
 
 def track_congestion():

@@ -30,27 +30,23 @@ services:
       timeout: 5s
       retries: 10
 
-  # Enable this service when the team's FastAPI backend
-  # and Dockerfile are available.
-  #
-  # backend:
-  #   build:
-  #     context: ./backend
-  #   container_name: trafficvision-backend
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     DATABASE_URL: postgresql://trafficvision:trafficvision_dev_password@postgres:5432/trafficvision
-  #     REDIS_URL: redis://redis:6379/0
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-
-  # Auth, Traffic Monitoring and Prediction services should
-  # be added here when their actual service directories and
-  # Dockerfiles are provided by the development team.
+  backend:
+    build:
+      context: ../Backend
+      dockerfile: Dockerfile
+    container_name: trafficvision-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://trafficvision:trafficvision_dev_password@postgres:5432/trafficvision
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: dev-secret-key-trafficvision-m1
+      DEBUG: "True"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   postgres_data:

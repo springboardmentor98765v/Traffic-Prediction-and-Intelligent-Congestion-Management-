@@ -1,76 +1,39 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from datetime import datetime
-import random
+from typing import Optional, List, Dict, Any
 
-from app.middleware.auth_middleware import get_current_user, require_role
+from app.middleware.auth_middleware import get_optional_current_user, get_current_user
 from app.models.user import User
+from app.services import traffic_service
 
 router = APIRouter()
 
 
-@router.get("/live")
-def get_live_traffic(current_user: User = Depends(get_current_user)):
-    roads = []
-    for i in range(1, 6):
-        vehicle_count = random.randint(10, 200)
-        density = round(random.uniform(5.0, 80.0), 2)
-        if density < 20:
-            congestion_level = "Low"
-        elif density <= 50:
-            congestion_level = "Medium"
-        else:
-            congestion_level = "High"
-        roads.append({
-            "road_id": f"road_{i}",
-            "vehicle_count": vehicle_count,
-            "density": density,
-            "congestion_level": congestion_level,
-            "updated_at": datetime.utcnow().isoformat()
-        })
-    return roads
+@router.get("/live", summary="Get live traffic for all monitored roads")
+def get_live_traffic(current_user: Optional[User] = Depends(get_optional_current_user)):
+    """
+    Returns real-time traffic condition for all monitored road segments.
+    Available to public commuters and authenticated operators/admins.
+    """
+    return traffic_service.get_live_traffic_data()
 
 
-@router.get("/road/{road_id}")
-def get_road_traffic(road_id: str, current_user: User = Depends(get_current_user)):
-    vehicle_count = random.randint(10, 200)
-    density = round(random.uniform(5.0, 80.0), 2)
-    if density < 20:
-        congestion_level = "Low"
-    elif density <= 50:
-        congestion_level = "Medium"
-    else:
-        congestion_level = "High"
-
-    history = []
-    for h in range(24):
-        hist_density = round(random.uniform(5.0, 80.0), 2)
-        if hist_density < 20:
-            hist_level = "Low"
-        elif hist_density <= 50:
-            hist_level = "Medium"
-        else:
-            hist_level = "High"
-        history.append({
-            "hour": h,
-            "density": hist_density,
-            "congestion_level": hist_level
-        })
-
-    return {
-        "road_id": road_id,
-        "name": f"Road {road_id.replace('road_', 'R')}",
-        "congestion_level": congestion_level,
-        "vehicle_count": vehicle_count,
-        "density": density,
-        "history": history
-    }
+@router.get("/road/{road_id}", summary="Get traffic details and history for a specific road")
+def get_road_traffic(road_id: str, current_user: Optional[User] = Depends(get_optional_current_user)):
+    """
+    Returns detailed current and historical hourly traffic for a given road ID (e.g. R001).
+    """
+    road_data = traffic_service.get_road_detail(road_id)
+    if not road_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Road '{road_id}' not found. Monitored roads are R001 to R005."
+        )
+    return road_data
 
 
-@router.get("/density")
-def get_density_metrics(current_user: User = Depends(get_current_user)):
-    return {
-        "average_density": round(random.uniform(20.0, 60.0), 2),
-        "total_roads": 5,
-        "congested_roads": random.randint(1, 3),
-        "timestamp": datetime.utcnow().isoformat()
-    }
+@router.get("/density", summary="Get aggregated density metrics for dashboard KPIs")
+def get_density_metrics(current_user: Optional[User] = Depends(get_optional_current_user)):
+    """
+    Returns aggregated city-wide traffic density metrics, total roads, and congested roads count.
+    """
+    return traffic_service.get_density_summary()
