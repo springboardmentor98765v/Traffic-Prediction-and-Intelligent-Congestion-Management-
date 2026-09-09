@@ -52,6 +52,8 @@ app.add_middleware(
 )
 
 
+from fastapi.responses import RedirectResponse
+
 @app.get("/", tags=["System"])
 def root():
     return {"message": "Welcome to TrafficVision AI API", "version": settings.APP_VERSION}
@@ -60,6 +62,11 @@ def root():
 @app.get("/health", tags=["System"])
 def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/pages", include_in_schema=False)
+def pages_redirect():
+    return RedirectResponse(url="/docs")
 
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
