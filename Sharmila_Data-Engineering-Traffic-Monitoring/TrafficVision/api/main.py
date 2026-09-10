@@ -17,7 +17,7 @@ def get_connection():
         port=5432,
         database="trafficvision",
         user="postgres",
-        password="sharmila0612"
+        password="**password**"
     )
 
 
