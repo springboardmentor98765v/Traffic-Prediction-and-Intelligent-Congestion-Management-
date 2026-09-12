@@ -12,6 +12,7 @@ class TrafficLiveResponse(BaseModel):
 
 
 class TrafficHistoryItem(BaseModel):
+    road_id: int
     timestamp: datetime
     vehicle_count: int
     density: float
@@ -29,3 +30,10 @@ class TrafficDensityResponse(BaseModel):
     road_id: int
     density: float
     congestion_level: str
+
+
+class TrafficAggregateItem(BaseModel):
+    road_id: int
+    period: str
+    average_vehicle_count: float
+    average_density: float

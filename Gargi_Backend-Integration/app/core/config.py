@@ -6,9 +6,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
-    DATABASE_URL: str = (
-        "postgresql://postgres:password@localhost:5432/trafficvision"
-    )
+    DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/trafficvision"
 
     JWT_SECRET_KEY: str = "change-this-secret-key"
     JWT_ALGORITHM: str = "HS256"

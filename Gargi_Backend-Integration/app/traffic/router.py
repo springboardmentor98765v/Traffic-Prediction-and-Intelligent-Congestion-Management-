@@ -1,22 +1,15 @@
-from datetime import timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-
 from app.auth.rbac import require_role
 from app.database.connection import get_db
-from app.database.models import Road, User
+from app.database.models import TrafficRecord
 from app.traffic.schemas import (
-    TrafficDensityResponse,
-    TrafficLiveResponse,
-    TrafficRoadResponse,
+    TrafficAggregateItem,
+    TrafficHistoryItem,
 )
-from app.traffic.service import (
-    get_latest_traffic,
-    get_road,
-    get_traffic_history,
-)
-
 
 router = APIRouter(
     prefix="/traffic",
@@ -25,186 +18,127 @@ router = APIRouter(
 
 
 @router.get(
-    "/live",
-    response_model=list[TrafficLiveResponse],
+    "/history",
+    response_model=list[TrafficHistoryItem],
 )
-def live_traffic(
-    current_user: User = Depends(
-        require_role("admin", "operator", "public")
-    ),
-    db: Session = Depends(get_db),
-):
-    roads = (
-        db.query(Road)
-        .order_by(Road.id)
-        .all()
-    )
-
-    result = []
-
-    for road in roads:
-        record = get_latest_traffic(
-            db,
-            road.id,
-        )
-
-        if not record:
-            continue
-
-        updated_at = record.recorded_at
-
-        if updated_at.tzinfo is None:
-            updated_at = updated_at.replace(
-                tzinfo=timezone.utc
-            )
-
-        result.append(
-            {
-                "road_id": road.id,
-                "vehicle_count": record.vehicle_count,
-                "density": record.density,
-                "congestion_level": record.congestion_level,
-                "updated_at": updated_at,
-            }
-        )
-
-    return result
-
-
-@router.get(
-    "/road/{road_id}",
-    response_model=TrafficRoadResponse,
-)
-def road_traffic(
+def get_traffic_history(
     road_id: int,
-    current_user: User = Depends(
-        require_role("admin", "operator", "public")
-    ),
+    start: datetime,
+    end: datetime,
     db: Session = Depends(get_db),
 ):
-    road = get_road(
-        db,
-        road_id,
-    )
-
-    if not road:
+    if start >= end:
         raise HTTPException(
-            status_code=404,
-            detail="Road not found",
+            status_code=400,
+            detail="start must be earlier than end",
         )
 
-    records = get_traffic_history(
-        db,
-        road_id,
-    )
-
-    history = []
-
-    for record in records:
-        timestamp = record.recorded_at
-
-        if timestamp.tzinfo is None:
-            timestamp = timestamp.replace(
-                tzinfo=timezone.utc
-            )
-
-        history.append(
-            {
-                "timestamp": timestamp,
-                "vehicle_count": record.vehicle_count,
-                "density": record.density,
-                "congestion_level": record.congestion_level,
-            }
+    records = (
+        db.query(TrafficRecord)
+        .filter(
+            TrafficRecord.road_id == road_id,
+            TrafficRecord.recorded_at >= start,
+            TrafficRecord.recorded_at <= end,
         )
-
-    latest = records[0] if records else None
-
-    return {
-        "road_id": road.id,
-        "name": road.name,
-        "congestion_level": (
-            latest.congestion_level
-            if latest
-            else "UNKNOWN"
-        ),
-        "history": history,
-    }
-
-
-@router.get(
-    "/density",
-    response_model=list[TrafficDensityResponse],
-)
-def traffic_density(
-    current_user: User = Depends(
-        require_role("admin", "operator", "public")
-    ),
-    db: Session = Depends(get_db),
-):
-    roads = (
-        db.query(Road)
-        .order_by(Road.id)
+        .order_by(TrafficRecord.recorded_at)
         .all()
     )
 
-    result = []
+    return [
+        {
+            "road_id": record.road_id,
+            "timestamp": record.recorded_at,
+            "vehicle_count": record.vehicle_count,
+            "density": record.density,
+            "congestion_level": record.congestion_level,
+        }
+        for record in records
+    ]
 
-    for road in roads:
-        record = get_latest_traffic(
-            db,
-            road.id,
+
+@router.get(
+    "/aggregate",
+    response_model=list[TrafficAggregateItem],
+)
+def get_traffic_aggregate(
+    road_id: int,
+    granularity: str,
+    db: Session = Depends(get_db),
+):
+    if granularity not in ["hour", "day"]:
+        raise HTTPException(
+            status_code=400,
+            detail="granularity must be hour or day",
         )
 
-        if not record:
-            continue
-
-        result.append(
-            {
-                "road_id": road.id,
-                "density": record.density,
-                "congestion_level": record.congestion_level,
-            }
+    if granularity == "hour":
+        period_expression = func.date_trunc(
+            "hour",
+            TrafficRecord.recorded_at,
+        )
+    else:
+        period_expression = func.date_trunc(
+            "day",
+            TrafficRecord.recorded_at,
         )
 
-    return result
+    results = (
+        db.query(
+            TrafficRecord.road_id,
+            period_expression.label("period"),
+            func.avg(TrafficRecord.vehicle_count).label("average_vehicle_count"),
+            func.avg(TrafficRecord.density).label("average_density"),
+        )
+        .filter(TrafficRecord.road_id == road_id)
+        .group_by(
+            TrafficRecord.road_id,
+            period_expression,
+        )
+        .order_by(period_expression)
+        .all()
+    )
+
+    return [
+        {
+            "road_id": result.road_id,
+            "period": result.period.isoformat(),
+            "average_vehicle_count": round(
+                float(result.average_vehicle_count),
+                2,
+            ),
+            "average_density": round(
+                float(result.average_density),
+                2,
+            ),
+        }
+        for result in results
+    ]
 
 
-@router.post("/record")
-def create_traffic_record_endpoint(
+@router.post(
+    "/record",
+)
+def record_traffic(
     road_id: int,
     vehicle_count: int,
     density: float,
     congestion_level: str,
-    current_user: User = Depends(
-        require_role("admin", "operator")
-    ),
+    current_user=Depends(require_role("admin", "operator")),
     db: Session = Depends(get_db),
 ):
-    from app.traffic.service import create_traffic_record
-
-    road = get_road(
-        db,
-        road_id,
+    record = TrafficRecord(
+        road_id=road_id,
+        vehicle_count=vehicle_count,
+        density=density,
+        congestion_level=congestion_level,
+        recorded_at=datetime.now(timezone.utc),
     )
 
-    if not road:
-        raise HTTPException(
-            status_code=404,
-            detail="Road not found",
-        )
-
-    record = create_traffic_record(
-        db,
-        road_id,
-        vehicle_count,
-        density,
-        congestion_level,
-    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
 
     return {
-        "id": record.id,
-        "road_id": record.road_id,
-        "vehicle_count": record.vehicle_count,
-        "density": record.density,
-        "congestion_level": record.congestion_level,
+        "message": "Traffic record created",
+        "record_id": record.id,
     }

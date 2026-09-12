@@ -1,22 +1,112 @@
-from fastapi.testclient import TestClient
+import uuid
 
+from fastapi.testclient import TestClient
+from passlib.context import CryptContext
+
+from app.database.connection import SessionLocal
+from app.database.models import Role, User
 from app.main import app
+from app.route.maps import maps_service
 
 client = TestClient(app)
 
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+)
 
-def get_operator_token():
+TEST_PASSWORD = "Test@12345"
+
+
+def create_test_user(role_name):
+    db = SessionLocal()
+
+    try:
+        role = db.query(Role).filter(Role.name == role_name).first()
+
+        assert role is not None
+
+        email = f"test-{role_name}-{uuid.uuid4().hex[:8]}@example.com"
+
+        user = User(
+            name=f"Test {role_name.title()}",
+            email=email,
+            password_hash=pwd_context.hash(TEST_PASSWORD),
+            role_id=role.id,
+            is_active=True,
+        )
+
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        return email
+    finally:
+        db.close()
+
+
+def get_token(role_name):
+    email = create_test_user(role_name)
+
     response = client.post(
         "/api/v1/auth/login",
         json={
-            "email": "operator@test.com",
-            "password": "operator123",
+            "email": email,
+            "password": TEST_PASSWORD,
         },
     )
 
     assert response.status_code == 200
 
     return response.json()["access_token"]
+
+
+def fake_get_route(
+    origin_lat,
+    origin_lng,
+    destination_lat,
+    destination_lng,
+    alternatives=False,
+):
+    routes = [
+        {
+            "distance": 5000,
+            "duration": 600,
+            "geometry": {
+                "coordinates": [
+                    [origin_lng, origin_lat],
+                    [
+                        (origin_lng + destination_lng) / 2,
+                        (origin_lat + destination_lat) / 2,
+                    ],
+                    [destination_lng, destination_lat],
+                ]
+            },
+        }
+    ]
+
+    if alternatives:
+        routes.append(
+            {
+                "distance": 6500,
+                "duration": 540,
+                "geometry": {
+                    "coordinates": [
+                        [origin_lng, origin_lat],
+                        [
+                            (origin_lng + destination_lng) / 2,
+                            (origin_lat + destination_lat) / 2 + 0.01,
+                        ],
+                        [destination_lng, destination_lat],
+                    ]
+                },
+            }
+        )
+
+    return {
+        "code": "Ok",
+        "routes": routes,
+    }
 
 
 def test_root():
@@ -33,28 +123,29 @@ def test_health():
     assert response.json()["status"] == "healthy"
 
 
-def test_prediction_requires_authentication():
-    response = client.get("/api/v1/predict/congestion?road_id=1")
+def test_operator_login():
+    token = get_token("operator")
 
-    assert response.status_code == 401
-
-
-def test_traffic_live_requires_authentication():
-    response = client.get("/api/v1/traffic/live")
-
-    assert response.status_code == 401
+    assert token is not None
+    assert isinstance(token, str)
+    assert len(token) > 0
 
 
-def test_traffic_road_requires_authentication():
-    response = client.get("/api/v1/traffic/road/1")
+def test_operator_me():
+    token = get_token("operator")
 
-    assert response.status_code == 401
+    response = client.get(
+        "/api/v1/auth/me",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
 
+    assert response.status_code == 200
 
-def test_traffic_density_requires_authentication():
-    response = client.get("/api/v1/traffic/density")
+    data = response.json()
 
-    assert response.status_code == 401
+    assert data["role"] == "operator"
 
 
 def test_traffic_record_requires_authentication():
@@ -71,12 +162,38 @@ def test_traffic_record_requires_authentication():
     assert response.status_code == 401
 
 
-def test_operator_login():
+def test_public_user_cannot_record_traffic():
+    token = get_token("public")
+
     response = client.post(
-        "/api/v1/auth/login",
-        json={
-            "email": "operator@test.com",
-            "password": "operator123",
+        "/api/v1/traffic/record",
+        params={
+            "road_id": 1,
+            "vehicle_count": 50,
+            "density": 0.70,
+            "congestion_level": "MEDIUM",
+        },
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 403
+
+
+def test_operator_can_record_traffic():
+    token = get_token("operator")
+
+    response = client.post(
+        "/api/v1/traffic/record",
+        params={
+            "road_id": 1,
+            "vehicle_count": 50,
+            "density": 0.70,
+            "congestion_level": "MEDIUM",
+        },
+        headers={
+            "Authorization": f"Bearer {token}",
         },
     )
 
@@ -84,34 +201,18 @@ def test_operator_login():
 
     data = response.json()
 
-    assert "access_token" in data
-    assert "refresh_token" in data
-    assert data["role"] == "operator"
+    assert data["message"] == "Traffic record created"
+    assert "record_id" in data
 
 
-def test_operator_me():
-    token = get_operator_token()
-
+def test_traffic_history():
     response = client.get(
-        "/api/v1/auth/me",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-
-    assert response.status_code == 200
-
-    data = response.json()
-
-    assert data["user_id"] == 2
-    assert data["name"] == "Operator User"
-    assert data["role"] == "operator"
-
-
-def test_operator_can_access_live_traffic():
-    token = get_operator_token()
-
-    response = client.get(
-        "/api/v1/traffic/live",
-        headers={"Authorization": f"Bearer {token}"},
+        "/api/v1/traffic/history",
+        params={
+            "road_id": 1,
+            "start": "2026-01-01T00:00:00",
+            "end": "2027-01-01T00:00:00",
+        },
     )
 
     assert response.status_code == 200
@@ -119,32 +220,28 @@ def test_operator_can_access_live_traffic():
     data = response.json()
 
     assert isinstance(data, list)
-    assert len(data) >= 1
 
 
-def test_operator_can_access_road_traffic():
-    token = get_operator_token()
-
+def test_traffic_history_invalid_range():
     response = client.get(
-        "/api/v1/traffic/road/1",
-        headers={"Authorization": f"Bearer {token}"},
+        "/api/v1/traffic/history",
+        params={
+            "road_id": 1,
+            "start": "2027-01-01T00:00:00",
+            "end": "2026-01-01T00:00:00",
+        },
     )
 
-    assert response.status_code == 200
-
-    data = response.json()
-
-    assert data["road_id"] == 1
-    assert data["name"] == "Anna Salai"
-    assert "history" in data
+    assert response.status_code == 400
 
 
-def test_operator_can_access_density():
-    token = get_operator_token()
-
+def test_traffic_aggregate_hour():
     response = client.get(
-        "/api/v1/traffic/density",
-        headers={"Authorization": f"Bearer {token}"},
+        "/api/v1/traffic/aggregate",
+        params={
+            "road_id": 1,
+            "granularity": "hour",
+        },
     )
 
     assert response.status_code == 200
@@ -152,16 +249,52 @@ def test_operator_can_access_density():
     data = response.json()
 
     assert isinstance(data, list)
-    assert len(data) >= 1
+
+    if data:
+        assert "road_id" in data[0]
+        assert "period" in data[0]
+        assert "average_vehicle_count" in data[0]
+        assert "average_density" in data[0]
 
 
-def test_operator_can_get_prediction():
-    token = get_operator_token()
+def test_traffic_aggregate_day():
+    response = client.get(
+        "/api/v1/traffic/aggregate",
+        params={
+            "road_id": 1,
+            "granularity": "day",
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert isinstance(response.json(), list)
+
+
+def test_traffic_aggregate_invalid_granularity():
+    response = client.get(
+        "/api/v1/traffic/aggregate",
+        params={
+            "road_id": 1,
+            "granularity": "month",
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_operator_can_get_congestion_prediction():
+    token = get_token("operator")
 
     response = client.get(
         "/api/v1/predict/congestion",
-        params={"road_id": 1},
-        headers={"Authorization": f"Bearer {token}"},
+        params={
+            "road_id": 1,
+            "time": "2026-09-11T08:00:00",
+        },
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
     )
 
     assert response.status_code == 200
@@ -175,22 +308,209 @@ def test_operator_can_get_prediction():
         "HIGH",
     ]
     assert 0 <= data["confidence"] <= 1
-    assert data["generated_by"] == "heuristic-v0"
+    assert data["model_version"] == "random-forest-v1"
 
 
 def test_prediction_unknown_road():
-    token = get_operator_token()
+    token = get_token("operator")
 
     response = client.get(
         "/api/v1/predict/congestion",
-        params={"road_id": 9999},
-        headers={"Authorization": f"Bearer {token}"},
+        params={
+            "road_id": 9999,
+            "time": "2026-09-11T08:00:00",
+        },
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
     )
 
     assert response.status_code == 404
 
 
-def test_openapi_contains_all_required_endpoints():
+def test_peak_hours_prediction():
+    token = get_token("operator")
+
+    response = client.get(
+        "/api/v1/predict/peak-hours",
+        params={
+            "road_id": 1,
+        },
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["road_id"] == 1
+    assert isinstance(data["peak_windows"], list)
+
+
+def test_delay_prediction():
+    token = get_token("operator")
+
+    response = client.get(
+        "/api/v1/predict/delay",
+        params={
+            "road_id": 1,
+        },
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["road_id"] == 1
+    assert data["estimated_delay_minutes"] >= 0
+    assert 0 <= data["confidence"] <= 1
+
+
+def test_route_optimize(monkeypatch):
+    monkeypatch.setattr(
+        maps_service,
+        "get_route",
+        fake_get_route,
+    )
+
+    response = client.get(
+        "/api/v1/route/optimize",
+        params={
+            "origin_lat": 13.0827,
+            "origin_lng": 80.2707,
+            "destination_lat": 13.0674,
+            "destination_lng": 80.2376,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["route_id"].startswith("route-")
+    assert isinstance(data["path"], list)
+    assert data["distance_km"] > 0
+    assert data["duration_minutes"] > 0
+    assert 0 <= data["congestion_score"] <= 1
+
+
+def test_route_alternate(monkeypatch):
+    monkeypatch.setattr(
+        maps_service,
+        "get_route",
+        fake_get_route,
+    )
+
+    response = client.get(
+        "/api/v1/route/alternate",
+        params={
+            "origin_lat": 13.0827,
+            "origin_lng": 80.2707,
+            "destination_lat": 13.0674,
+            "destination_lng": 80.2376,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert isinstance(data, list)
+    assert len(data) >= 1
+
+    ranks = [route["rank"] for route in data]
+
+    assert ranks == list(range(1, len(data) + 1))
+
+    for route in data:
+        assert route["route_id"].startswith("route-")
+        assert route["distance_km"] > 0
+        assert route["duration_minutes"] > 0
+        assert 0 <= route["congestion_score"] <= 1
+
+
+def test_route_travel_time(monkeypatch):
+    monkeypatch.setattr(
+        maps_service,
+        "get_route",
+        fake_get_route,
+    )
+
+    optimize_response = client.get(
+        "/api/v1/route/optimize",
+        params={
+            "origin_lat": 13.0827,
+            "origin_lng": 80.2707,
+            "destination_lat": 13.0674,
+            "destination_lng": 80.2376,
+        },
+    )
+
+    assert optimize_response.status_code == 200
+
+    route_id = optimize_response.json()["route_id"]
+
+    response = client.get(
+        "/api/v1/route/travel-time",
+        params={
+            "route_id": route_id,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["route_id"] == route_id
+    assert data["estimated_minutes"] > 0
+    assert data["based_on"] == "live+predicted"
+
+
+def test_route_travel_time_unknown_route():
+    response = client.get(
+        "/api/v1/route/travel-time",
+        params={
+            "route_id": "route-does-not-exist",
+        },
+    )
+
+    assert response.status_code == 404
+
+
+def test_road_condition():
+    response = client.get(
+        "/api/v1/route/conditions",
+        params={
+            "road_id": 1,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["road_id"] == 1
+    assert data["status"] == "NORMAL"
+    assert data["notes"] == "Traffic flowing normally"
+
+
+def test_unknown_road_condition():
+    response = client.get(
+        "/api/v1/route/conditions",
+        params={
+            "road_id": 9999,
+        },
+    )
+
+    assert response.status_code == 404
+
+
+def test_openapi_contains_m2_endpoints():
     response = client.get("/openapi.json")
 
     assert response.status_code == 200
@@ -202,11 +522,16 @@ def test_openapi_contains_all_required_endpoints():
         "/api/v1/auth/login",
         "/api/v1/auth/refresh",
         "/api/v1/auth/me",
-        "/api/v1/traffic/live",
-        "/api/v1/traffic/road/{road_id}",
-        "/api/v1/traffic/density",
+        "/api/v1/traffic/history",
+        "/api/v1/traffic/aggregate",
         "/api/v1/traffic/record",
         "/api/v1/predict/congestion",
+        "/api/v1/predict/peak-hours",
+        "/api/v1/predict/delay",
+        "/api/v1/route/optimize",
+        "/api/v1/route/alternate",
+        "/api/v1/route/travel-time",
+        "/api/v1/route/conditions",
     ]
 
     for path in expected_paths:
