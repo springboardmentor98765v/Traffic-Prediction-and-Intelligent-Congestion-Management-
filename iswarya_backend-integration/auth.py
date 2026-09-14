@@ -13,7 +13,9 @@ from app.security.config import SECRET_KEY, ALGORITHM
 
 import uuid
 
-router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+from app.schemas.user import UserCreate  # (Or it might be from app.models.user)
+
+router = APIRouter(tags=["Authentication"])
 
 security = HTTPBearer()
 

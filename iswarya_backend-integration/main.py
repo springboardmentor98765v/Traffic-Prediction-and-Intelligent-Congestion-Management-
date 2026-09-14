@@ -5,29 +5,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine
 from app.models.user import Base  # Adjust path if your models base is located elsewhere
 
-# Import your service routers
-from app.routes import auth, traffic, predict
+# Import your service routers (including Milestone 2 route_analysis)
+from app.routes import auth, traffic, predict, route_analysis
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-# Initialize FastAPI Application (Serving as the Central API Gateway)
+# ==========================================
+# Initialize FastAPI Application First!
+# ==========================================
 app = FastAPI(
     title="TrafficVision AI API",
-    version="1.0.0",
-    description="Central API Gateway for TrafficVision AI - Milestone 1"
+    version="2.0.0",
+    description="Central API Gateway for TrafficVision AI - Milestone 2"
 )
 
-# Add CORS Middleware to allow Swagger UI and frontend communication
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
-    allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"],  # Allows all headers
-)
-
-# Configure CORS Middleware to allow your frontend (Live Server / local ports) to communicate safely
+# Add CORS Middleware to allow your frontend (Live Server / local ports) to communicate safely
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows all origins for local development and testing
@@ -63,7 +53,7 @@ def health_check():
 # API Gateway Route Registrations
 # ==========================================
 
-# 1. Authentication Service Routes (Register, Login, Refresh, Me & RBAC roles)
+# 1. Authentication Service Routes (Fixed prefix duplication)
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 
 # 2. Traffic Monitoring Service Routes (Live traffic, road density, utilization)
@@ -71,3 +61,6 @@ app.include_router(traffic.router, prefix="/api/v1/traffic", tags=["Traffic Moni
 
 # 3. AI Engine Prediction Stub Route (Heuristic congestion prediction)
 app.include_router(predict.router, prefix="/api/v1/predict", tags=["AI Prediction Stub"])
+
+# 4. Route Analysis Service Routes (Milestone 2: Optimized paths, alternates, travel time)
+app.include_router(route_analysis.router, prefix="/api/v1/route", tags=["Route Analysis"])
