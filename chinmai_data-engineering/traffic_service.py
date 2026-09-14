@@ -374,3 +374,498 @@ def get_density_summary():
     finally:
 
         conn.close()
+# =========================================================
+# M2 DAY 3 - HISTORICAL DATA API
+# =========================================================
+
+def get_traffic_history(road_id=None, start_time=None, end_time=None, limit=500):
+    """Return cleaned historical traffic readings for ML/API consumers."""
+    conditions = []
+    params = []
+
+    if road_id:
+        conditions.append("th.road_id = %s")
+        params.append(road_id)
+    if start_time:
+        conditions.append("th.reading_timestamp >= %s")
+        params.append(start_time)
+    if end_time:
+        conditions.append("th.reading_timestamp <= %s")
+        params.append(end_time)
+
+    where_clause = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+    query = f"""
+        SELECT
+            th.history_id,
+            th.road_id,
+            th.sensor_id,
+            th.reading_timestamp,
+            th.vehicle_count,
+            th.avg_speed_kmph,
+            th.road_capacity,
+            th.traffic_density_vehicles_per_km,
+            th.congestion_level,
+            th.latitude,
+            th.longitude,
+            th.source
+        FROM traffic_history th
+        {where_clause}
+        ORDER BY th.reading_timestamp ASC, th.history_id ASC
+        LIMIT %s;
+    """
+    params.append(limit)
+
+    conn = get_postgres_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+            data = []
+            for row in rows:
+                data.append({
+                    "history_id": row[0],
+                    "road_id": row[1],
+                    "sensor_id": row[2],
+                    "timestamp": row[3].isoformat(),
+                    "vehicle_count": row[4],
+                    "avg_speed_kmph": float(row[5]) if row[5] is not None else None,
+                    "road_capacity": row[6],
+                    "traffic_density_vehicles_per_km": float(row[7]),
+                    "congestion_level": row[8],
+                    "latitude": float(row[9]) if row[9] is not None else None,
+                    "longitude": float(row[10]) if row[10] is not None else None,
+                    "source": row[11],
+                })
+            return {"count": len(data), "data": data}
+    finally:
+        conn.close()
+
+
+def get_traffic_aggregate(road_id=None, start_time=None, end_time=None, interval="day"):
+    """Return aggregate historical traffic metrics grouped by hour or day."""
+    if interval not in {"hour", "day"}:
+        raise ValueError("interval must be 'hour' or 'day'")
+
+    conditions = []
+    params = []
+    if road_id:
+        conditions.append("th.road_id = %s")
+        params.append(road_id)
+    if start_time:
+        conditions.append("th.reading_timestamp >= %s")
+        params.append(start_time)
+    if end_time:
+        conditions.append("th.reading_timestamp <= %s")
+        params.append(end_time)
+
+    where_clause = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    bucket = "day" if interval == "day" else "hour"
+
+    query = f"""
+        SELECT
+            th.road_id,
+            date_trunc('{bucket}', th.reading_timestamp) AS period_start,
+            COUNT(*) AS total_readings,
+            ROUND(AVG(th.vehicle_count)::numeric, 2) AS avg_vehicle_count,
+            MAX(th.vehicle_count) AS max_vehicle_count,
+            ROUND(AVG(th.avg_speed_kmph)::numeric, 2) AS avg_speed_kmph,
+            ROUND(MIN(th.avg_speed_kmph)::numeric, 2) AS min_speed_kmph,
+            ROUND(AVG(th.traffic_density_vehicles_per_km)::numeric, 2) AS avg_density,
+            ROUND(MAX(th.traffic_density_vehicles_per_km)::numeric, 2) AS max_density,
+            COUNT(*) FILTER (WHERE th.congestion_level = 'High') AS high_congestion_count,
+            COUNT(*) FILTER (WHERE th.congestion_level = 'Severe') AS severe_congestion_count
+        FROM traffic_history th
+        {where_clause}
+        GROUP BY th.road_id, date_trunc('{bucket}', th.reading_timestamp)
+        ORDER BY th.road_id, period_start;
+    """
+
+    conn = get_postgres_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+            data = []
+            for row in rows:
+                data.append({
+                    "road_id": row[0],
+                    "period_start": row[1].isoformat(),
+                    "total_readings": row[2],
+                    "avg_vehicle_count": float(row[3]) if row[3] is not None else None,
+                    "max_vehicle_count": row[4],
+                    "avg_speed_kmph": float(row[5]) if row[5] is not None else None,
+                    "min_speed_kmph": float(row[6]) if row[6] is not None else None,
+                    "avg_density": float(row[7]) if row[7] is not None else None,
+                    "max_density": float(row[8]) if row[8] is not None else None,
+                    "high_congestion_count": row[9],
+                    "severe_congestion_count": row[10],
+                })
+            return {"interval": interval, "count": len(data), "data": data}
+    finally:
+        conn.close()
+
+
+# =========================================================
+# M2 DAY 4 - ROAD CONDITIONS
+# =========================================================
+
+def get_road_condition(road_id):
+    """Return road-condition information for a specific road."""
+
+    road_query = """
+        SELECT road_id, road_name
+        FROM roads
+        WHERE road_id = %s;
+    """
+
+    condition_query = """
+        SELECT
+            condition_id,
+            road_id,
+            condition_timestamp,
+            road_condition,
+            road_status,
+            incident_type,
+            description,
+            source,
+            created_at
+        FROM road_conditions
+        WHERE road_id = %s
+        ORDER BY condition_timestamp DESC, condition_id DESC;
+    """
+
+    conn = get_postgres_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(road_query, (road_id,))
+            road = cursor.fetchone()
+
+            if road is None:
+                return None
+
+            cursor.execute(condition_query, (road_id,))
+            rows = cursor.fetchall()
+
+            conditions = []
+            for row in rows:
+                conditions.append({
+                    "condition_id": row[0],
+                    "road_id": row[1],
+                    "condition_timestamp": row[2].isoformat(),
+                    "road_condition": row[3],
+                    "road_status": row[4],
+                    "incident_type": row[5],
+                    "description": row[6],
+                    "source": row[7],
+                    "created_at": row[8].isoformat(),
+                })
+
+            return {
+                "road_id": road[0],
+                "road_name": road[1],
+                "count": len(conditions),
+                "conditions": conditions,
+            }
+    finally:
+        conn.close()
+
+
+# =========================================================
+# M2 DAY 4 - ROAD CONDITIONS
+# =========================================================
+
+def get_road_condition(road_id):
+    """Return road-condition records for a specific road."""
+    road_query = """
+        SELECT road_id, road_name
+        FROM roads
+        WHERE road_id = %s;
+    """
+
+    condition_query = """
+        SELECT
+            condition_id,
+            road_id,
+            condition_timestamp,
+            road_condition,
+            road_status,
+            incident_type,
+            description,
+            source,
+            created_at
+        FROM road_conditions
+        WHERE road_id = %s
+        ORDER BY condition_timestamp DESC, condition_id DESC;
+    """
+
+    conn = get_postgres_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(road_query, (road_id,))
+            road = cursor.fetchone()
+
+            if road is None:
+                return None
+
+            cursor.execute(condition_query, (road_id,))
+            rows = cursor.fetchall()
+
+            conditions = []
+            for row in rows:
+                conditions.append({
+                    "condition_id": row[0],
+                    "road_id": row[1],
+                    "condition_timestamp": row[2].isoformat(),
+                    "road_condition": row[3],
+                    "road_status": row[4],
+                    "incident_type": row[5],
+                    "description": row[6],
+                    "source": row[7],
+                    "created_at": row[8].isoformat(),
+                })
+
+            return {
+                "road_id": road[0],
+                "road_name": road[1],
+                "count": len(conditions),
+                "conditions": conditions,
+            }
+    finally:
+        conn.close()
+
+# =========================================================
+# M2 DAY 5 - PRE-AGGREGATED HOURLY METRICS
+# =========================================================
+
+def get_hourly_metrics(
+    road_id=None,
+    start_time=None,
+    end_time=None,
+    limit=500
+):
+    """
+    Return pre-aggregated hourly traffic metrics.
+    """
+
+    query = """
+        SELECT
+            road_id,
+            metric_timestamp,
+            avg_vehicle_count,
+            max_vehicle_count,
+            avg_speed_kmph,
+            min_speed_kmph,
+            avg_density,
+            max_density,
+            total_readings,
+            high_congestion_count,
+            severe_congestion_count,
+            high_congestion_percentage,
+            severe_congestion_percentage
+        FROM hourly_traffic_metrics
+        WHERE 1 = 1
+    """
+
+    params = []
+
+    if road_id:
+        query += " AND road_id = %s"
+        params.append(road_id)
+
+    if start_time:
+        query += " AND metric_timestamp >= %s"
+        params.append(start_time)
+
+    if end_time:
+        query += " AND metric_timestamp <= %s"
+        params.append(end_time)
+
+    query += """
+        ORDER BY metric_timestamp DESC, road_id
+        LIMIT %s
+    """
+
+    params.append(limit)
+
+    conn = get_postgres_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+
+            data = []
+
+            for row in rows:
+                data.append({
+                    "road_id": row[0],
+                    "metric_timestamp": row[1].isoformat(),
+                    "avg_vehicle_count": (
+                        float(row[2])
+                        if row[2] is not None
+                        else None
+                    ),
+                    "max_vehicle_count": row[3],
+                    "avg_speed_kmph": (
+                        float(row[4])
+                        if row[4] is not None
+                        else None
+                    ),
+                    "min_speed_kmph": (
+                        float(row[5])
+                        if row[5] is not None
+                        else None
+                    ),
+                    "avg_density": (
+                        float(row[6])
+                        if row[6] is not None
+                        else None
+                    ),
+                    "max_density": (
+                        float(row[7])
+                        if row[7] is not None
+                        else None
+                    ),
+                    "total_readings": row[8],
+                    "high_congestion_count": row[9],
+                    "severe_congestion_count": row[10],
+                    "high_congestion_percentage": (
+                        float(row[11])
+                        if row[11] is not None
+                        else None
+                    ),
+                    "severe_congestion_percentage": (
+                        float(row[12])
+                        if row[12] is not None
+                        else None
+                    ),
+                })
+
+            return {
+                "interval": "hour",
+                "count": len(data),
+                "data": data
+            }
+
+    finally:
+        conn.close()
+
+
+# =========================================================
+# M2 DAY 5 - PRE-AGGREGATED DAILY METRICS
+# =========================================================
+
+def get_daily_metrics(
+    road_id=None,
+    start_date=None,
+    end_date=None,
+    limit=500
+):
+    """
+    Return pre-aggregated daily traffic metrics.
+    """
+
+    query = """
+        SELECT
+            road_id,
+            metric_date,
+            avg_vehicle_count,
+            max_vehicle_count,
+            avg_speed_kmph,
+            min_speed_kmph,
+            avg_density,
+            max_density,
+            total_readings,
+            high_congestion_count,
+            severe_congestion_count,
+            high_congestion_percentage,
+            severe_congestion_percentage
+        FROM daily_traffic_metrics
+        WHERE 1 = 1
+    """
+
+    params = []
+
+    if road_id:
+        query += " AND road_id = %s"
+        params.append(road_id)
+
+    if start_date:
+        query += " AND metric_date >= %s"
+        params.append(start_date)
+
+    if end_date:
+        query += " AND metric_date <= %s"
+        params.append(end_date)
+
+    query += """
+        ORDER BY metric_date DESC, road_id
+        LIMIT %s
+    """
+
+    params.append(limit)
+
+    conn = get_postgres_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+
+            data = []
+
+            for row in rows:
+                data.append({
+                    "road_id": row[0],
+                    "metric_date": row[1].isoformat(),
+                    "avg_vehicle_count": (
+                        float(row[2])
+                        if row[2] is not None
+                        else None
+                    ),
+                    "max_vehicle_count": row[3],
+                    "avg_speed_kmph": (
+                        float(row[4])
+                        if row[4] is not None
+                        else None
+                    ),
+                    "min_speed_kmph": (
+                        float(row[5])
+                        if row[5] is not None
+                        else None
+                    ),
+                    "avg_density": (
+                        float(row[6])
+                        if row[6] is not None
+                        else None
+                    ),
+                    "max_density": (
+                        float(row[7])
+                        if row[7] is not None
+                        else None
+                    ),
+                    "total_readings": row[8],
+                    "high_congestion_count": row[9],
+                    "severe_congestion_count": row[10],
+                    "high_congestion_percentage": (
+                        float(row[11])
+                        if row[11] is not None
+                        else None
+                    ),
+                    "severe_congestion_percentage": (
+                        float(row[12])
+                        if row[12] is not None
+                        else None
+                    ),
+                })
+
+            return {
+                "interval": "day",
+                "count": len(data),
+                "data": data
+            }
+
+    finally:
+        conn.close()

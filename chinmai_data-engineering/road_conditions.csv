@@ -1,0 +1,10 @@
+road_id,condition_timestamp,road_condition,road_status,incident_type,description,source
+R001,2026-08-28T08:00:00+05:30,construction,Active,construction,Road widening work near the main junction,simulated_m2_day4
+R001,2026-08-28T12:00:00+05:30,hazard,Active,waterlogging,Waterlogging reported after heavy rainfall,simulated_m2_day4
+R002,2026-08-27T00:00:00+05:30,closure,Active,maintenance,Road closed for bridge maintenance,simulated_m2_day4
+R002,2026-08-20T08:00:00+05:30,construction,Active,flyover_work,Flyover construction activity,simulated_m2_day4
+R003,2026-08-28T10:00:00+05:30,hazard,Active,accident,Debris reported near an accident-prone section,simulated_m2_day4
+R003,2026-08-15T09:00:00+05:30,maintenance,Resolved,street_lighting,Street-light maintenance completed,simulated_m2_day4
+R004,2026-08-22T08:00:00+05:30,construction,Active,drainage,Drainage construction work,simulated_m2_day4
+R005,2026-08-28T12:00:00+05:30,hazard,Active,road_debris,Temporary road debris reported,simulated_m2_day4
+R006,2026-08-29T15:00:00+05:30,event,Active,local_event,Traffic diversion due to a local event,simulated_m2_day4
