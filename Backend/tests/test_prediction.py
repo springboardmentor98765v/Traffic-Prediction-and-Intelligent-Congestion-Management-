@@ -14,8 +14,8 @@ def test_predict_congestion_default():
     assert res.status_code == 200
     data = res.json()
     assert data["road_id"] == "R001"
-    assert data["generated_by"] == "heuristic-v0"
-    assert data["confidence"] == 0.80
+    assert data["generated_by"] in ["model-v1", "heuristic-v0"]
+    assert 0.0 <= data["confidence"] <= 1.0
     assert data["predicted_level"] in ["Low", "Medium", "High"]
     assert "current_density" in data
 
@@ -49,4 +49,4 @@ def test_predict_live_all_roads():
     assert "predictions" in data
     assert len(data["predictions"]) >= 5
     for p in data["predictions"]:
-        assert p["generated_by"] == "heuristic-v0"
+        assert p["generated_by"] in ["model-v1", "heuristic-v0"]

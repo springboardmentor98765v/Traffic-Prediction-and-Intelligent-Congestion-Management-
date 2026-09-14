@@ -217,3 +217,118 @@ def get_density_summary() -> Dict[str, Any]:
     }
     set_cached(cache_key, summary, expiry_seconds=30)
     return summary
+
+
+def get_traffic_history(
+    road_id: Optional[str] = None,
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+    limit: int = 200
+) -> List[Dict[str, Any]]:
+    """
+    Retrieve historical traffic readings filtered by road_id, start time, and end time.
+    """
+    records = load_traffic_records()
+    norm_id = road_id.upper() if road_id else None
+
+    filtered = []
+    for r in records:
+        r_id = r.get("road_id", "").upper()
+        if norm_id and r_id != norm_id:
+            continue
+
+        ts = r.get("timestamp", "")
+        if start and ts < start:
+            continue
+        if end and ts > end:
+            continue
+
+        density_val = float(r.get("density", 25.0))
+        filtered.append({
+            "road_id": r_id,
+            "timestamp": ts,
+            "vehicle_count": int(float(r.get("vehicle_count", 30))),
+            "density": round(density_val, 2),
+            "congestion_level": r.get("congestion") or calculate_congestion_level(density_val),
+            "avg_speed": float(r.get("avg_speed", 40.0)),
+        })
+
+        if len(filtered) >= limit:
+            break
+
+    return filtered
+
+
+def get_traffic_aggregates(
+    road_id: Optional[str] = None,
+    granularity: str = "hour"
+) -> Dict[str, Any]:
+    """
+    Compute rolled-up averages (density, volume, speed) for trend analysis and ML features.
+    """
+    cache_key = f"traffic:aggregate:{road_id or 'all'}:{granularity}"
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
+
+    records = load_traffic_records()
+    norm_id = road_id.upper() if road_id else None
+
+    matching = []
+    for r in records:
+        r_id = r.get("road_id", "").upper()
+        if norm_id and r_id != norm_id:
+            continue
+        matching.append(r)
+
+    if not matching:
+        return {
+            "road_id": norm_id or "ALL",
+            "granularity": granularity,
+            "total_readings": 0,
+            "avg_density": 0.0,
+            "avg_vehicle_count": 0.0,
+            "avg_speed": 0.0,
+            "peak_hour": None,
+            "congestion_distribution": {"Low": 0, "Medium": 0, "High": 0}
+        }
+
+    total_density = sum(float(r.get("density", 0.0)) for r in matching)
+    total_vehicles = sum(float(r.get("vehicle_count", 0.0)) for r in matching)
+    total_speed = sum(float(r.get("avg_speed", 0.0)) for r in matching)
+    count = len(matching)
+
+    congestion_dist = {"Low": 0, "Medium": 0, "High": 0}
+    hour_density: Dict[int, List[float]] = {}
+
+    for r in matching:
+        level = r.get("congestion", "Medium")
+        if level in congestion_dist:
+            congestion_dist[level] += 1
+
+        ts = r.get("timestamp", "")
+        if ts:
+            try:
+                h = int(ts.split(" ")[1].split(":")[0])
+                hour_density.setdefault(h, []).append(float(r.get("density", 0.0)))
+            except Exception:
+                pass
+
+    peak_hour = None
+    if hour_density:
+        peak_hour = max(hour_density.keys(), key=lambda h: sum(hour_density[h]) / len(hour_density[h]))
+
+    result = {
+        "road_id": norm_id or "ALL",
+        "granularity": granularity,
+        "total_readings": count,
+        "avg_density": round(total_density / count, 2),
+        "avg_vehicle_count": round(total_vehicles / count, 1),
+        "avg_speed": round(total_speed / count, 1),
+        "peak_hour": peak_hour,
+        "congestion_distribution": congestion_dist
+    }
+
+    set_cached(cache_key, result, expiry_seconds=60)
+    return result
+

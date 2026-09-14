@@ -56,8 +56,8 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
             detail="Invalid credentials"
         )
 
-    access_token = create_access_token(data={"sub": str(user.id)})
-    refresh_token = create_refresh_token(data={"sub": str(user.id)})
+    access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
+    refresh_token = create_refresh_token(data={"sub": str(user.id), "role": user.role})
 
     expires_at = datetime.utcnow() + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
     db_refresh_token = RefreshToken(
@@ -111,7 +111,9 @@ def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
             detail="Refresh token expired"
         )
 
-    new_access_token = create_access_token(data={"sub": str(user_id)})
+    user = db.query(User).filter(User.id == user_id).first()
+    user_role = user.role if user else "public"
+    new_access_token = create_access_token(data={"sub": str(user_id), "role": user_role})
 
     return TokenRefreshResponse(access_token=new_access_token)
 
