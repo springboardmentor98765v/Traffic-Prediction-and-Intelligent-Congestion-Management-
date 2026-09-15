@@ -61,6 +61,7 @@ services:
       timeout: 5s
       retries: 10
 
+<<<<<<< HEAD
   # ----------------------------------------------------------------------------
   # 3. Main API Gateway & Core Backend (FastAPI - Auth, RBAC, Gateway Routing)
   # ----------------------------------------------------------------------------
@@ -122,6 +123,25 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+=======
+  backend:
+    build:
+      context: ../Backend
+      dockerfile: Dockerfile
+    container_name: trafficvision-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://trafficvision:trafficvision_dev_password@postgres:5432/trafficvision
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: dev-secret-key-trafficvision-m1
+      DEBUG: "True"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+>>>>>>> b5665b307f41bac24ed19a9e7f4e447367cf26b8
 
   # ----------------------------------------------------------------------------
   # 5. Route Analysis Service (FastAPI - OpenStreetMap Wrapper & Optimization)

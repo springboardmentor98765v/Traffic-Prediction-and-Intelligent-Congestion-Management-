@@ -1,15 +1,17 @@
 import os
 import requests
+import uuid
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 
 
 def test_register():
+    test_email = f"api_test_{uuid.uuid4().hex[:8]}@example.com"
     payload = {
         "name": "Test User",
-        "email": "testuser@example.com",
-        "password": "Test@123",
-        "role": "Public/Commuter"
+        "email": test_email,
+        "password": "TestPassword123!",
+        "role": "public"
     }
 
     response = requests.post(
@@ -18,32 +20,43 @@ def test_register():
     )
 
     assert response.status_code in [200, 201]
+    data = response.json()
+    assert "user_id" in data
+    assert data["email"] == test_email
 
 
 def test_login():
-    payload = {
-        "email": "testuser@example.com",
-        "password": "Test@123"
-    }
+    test_email = f"api_test_{uuid.uuid4().hex[:8]}@example.com"
+    # Register first
+    requests.post(
+        f"{BASE_URL}/api/v1/auth/register",
+        json={
+            "name": "Login Tester",
+            "email": test_email,
+            "password": "TestPassword123!",
+            "role": "operator"
+        }
+    )
 
     response = requests.post(
         f"{BASE_URL}/api/v1/auth/login",
-        json=payload
+        json={
+            "email": test_email,
+            "password": "TestPassword123!"
+        }
     )
 
     assert response.status_code == 200
-
     data = response.json()
-
     assert "access_token" in data
     assert "refresh_token" in data
-    assert "role" in data
+    assert data["role"] == "operator"
 
 
 def test_login_invalid_password():
     payload = {
         "email": "testuser@example.com",
-        "password": "WrongPassword"
+        "password": "WrongPassword!"
     }
 
     response = requests.post(
@@ -56,8 +69,8 @@ def test_login_invalid_password():
 
 def test_login_unknown_email():
     payload = {
-        "email": "unknown@example.com",
-        "password": "Test@123"
+        "email": f"unknown_{uuid.uuid4().hex[:8]}@example.com",
+        "password": "AnyPassword123!"
     }
 
     response = requests.post(

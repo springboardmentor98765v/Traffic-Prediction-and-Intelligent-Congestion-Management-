@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -15,6 +15,19 @@ class UserCreate(BaseModel):
     email: str = Field(..., min_length=5, max_length=255)
     password: str = Field(..., min_length=6, max_length=128)
     role: RoleEnum = RoleEnum.public
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def normalize_role(cls, v):
+        if isinstance(v, str):
+            v_clean = v.strip().lower()
+            if "admin" in v_clean:
+                return RoleEnum.admin
+            elif "operator" in v_clean:
+                return RoleEnum.operator
+            elif "public" in v_clean or "commuter" in v_clean:
+                return RoleEnum.public
+        return v
 
 
 class UserResponse(BaseModel):
