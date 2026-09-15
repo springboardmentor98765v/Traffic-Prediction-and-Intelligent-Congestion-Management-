@@ -183,7 +183,7 @@ export default function LoginPage() {
             <input
               type="password"
               required
-              placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-[#10121a] border border-white/10 text-white px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-[#1d4ed8]"

@@ -15,4 +15,4 @@ export const Card: React.FC<CardProps> = ({ title, value, valueColor = 'text-whi
       {children}
     </div>
   );
-};
+};
