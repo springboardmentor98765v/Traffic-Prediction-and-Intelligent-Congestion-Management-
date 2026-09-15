@@ -25,9 +25,9 @@ def analyze_routes(
     """
     Get available routes from the maps service.
 
-    This function provides the real map-based routes.
-    AI congestion ranking is performed separately when
-    road/junction information is available.
+    Routes are obtained from the OSRM map-routing service.
+    The calculated routes are stored temporarily so that
+    travel-time information can be requested using route_id.
     """
 
     routes = get_routes(
@@ -35,14 +35,17 @@ def analyze_routes(
         origin_lng,
         destination_lat,
         destination_lng,
+        alternatives=True,
     )
 
     analyzed_routes = []
 
     for index, route in enumerate(routes, start=1):
 
+        route_id = str(route["route_id"])
+
         analyzed_route = {
-            "route_id": route["route_id"],
+            "route_id": route_id,
             "rank": index,
             "distance_km": route["distance_km"],
             "estimated_minutes": route["estimated_minutes"],
@@ -51,8 +54,9 @@ def analyze_routes(
 
         analyzed_routes.append(analyzed_route)
 
-        # Store route for travel-time lookup
-        ROUTE_CACHE[route["route_id"]] = analyzed_route
+        # Store using string route ID because FastAPI
+        # receives route_id as a string query parameter.
+        ROUTE_CACHE[route_id] = analyzed_route
 
     return analyzed_routes
 
@@ -104,7 +108,7 @@ def rank_routes_with_congestion(
             estimated_delay = 3
 
         ranked_route = {
-            "route_id": route["route_id"],
+            "route_id": str(route["route_id"]),
             "junction_id": junction_id,
             "distance_km": route["distance_km"],
             "estimated_minutes": route["estimated_minutes"],
@@ -116,7 +120,7 @@ def rank_routes_with_congestion(
 
         ranked_routes.append(ranked_route)
 
-    # Lower predicted congestion and lower delay
+    # Lower delay and lower predicted traffic
     # receive a better ranking.
     ranked_routes.sort(
         key=lambda route: (
@@ -128,6 +132,9 @@ def rank_routes_with_congestion(
 
     for index, route in enumerate(ranked_routes, start=1):
         route["rank"] = index
+
+        # Update cache with the complete ranked route.
+        ROUTE_CACHE[str(route["route_id"])] = route
 
     return ranked_routes
 
@@ -143,7 +150,7 @@ def get_best_route(
     destination_lng: float,
 ):
     """
-    Return the best map-based route.
+    Return the first map-based route.
     """
 
     routes = analyze_routes(
@@ -152,6 +159,9 @@ def get_best_route(
         destination_lat,
         destination_lng,
     )
+
+    if not routes:
+        raise ValueError("No route found.")
 
     return routes[0]
 
@@ -163,7 +173,12 @@ def get_best_route(
 def get_travel_time(route_id: str):
     """
     Return estimated travel time for a calculated route.
+
+    The route must have been calculated previously during
+    the current API session.
     """
+
+    route_id = str(route_id)
 
     route = ROUTE_CACHE.get(route_id)
 
