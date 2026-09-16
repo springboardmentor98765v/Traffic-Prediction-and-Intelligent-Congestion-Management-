@@ -10,9 +10,16 @@ from src.model import predict_congestion_ml
 
 app = FastAPI(
     title="TrafficVision AI Prediction Service",
-    description="Traffic congestion prediction using trained ML model",
+    description="Traffic congestion prediction using trained Random Forest ML model",
     version="2.0.0"
 )
+
+
+# ---------------------------------------------------------
+# MODEL VERSION
+# ---------------------------------------------------------
+
+MODEL_VERSION = "random-forest-v1"
 
 
 # ---------------------------------------------------------
@@ -21,10 +28,12 @@ app = FastAPI(
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Primary: Sowjanya-ai-ml/data/processed_traffic.csv
+# Primary:
+# Sowjanya-ai-ml/data/processed_traffic.csv
 CSV_PATH = BASE_DIR / "data" / "processed_traffic.csv"
 
-# Fallback: existing team data location
+# Fallback:
+# Existing team data location
 FALLBACK_CSV_PATH = (
     BASE_DIR.parent
     / "Komal_Data-Engineering-Traffic-Monitoring"
@@ -75,7 +84,7 @@ def home():
     return {
         "message": "TrafficVision AI Prediction Service is running",
         "status": "success",
-        "model_version": "model-v1"
+        "model_version": MODEL_VERSION
     }
 
 
@@ -143,8 +152,11 @@ def predict_congestion(
         latest_record["road_id_encoded"]
     )
 
-    # ML prediction
-    prediction, confidence = predict_congestion_ml(
+    # -----------------------------------------------------
+    # ML PREDICTION
+    # -----------------------------------------------------
+
+    result = predict_congestion_ml(
         road_id_encoded=road_id_encoded,
         vehicle_count=vehicle_count,
         avg_speed=avg_speed,
@@ -155,9 +167,12 @@ def predict_congestion(
 
     return {
         "road_id": road_id,
-        "predicted_level": prediction,
-        "confidence": confidence,
-        "model_version": "model-v1"
+        "predicted_level": result["prediction"],
+        "confidence": result["confidence"],
+        "model_version": result.get(
+            "model_version",
+            MODEL_VERSION
+        )
     }
 
 
@@ -196,7 +211,7 @@ def predict_peak_hours(
                 "end": "20:00"
             }
         ],
-        "model_version": "model-v1"
+        "model_version": MODEL_VERSION
     }
 
 
@@ -225,8 +240,13 @@ def predict_delay(
 
     latest_record = road_data.iloc[-1]
 
-    density = float(latest_record["density"])
-    hour = int(latest_record["timestamp"].hour)
+    density = float(
+        latest_record["density"]
+    )
+
+    hour = int(
+        latest_record["timestamp"].hour
+    )
 
     vehicle_count = int(
         latest_record["vehicle_count"]
@@ -244,7 +264,11 @@ def predict_delay(
         latest_record["road_id_encoded"]
     )
 
-    prediction, confidence = predict_congestion_ml(
+    # -----------------------------------------------------
+    # ML PREDICTION
+    # -----------------------------------------------------
+
+    result = predict_congestion_ml(
         road_id_encoded=road_id_encoded,
         vehicle_count=vehicle_count,
         avg_speed=avg_speed,
@@ -253,7 +277,13 @@ def predict_delay(
         day_of_week=day_of_week
     )
 
-    # Initial delay estimation logic
+    prediction = result["prediction"]
+    confidence = result["confidence"]
+
+    # -----------------------------------------------------
+    # INITIAL DELAY ESTIMATION LOGIC
+    # -----------------------------------------------------
+
     if prediction == "Low":
         delay_minutes = 2
 
@@ -265,8 +295,13 @@ def predict_delay(
 
     return {
         "road_id": road_id,
+        "predicted_level": prediction,
         "estimated_delay_minutes": delay_minutes,
-        "confidence": confidence
+        "confidence": confidence,
+        "model_version": result.get(
+            "model_version",
+            MODEL_VERSION
+        )
     }
 
 
@@ -274,7 +309,9 @@ def predict_delay(
 # LIVE CONGESTION PREDICTION
 # ---------------------------------------------------------
 
-TRAFFIC_API_URL = "http://127.0.0.1:8000/traffic/live"
+TRAFFIC_API_URL = (
+    "http://127.0.0.1:8000/traffic/live"
+)
 
 
 @app.get(
@@ -341,9 +378,11 @@ def predict_live():
 
             latest_record = road_data.iloc[-1]
 
-            hour = pd.to_datetime(
+            parsed_timestamp = pd.to_datetime(
                 timestamp
-            ).hour
+            )
+
+            hour = parsed_timestamp.hour
 
             vehicle_count = int(
                 latest_record["vehicle_count"]
@@ -353,39 +392,46 @@ def predict_live():
                 latest_record["avg_speed"]
             )
 
-            day_of_week = pd.to_datetime(
-                timestamp
-            ).dayofweek
+            day_of_week = int(
+                parsed_timestamp.dayofweek
+            )
 
             road_id_encoded = int(
                 latest_record["road_id_encoded"]
             )
 
-            prediction, confidence = predict_congestion_ml(
+            # -------------------------------------------------
+            # ML PREDICTION
+            # -------------------------------------------------
+
+            result = predict_congestion_ml(
                 road_id_encoded=road_id_encoded,
                 vehicle_count=vehicle_count,
                 avg_speed=avg_speed,
                 density=float(density),
                 hour=int(hour),
-                day_of_week=int(day_of_week)
+                day_of_week=day_of_week
             )
 
             predictions.append({
                 "road_id": road_id,
                 "density": float(density),
                 "hour": int(hour),
-                "predicted_level": prediction,
-                "confidence": confidence,
-                "model_version": "model-v1"
+                "predicted_level": result["prediction"],
+                "confidence": result["confidence"],
+                "model_version": result.get(
+                    "model_version",
+                    MODEL_VERSION
+                )
             })
 
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, KeyError):
 
             continue
 
     return {
         "source": "Traffic Monitoring API",
-        "model_version": "model-v1",
+        "model_version": MODEL_VERSION,
         "total_records": len(predictions),
         "predictions": predictions
     }
