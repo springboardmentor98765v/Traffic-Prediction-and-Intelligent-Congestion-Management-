@@ -5,35 +5,66 @@ import httpx
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 
-from congestion_predictor import predict_congestion as get_prediction
+from src.model import predict_congestion_ml
 
 
 app = FastAPI(
-    title="TrafficVision AI Engine",
-    description="Traffic congestion prediction using density and peak-hour logic",
-    version="1.0.0"
+    title="TrafficVision AI Prediction Service",
+    description="Traffic congestion prediction using trained ML model",
+    version="2.0.0"
 )
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# ---------------------------------------------------------
+# PATHS
+# ---------------------------------------------------------
 
-CSV_PATH = (
-    BASE_DIR
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Primary: Sowjanya-ai-ml/data/processed_traffic.csv
+CSV_PATH = BASE_DIR / "data" / "processed_traffic.csv"
+
+# Fallback: existing team data location
+FALLBACK_CSV_PATH = (
+    BASE_DIR.parent
     / "Komal_Data-Engineering-Traffic-Monitoring"
     / "processed_traffic.csv"
 )
 
-TRAFFIC_API_URL = "http://127.0.0.1:8000/traffic/live"
 
+# ---------------------------------------------------------
+# LOAD TRAFFIC DATA
+# ---------------------------------------------------------
 
-try:
+if CSV_PATH.exists():
     traffic_data = pd.read_csv(CSV_PATH)
 
-except FileNotFoundError:
+elif FALLBACK_CSV_PATH.exists():
+    traffic_data = pd.read_csv(FALLBACK_CSV_PATH)
+
+else:
     raise RuntimeError(
-        f"processed_traffic.csv not found at: {CSV_PATH}"
+        "processed_traffic.csv not found."
     )
 
+
+# Make sure timestamp is datetime
+traffic_data["timestamp"] = pd.to_datetime(
+    traffic_data["timestamp"]
+)
+
+
+# Create consistent road ID encoding
+traffic_data["road_id_encoded"] = (
+    traffic_data["road_id"]
+    .astype("category")
+    .cat.codes
+)
+
+
+# ---------------------------------------------------------
+# HEALTH CHECK
+# ---------------------------------------------------------
 
 @app.get(
     "/",
@@ -42,15 +73,20 @@ except FileNotFoundError:
 )
 def home():
     return {
-        "message": "TrafficVision AI Engine is running",
-        "status": "success"
+        "message": "TrafficVision AI Prediction Service is running",
+        "status": "success",
+        "model_version": "model-v1"
     }
 
 
+# ---------------------------------------------------------
+# CONGESTION PREDICTION
+# ---------------------------------------------------------
+
 @app.get(
     "/api/v1/predict/congestion",
-    tags=["AI Engine"],
-    summary="Congestion Prediction"
+    tags=["Prediction"],
+    summary="ML Congestion Prediction"
 )
 def predict_congestion(
     road_id: str,
@@ -68,74 +104,215 @@ def predict_congestion(
             detail="Road ID not found"
         )
 
-    if density is None or hour is None:
-        latest_record = road_data.iloc[-1]
+    # Use latest record when values are not provided
+    latest_record = road_data.iloc[-1]
 
-        if density is None:
-            density = float(latest_record["density"])
+    if density is None:
+        density = float(latest_record["density"])
 
-        if hour is None:
-            timestamp = pd.to_datetime(
-                latest_record["timestamp"]
-            )
-            hour = int(timestamp.hour)
+    if hour is None:
+        hour = int(latest_record["timestamp"].hour)
 
+    # Validate density
     if density < 0:
         raise HTTPException(
             status_code=400,
             detail="Density cannot be negative"
         )
 
+    # Validate hour
     if hour < 0 or hour > 23:
         raise HTTPException(
             status_code=400,
             detail="Hour must be between 0 and 23"
         )
 
-    prediction = get_prediction(
-        density=density,
-        hour=hour
+    vehicle_count = int(
+        latest_record["vehicle_count"]
+    )
+
+    avg_speed = float(
+        latest_record["avg_speed"]
+    )
+
+    day_of_week = int(
+        latest_record["timestamp"].dayofweek
+    )
+
+    road_id_encoded = int(
+        latest_record["road_id_encoded"]
+    )
+
+    # ML prediction
+    prediction, confidence = predict_congestion_ml(
+        road_id_encoded=road_id_encoded,
+        vehicle_count=vehicle_count,
+        avg_speed=avg_speed,
+        density=float(density),
+        hour=int(hour),
+        day_of_week=day_of_week
     )
 
     return {
         "road_id": road_id,
-        "density": density,
-        "hour": hour,
         "predicted_level": prediction,
-        "confidence": 0.80,
-        "generated_by": "heuristic-v0"
+        "confidence": confidence,
+        "model_version": "model-v1"
     }
+
+
+# ---------------------------------------------------------
+# PEAK-HOUR FORECAST
+# ---------------------------------------------------------
+
+@app.get(
+    "/api/v1/predict/peak-hours",
+    tags=["Prediction"],
+    summary="Peak Hour Forecast"
+)
+def predict_peak_hours(
+    road_id: str
+):
+
+    road_data = traffic_data[
+        traffic_data["road_id"].astype(str) == str(road_id)
+    ]
+
+    if road_data.empty:
+        raise HTTPException(
+            status_code=404,
+            detail="Road ID not found"
+        )
+
+    return {
+        "road_id": road_id,
+        "peak_windows": [
+            {
+                "start": "07:00",
+                "end": "10:00"
+            },
+            {
+                "start": "17:00",
+                "end": "20:00"
+            }
+        ],
+        "model_version": "model-v1"
+    }
+
+
+# ---------------------------------------------------------
+# DELAY ESTIMATION
+# ---------------------------------------------------------
+
+@app.get(
+    "/api/v1/predict/delay",
+    tags=["Prediction"],
+    summary="Traffic Delay Estimation"
+)
+def predict_delay(
+    road_id: str
+):
+
+    road_data = traffic_data[
+        traffic_data["road_id"].astype(str) == str(road_id)
+    ]
+
+    if road_data.empty:
+        raise HTTPException(
+            status_code=404,
+            detail="Road ID not found"
+        )
+
+    latest_record = road_data.iloc[-1]
+
+    density = float(latest_record["density"])
+    hour = int(latest_record["timestamp"].hour)
+
+    vehicle_count = int(
+        latest_record["vehicle_count"]
+    )
+
+    avg_speed = float(
+        latest_record["avg_speed"]
+    )
+
+    day_of_week = int(
+        latest_record["timestamp"].dayofweek
+    )
+
+    road_id_encoded = int(
+        latest_record["road_id_encoded"]
+    )
+
+    prediction, confidence = predict_congestion_ml(
+        road_id_encoded=road_id_encoded,
+        vehicle_count=vehicle_count,
+        avg_speed=avg_speed,
+        density=density,
+        hour=hour,
+        day_of_week=day_of_week
+    )
+
+    # Initial delay estimation logic
+    if prediction == "Low":
+        delay_minutes = 2
+
+    elif prediction == "Medium":
+        delay_minutes = 5
+
+    else:
+        delay_minutes = 10
+
+    return {
+        "road_id": road_id,
+        "estimated_delay_minutes": delay_minutes,
+        "confidence": confidence
+    }
+
+
+# ---------------------------------------------------------
+# LIVE CONGESTION PREDICTION
+# ---------------------------------------------------------
+
+TRAFFIC_API_URL = "http://127.0.0.1:8000/traffic/live"
 
 
 @app.get(
     "/api/v1/predict/live",
-    tags=["AI Engine"],
-    summary="Live Congestion Prediction"
+    tags=["Prediction"],
+    summary="Live ML Congestion Prediction"
 )
 def predict_live():
 
     try:
+
         response = httpx.get(
             TRAFFIC_API_URL,
             timeout=10
         )
 
         response.raise_for_status()
+
         live_data = response.json()
 
     except httpx.RequestError:
+
         raise HTTPException(
             status_code=503,
             detail="Traffic monitoring API is unavailable"
         )
 
     except httpx.HTTPStatusError:
+
         raise HTTPException(
             status_code=502,
             detail="Traffic monitoring API returned an error"
         )
 
-    traffic_records = live_data.get("traffic", [])
+    traffic_records = live_data.get(
+        "traffic",
+        []
+    )
 
     predictions = []
 
@@ -145,15 +322,52 @@ def predict_live():
         density = record.get("density")
         timestamp = record.get("timestamp")
 
-        if road_id is None or density is None or timestamp is None:
+        if (
+            road_id is None
+            or density is None
+            or timestamp is None
+        ):
             continue
 
         try:
-            hour = pd.to_datetime(timestamp).hour
 
-            prediction = get_prediction(
+            road_data = traffic_data[
+                traffic_data["road_id"].astype(str)
+                == str(road_id)
+            ]
+
+            if road_data.empty:
+                continue
+
+            latest_record = road_data.iloc[-1]
+
+            hour = pd.to_datetime(
+                timestamp
+            ).hour
+
+            vehicle_count = int(
+                latest_record["vehicle_count"]
+            )
+
+            avg_speed = float(
+                latest_record["avg_speed"]
+            )
+
+            day_of_week = pd.to_datetime(
+                timestamp
+            ).dayofweek
+
+            road_id_encoded = int(
+                latest_record["road_id_encoded"]
+            )
+
+            prediction, confidence = predict_congestion_ml(
+                road_id_encoded=road_id_encoded,
+                vehicle_count=vehicle_count,
+                avg_speed=avg_speed,
                 density=float(density),
-                hour=int(hour)
+                hour=int(hour),
+                day_of_week=int(day_of_week)
             )
 
             predictions.append({
@@ -161,15 +375,17 @@ def predict_live():
                 "density": float(density),
                 "hour": int(hour),
                 "predicted_level": prediction,
-                "confidence": 0.80,
-                "generated_by": "heuristic-v0"
+                "confidence": confidence,
+                "model_version": "model-v1"
             })
 
         except (ValueError, TypeError):
+
             continue
 
     return {
-        "source": "Komal Traffic Monitoring API",
+        "source": "Traffic Monitoring API",
+        "model_version": "model-v1",
         "total_records": len(predictions),
         "predictions": predictions
     }
