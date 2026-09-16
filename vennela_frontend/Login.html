@@ -831,7 +831,7 @@
                 submitText.textContent = 'Creating account...';
 
                 try {
-                    const res = await authAPI.register(name, email, password, 'PUBLIC');
+                    const res = await authAPI.register(name, email, password, 'user');
                     // Redirect to Login page (Sign In tab, Public role pre-selected) with a success flag
                     sessionStorage.setItem('signup_success', '1');
                     window.location.href = 'Login.html?role=public&tab=signin';
@@ -858,7 +858,7 @@
                         access_token: data.access_token,
                         refresh_token: data.refresh_token,
                         role: data.role || currentRole.toUpperCase(),
-                        name: email.split('@')[0]
+                        name: data.username || data.name || email.split('@')[0]
                     });
                     window.location.href = AuthManager.getDashboardUrl(data.role || currentRole);
                 } catch (err) {

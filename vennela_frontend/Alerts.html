@@ -140,30 +140,84 @@
     AuthManager.guardPage();
 })();
 </script>
-<!-- TopAppBar -->
-<header class="fixed top-0 w-full z-50 bg-surface-container/60 dark:bg-surface-container/60 backdrop-blur-xl shadow-24px-blur dark:shadow-none border-b border-white/10 flex justify-between items-center px-container-padding-mobile md:px-container-padding-desktop h-16">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-primary dark:text-primary">analytics</span>
-<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg font-bold tracking-tight text-on-surface dark:text-on-surface">TrafficVision AI</h1>
-</div>
-<!-- Desktop Nav -->
-<nav class="hidden md:flex gap-6 items-center">
-<a class="nav-home-link text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors font-label-sm text-label-sm px-3 py-2 rounded-lg flex items-center gap-2" href="#">
-<span class="material-symbols-outlined">dashboard</span> Home
-</a>
-<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors font-label-sm text-label-sm px-3 py-2 rounded-lg flex items-center gap-2" href="live maps.html">
-<span class="material-symbols-outlined">traffic</span> Traffic
-</a>
-<a class="text-secondary dark:text-secondary bg-white/5 transition-colors font-label-sm text-label-sm px-3 py-2 rounded-lg flex items-center gap-2 scale-95 duration-100" href="Alerts.html">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span> Alerts
-</a>
-<button class="text-on-surface-variant hover:text-error transition-colors font-label-sm text-label-sm px-3 py-2 rounded-lg flex items-center gap-2" onclick="logout()">
-<span class="material-symbols-outlined">logout</span> Logout
-</button>
-</nav>
-<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden flex-shrink-0">
-<img class="w-full h-full object-cover" data-alt="Operator avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_vKZ-W8rS4Rl5-APyDQZxRP3Y0x9m2ol4C9A65IeVluV0OSoIc_gkzxT3IDV4WdwcF-i4qlOZvK3FUWZvfzhonx-qSMF-4nTsBHkYfROuYTDE6rF-stHBsDDf4UngSGqnljUJDx8R1W5AIi1Gl8hm8q3uz1G8k2uoPgVYusFxadrnbNF7pOw-cZay0vPPtIw6HtTtrwpEwA7zAiEKRkEZ5RK1e5_LOPUY3t2WFiVmZ7kmQignKD3r"/>
-</div>
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-[#131b2e]/80 dark:bg-[#131b2e]/80 backdrop-blur-2xl border-b border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] flex items-center justify-between px-4 sm:px-6 md:px-8 h-16 transition-all duration-300">
+    <!-- Brand / Logo -->
+    <div class="flex items-center gap-3">
+        <a class="nav-home-link flex items-center gap-3 group focus:outline-none" href="#">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-container via-primary-container/80 to-secondary-container/40 flex items-center justify-center border border-white/15 shadow-[0_0_15px_rgba(0,175,254,0.25)] group-hover:shadow-[0_0_22px_rgba(141,205,255,0.5)] transition-all">
+                <span class="material-symbols-outlined text-secondary text-[24px]" style="font-variation-settings: 'FILL' 1;">analytics</span>
+            </div>
+            <div class="flex flex-col">
+                <span class="font-headline-lg text-[18px] md:text-[20px] font-bold tracking-tight text-on-surface flex items-center gap-1.5 leading-none">
+                    TrafficVision <span class="text-secondary font-black tracking-normal">AI</span>
+                </span>
+                <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest hidden sm:inline-block mt-1">Autonomous Traffic Grid</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Desktop Navigation Links -->
+    <nav class="hidden md:flex items-center gap-1.5 lg:gap-2 bg-surface-container/70 p-1.5 rounded-2xl border border-white/5 shadow-inner">
+        <!-- Dashboard Tab -->
+        <a class="nav-home-link px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="#">
+            <span class="material-symbols-outlined text-[18px]">dashboard</span>
+            <span>Dashboard</span>
+        </a>
+        <!-- Live Traffic Tab -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="live maps.html">
+            <span class="material-symbols-outlined text-[18px]">traffic</span>
+            <span>Live Traffic</span>
+        </a>
+        <!-- Route Analysis Tab -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="route-analysis.html">
+            <span class="material-symbols-outlined text-[18px]">alt_route</span>
+            <span>Route Analysis</span>
+        </a>
+        <!-- Alerts Tab (Active for alerts page) -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-semibold text-secondary bg-secondary/15 border border-secondary/30 shadow-[0_0_15px_rgba(141,205,255,0.2)] flex items-center gap-2 transition-all" href="Alerts.html">
+            <span class="material-symbols-outlined text-[18px]">warning</span>
+            <span>Alerts</span>
+        </a>
+        <!-- Admin Console Tab (Visible to admin) -->
+        <a class="nav-admin-only hidden px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="admin dashboard.html">
+            <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+            <span>Admin</span>
+        </a>
+    </nav>
+
+    <!-- Right Utility Controls & User Profile -->
+    <div class="flex items-center gap-2.5 sm:gap-3.5">
+        <!-- Live Stream Badge -->
+        <div class="hidden xl:flex items-center gap-2 px-3 py-1 bg-surface-container-high/60 border border-white/5 rounded-full font-label-sm text-[11px] text-on-surface-variant">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Grid Live</span>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all" onclick="document.documentElement.classList.toggle('dark')" title="Toggle Theme">
+            <span class="material-symbols-outlined text-[19px]">light_mode</span>
+        </button>
+
+        <!-- Logout Button -->
+        <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-error/20 hover:border-error/40 border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-error transition-all" onclick="logout()" title="Logout">
+            <span class="material-symbols-outlined text-[19px]">logout</span>
+        </button>
+
+        <!-- User Profile Avatar & Role -->
+        <div class="flex items-center gap-2.5 pl-2 border-l border-white/10">
+            <div class="w-9 h-9 rounded-xl overflow-hidden border border-secondary/30 bg-surface-container-high flex items-center justify-center shadow-inner">
+                <img id="nav-user-avatar" class="w-full h-full object-cover" alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_vKZ-W8rS4Rl5-APyDQZxRP3Y0x9m2ol4C9A65IeVluV0OSoIc_gkzxT3IDV4WdwcF-i4qlOZvK3FUWZvfzhonx-qSMF-4nTsBHkYfROuYTDE6rF-stHBsDDf4UngSGqnljUJDx8R1W5AIi1Gl8hm8q3uz1G8k2uoPgVYusFxadrnbNF7pOw-cZay0vPPtIw6HtTtrwpEwA7zAiEKRkEZ5RK1e5_LOPUY3t2WFiVmZ7kmQignKD3r"/>
+            </div>
+            <div class="hidden lg:flex flex-col text-left">
+                <span id="nav-user-name" class="font-body-md text-[13px] font-semibold text-on-surface leading-tight">Operator</span>
+                <span id="nav-user-role" class="font-label-sm text-[10px] text-secondary uppercase tracking-wider leading-none">OPERATOR</span>
+            </div>
+        </div>
+    </div>
 </header>
 <!-- Main Layout -->
 <main class="flex-grow flex flex-col md:flex-row relative">
@@ -223,11 +277,11 @@
 <p class="text-sm text-on-surface font-body-md" id="detail-alert-notes">Heuristic analysis reports high vehicle density (22.4 veh/km). Recommend dynamic signal offset adjustments and commercial reroute deployment.</p>
 </div>
 
-<div class="flex flex-col sm:flex-row gap-3">
-<button class="bg-primary text-on-primary font-label-sm text-label-sm px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2" onclick="dispatchUnit()">
+<div class="flex flex-col sm:flex-row gap-3" id="incident-action-buttons">
+<button id="btn-dispatch-unit" class="bg-primary text-on-primary font-label-sm text-label-sm px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2" onclick="dispatchUnit()">
 <span class="material-symbols-outlined text-sm">local_shipping</span> Dispatch Unit
 </button>
-<button class="bg-transparent border border-secondary text-secondary font-label-sm text-label-sm px-4 py-2.5 rounded-xl hover:bg-secondary/10 transition-colors flex justify-center items-center gap-2" onclick="updateIncidentStatus()">
+<button id="btn-update-status" class="bg-transparent border border-secondary text-secondary font-label-sm text-label-sm px-4 py-2.5 rounded-xl hover:bg-secondary/10 transition-colors flex justify-center items-center gap-2" onclick="updateIncidentStatus()">
 <span class="material-symbols-outlined text-sm">edit_note</span> Update Status
 </button>
 <a class="bg-surface-variant text-on-surface hover:bg-surface-bright font-label-sm text-label-sm px-4 py-2.5 rounded-xl transition-colors flex justify-center items-center gap-2" href="live maps.html">
@@ -244,24 +298,28 @@
 </div>
 </div>
 </main>
-<!-- BottomNavBar (Mobile Only) -->
-<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-20 px-4 pb-safe bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl shadow-24px-blur dark:shadow-none z-50 rounded-t-xl border-t border-white/10">
-<a class="nav-home-link flex flex-col items-center justify-center text-on-surface-variant font-label-sm text-label-sm hover:text-secondary transition-all w-16" href="#">
-<span class="material-symbols-outlined mb-1">dashboard</span>
-<span>Home</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant font-label-sm text-label-sm hover:text-secondary transition-all w-16" href="live maps.html">
-<span class="material-symbols-outlined mb-1">traffic</span>
-<span>Traffic</span>
-</a>
-<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container font-label-sm text-label-sm rounded-full py-1.5 transition-all w-20 scale-95 duration-100" href="Alerts.html">
-<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">warning</span>
-<span>Alerts</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant font-label-sm text-label-sm hover:text-error transition-all w-16" onclick="logout(); return false;" href="#">
-<span class="material-symbols-outlined mb-1">logout</span>
-<span>Logout</span>
-</a>
+<!-- Mobile Bottom Navigation Bar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 bg-[#131b2e]/90 dark:bg-[#131b2e]/90 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] flex justify-around items-center h-16 px-2">
+    <a class="nav-home-link flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="#">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">dashboard</span>
+        <span class="font-label-sm text-[11px]">Dashboard</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="live maps.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">traffic</span>
+        <span class="font-label-sm text-[11px]">Traffic</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="route-analysis.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">alt_route</span>
+        <span class="font-label-sm text-[11px]">Routes</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-secondary bg-secondary/15 font-semibold" href="Alerts.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">warning</span>
+        <span class="font-label-sm text-[11px]">Alerts</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-error" onclick="logout(); return false;" href="#">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">logout</span>
+        <span class="font-label-sm text-[11px]">Logout</span>
+    </a>
 </nav>
 
 <script>
@@ -453,6 +511,19 @@ function showActionBanner(msg) {
     }, 4000);
 }
 
-document.addEventListener('DOMContentLoaded', loadAlerts);
+function checkRoleRestrictions() {
+    const role = (AuthManager.getRole() || '').toUpperCase();
+    if (role === 'PUBLIC' || role === 'USER') {
+        const dispatchBtn = document.getElementById('btn-dispatch-unit');
+        const updateStatusBtn = document.getElementById('btn-update-status');
+        if (dispatchBtn) dispatchBtn.remove();
+        if (updateStatusBtn) updateStatusBtn.remove();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    checkRoleRestrictions();
+    loadAlerts();
+});
 </script>
 </body></html>

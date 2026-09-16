@@ -5,8 +5,11 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Live Traffic Monitoring - TrafficVision AI</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Leaflet CSS & JS (Free, OpenStreetMap based, No Key Required) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="api.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
@@ -76,12 +79,12 @@
                         "container-padding-mobile": "16px"
                     },
                     fontFamily: {
-                        "headline-lg": ["Poppins"],
-                        "label-sm": ["Poppins"],
-                        "data-lg": ["Poppins"],
-                        "display-lg": ["Poppins"],
-                        "body-md": ["Poppins"],
-                        "headline-lg-mobile": ["Poppins"]
+                        "headline-lg": ["Inter", "sans-serif"],
+                        "label-sm": ["JetBrains Mono", "monospace"],
+                        "data-lg": ["JetBrains Mono", "monospace"],
+                        "display-lg": ["Inter", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "headline-lg-mobile": ["Inter", "sans-serif"]
                     },
                     fontSize: {
                         "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
@@ -97,7 +100,7 @@
     </script>
 <style>
         .glass-panel {
-            background: rgba(19, 27, 46, 0.6);
+            background: rgba(19, 27, 46, 0.75);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -107,6 +110,52 @@
         .severity-red { border-left: 4px solid #ef4444; }
         .severity-severe { border-left: 4px solid #e11d48; box-shadow: 0 0 12px rgba(225, 29, 72, 0.2); }
         .severity-maroon { border-left: 4px solid #9f1239; }
+
+        /* Leaflet Dark Theme Overrides */
+        .leaflet-container {
+            background-color: #070d1d !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        .leaflet-popup-content-wrapper {
+            background: rgba(19, 27, 46, 0.95) !important;
+            color: #dae2fd !important;
+            border: 1px solid rgba(141, 205, 255, 0.3) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+            backdrop-filter: blur(12px) !important;
+        }
+        .leaflet-popup-tip {
+            background: rgba(19, 27, 46, 0.95) !important;
+            border: 1px solid rgba(141, 205, 255, 0.3) !important;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.6); opacity: 0.9; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+        .pulse-marker-severe {
+            position: relative;
+        }
+        .pulse-marker-severe::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(225, 29, 72, 0.7);
+            animation: pulse-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        .pulse-marker-active {
+            position: relative;
+        }
+        .pulse-marker-active::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(0, 175, 254, 0.6);
+            animation: pulse-ring 2.2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
     </style>
 <style>
         body {
@@ -120,66 +169,107 @@
     AuthManager.guardPage();
 })();
 </script>
-<!-- TopAppBar -->
-<header class="hidden md:flex justify-between items-center px-container-padding-desktop h-16 w-full fixed top-0 z-50 bg-surface-container/60 dark:bg-surface-container/60 backdrop-blur-xl border-b border-white/10 shadow-none">
-<div class="flex items-center gap-gutter">
-<span class="material-symbols-outlined text-primary dark:text-primary">analytics</span>
-<span class="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface dark:text-on-surface">TrafficVision AI</span>
-</div>
-<nav class="flex gap-gutter">
-<a class="nav-home-link font-label-sm text-label-sm text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors px-4 py-2 rounded-2xl" href="#">Home</a>
-<a class="font-label-sm text-label-sm text-secondary dark:text-secondary hover:bg-white/5 transition-colors px-4 py-2 rounded-2xl scale-95 duration-100" href="live maps.html">Traffic</a>
-<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors px-4 py-2 rounded-2xl" href="Alerts.html">Alerts</a>
-</nav>
-<div class="flex items-center gap-4">
-<button class="w-10 h-10 rounded-full bg-surface-variant border border-white/10 flex items-center justify-center text-on-surface hover:text-primary transition-colors" onclick="document.documentElement.classList.toggle('dark')" title="Switch Mode">
-<span class="material-symbols-outlined text-[20px]">light_mode</span>
-</button>
-<button class="w-10 h-10 rounded-full bg-surface-variant border border-white/10 flex items-center justify-center text-on-surface hover:text-error transition-colors" onclick="logout()" title="Logout">
-<span class="material-symbols-outlined text-[20px]">logout</span>
-</button>
-<div class="w-10 h-10 rounded-full bg-surface-variant border border-white/10 flex items-center justify-center overflow-hidden">
-<img class="w-full h-full object-cover" data-alt="Operator avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIp-CvRhmPQNnam7G4pnWSXkcDirVkeMCWuQZxdfFsApKZTVIxdj_iiArGhYBhrBmE5hg1BSHJtL6x8X7aA4vWPcP_F3SU1egGhmDOQHYyN8y6_JyNbNl4mHh_ZMviWwbyg7xTNd13JCyvOP2lZJjmMnD4Hpw09ughlj6uD_fVFwiiWrmIPcsvhWH-FyZ7vHo9IE1uBBCJqvOM6UUL5uhimlAzPMoGJFvTltB7kWxrGGv_fASSCKEj"/>
-</div>
-</div>
-</header>
-<header class="flex md:hidden justify-between items-center px-container-padding-mobile h-16 w-full fixed top-0 z-50 bg-surface-container/60 dark:bg-surface-container/60 backdrop-blur-xl border-b border-white/10 shadow-24px-blur shadow-none">
-<div class="flex items-center gap-base">
-<span class="material-symbols-outlined text-primary dark:text-primary">analytics</span>
-<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tight text-on-surface dark:text-on-surface">TrafficVision AI</span>
-</div>
-<div class="flex items-center gap-3">
-<button class="w-8 h-8 rounded-full bg-surface-variant border border-white/10 flex items-center justify-center text-on-surface hover:text-primary transition-colors" onclick="document.documentElement.classList.toggle('dark')">
-<span class="material-symbols-outlined text-[18px]">light_mode</span>
-</button>
-<button class="w-8 h-8 rounded-full bg-surface-variant border border-white/10 flex items-center justify-center text-on-surface hover:text-error transition-colors" onclick="logout()">
-<span class="material-symbols-outlined text-[18px]">logout</span>
-</button>
-<div class="w-8 h-8 rounded-full bg-surface-variant border border-white/10 flex items-center justify-center overflow-hidden">
-<img class="w-full h-full object-cover" data-alt="Operator avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCX6n5Ta9zNaQ8H7DXmlkBELuCJ6j3eSb57GD_BCf2gd3lNvxLb4H5byV6HPl-2MyLBVHag_C4or2zgw3PSA9OI6ctAI7SGf1tqANE-MSZPMG_17b447hbuPfH2wZcmLZpCd14exOMYXhAPwSWuWvmQpE0UxnKc4eehFQPeC1vsbFhFkGHbJ6cRNX6hGMkeqsYhjIYi-VoMyqgFVig8NM5YM1L4laM0uLObEvQ_8pTGedU7ZtZWpooS"/>
-</div>
-</div>
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-[#131b2e]/80 dark:bg-[#131b2e]/80 backdrop-blur-2xl border-b border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] flex items-center justify-between px-4 sm:px-6 md:px-8 h-16 transition-all duration-300">
+    <!-- Brand / Logo -->
+    <div class="flex items-center gap-3">
+        <a class="nav-home-link flex items-center gap-3 group focus:outline-none" href="#">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-container via-primary-container/80 to-secondary-container/40 flex items-center justify-center border border-white/15 shadow-[0_0_15px_rgba(0,175,254,0.25)] group-hover:shadow-[0_0_22px_rgba(141,205,255,0.5)] transition-all">
+                <span class="material-symbols-outlined text-secondary text-[24px]" style="font-variation-settings: 'FILL' 1;">analytics</span>
+            </div>
+            <div class="flex flex-col">
+                <span class="font-headline-lg text-[18px] md:text-[20px] font-bold tracking-tight text-on-surface flex items-center gap-1.5 leading-none">
+                    TrafficVision <span class="text-secondary font-black tracking-normal">AI</span>
+                </span>
+                <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest hidden sm:inline-block mt-1">Autonomous Traffic Grid</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Desktop Navigation Links -->
+    <nav class="hidden md:flex items-center gap-1.5 lg:gap-2 bg-surface-container/70 p-1.5 rounded-2xl border border-white/5 shadow-inner">
+        <!-- Dashboard Tab -->
+        <a class="nav-home-link px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="#">
+            <span class="material-symbols-outlined text-[18px]">dashboard</span>
+            <span>Dashboard</span>
+        </a>
+        <!-- Live Traffic Tab (Active for live maps) -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-semibold text-secondary bg-secondary/15 border border-secondary/30 shadow-[0_0_15px_rgba(141,205,255,0.2)] flex items-center gap-2 transition-all" href="live maps.html">
+            <span class="material-symbols-outlined text-[18px]">traffic</span>
+            <span>Live Traffic</span>
+        </a>
+        <!-- Route Analysis Tab -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="route-analysis.html">
+            <span class="material-symbols-outlined text-[18px]">alt_route</span>
+            <span>Route Analysis</span>
+        </a>
+        <!-- Alerts Tab -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="Alerts.html">
+            <span class="material-symbols-outlined text-[18px]">warning</span>
+            <span>Alerts</span>
+        </a>
+        <!-- Admin Console Tab (Visible to admin) -->
+        <a class="nav-admin-only hidden px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="admin dashboard.html">
+            <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+            <span>Admin</span>
+        </a>
+    </nav>
+
+    <!-- Right Utility Controls & User Profile -->
+    <div class="flex items-center gap-2.5 sm:gap-3.5">
+        <!-- Live Stream Badge -->
+        <div class="hidden xl:flex items-center gap-2 px-3 py-1 bg-surface-container-high/60 border border-white/5 rounded-full font-label-sm text-[11px] text-on-surface-variant">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Grid Live</span>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all" onclick="document.documentElement.classList.toggle('dark')" title="Toggle Theme">
+            <span class="material-symbols-outlined text-[19px]">light_mode</span>
+        </button>
+
+        <!-- Logout Button -->
+        <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-error/20 hover:border-error/40 border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-error transition-all" onclick="logout()" title="Logout">
+            <span class="material-symbols-outlined text-[19px]">logout</span>
+        </button>
+
+        <!-- User Profile Avatar & Role -->
+        <div class="flex items-center gap-2.5 pl-2 border-l border-white/10">
+            <div class="w-9 h-9 rounded-xl overflow-hidden border border-secondary/30 bg-surface-container-high flex items-center justify-center shadow-inner">
+                <img id="nav-user-avatar" class="w-full h-full object-cover" alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLpHS_T91cL3faZWJnIl81dTWaXyDwPk140zz3Y2PeubUzLpFrdYMMzNnBHM5q7hEKMn6YxDmMMVWmGNKnZPV_oxy-_MplLQcms1bO39V7hfuwDfaAuXBnWq-JMK8iEeGkWavbnLYED4Xe4euv6fUNa40_gl8x9fcupazjpMaBWTtxq-YnIpRE1rj3Td2hmxQ5N4PGtqTaygvofVy583LkEjup0FrAiwpbIP6kMXLpLrF_RPKEnonK"/>
+            </div>
+            <div class="hidden lg:flex flex-col text-left">
+                <span id="nav-user-name" class="font-body-md text-[13px] font-semibold text-on-surface leading-tight">Operator</span>
+                <span id="nav-user-role" class="font-label-sm text-[10px] text-secondary uppercase tracking-wider leading-none">OPERATOR</span>
+            </div>
+        </div>
+    </div>
 </header>
 <!-- Main Content Canvas -->
 <main class="h-screen w-full relative pt-16 md:pt-16 pb-20 md:pb-0">
-<!-- Map Background -->
-<div class="absolute inset-0 z-0 bg-[#0A0E23]">
-<img class="w-full h-full object-cover opacity-70 mix-blend-screen" data-alt="Dark aerial traffic map" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAliEJ4zWuJJz7d4-K7g8MeGGAS5kxTkZQ50M9SrQQovbS_45dNpAchfTuG3r-zQOYc2_ugS7LlOMQasXqq0gger33A7smDSY9OL01TbP6qNSftN21QtqHDejWPyPYyBIZnHYNm52w6a2FIyAdCqhUAzOrA5VlhbfaSw8Bxm-3xXspujlTt0uQ9P0fO6yqABKU9mRuf29e0AEdSq5sFojYBYfRJI1Vn5RDiI7TmjVgCEZVmz7dqCNDy"/>
+<!-- Leaflet Interactive Map Canvas -->
+<div id="live-leaflet-map" class="absolute inset-0 z-0 w-full h-full bg-[#070d1d]"></div>
+
 <!-- Overlay Map Controls -->
-<div class="absolute right-container-padding-mobile md:right-container-padding-desktop bottom-24 md:bottom-container-padding-desktop flex flex-col gap-base z-10">
-<button class="w-12 h-12 glass-panel rounded-2xl flex items-center justify-center text-on-surface hover:text-primary transition-colors" title="Zoom In" onclick="zoomMap(1.1)">
-<span class="material-symbols-outlined">add</span>
+<div class="absolute right-container-padding-mobile md:right-container-padding-desktop bottom-24 md:bottom-container-padding-desktop flex flex-col gap-base z-30 pointer-events-auto">
+<button class="w-11 h-11 glass-panel rounded-2xl flex items-center justify-center text-on-surface hover:text-secondary hover:border-secondary transition-all shadow-xl" title="Zoom In" onclick="zoomMapIn()">
+<span class="material-symbols-outlined text-[20px]">add</span>
 </button>
-<button class="w-12 h-12 glass-panel rounded-2xl flex items-center justify-center text-on-surface hover:text-primary transition-colors" title="Zoom Out" onclick="zoomMap(0.9)">
-<span class="material-symbols-outlined">remove</span>
+<button class="w-11 h-11 glass-panel rounded-2xl flex items-center justify-center text-on-surface hover:text-secondary hover:border-secondary transition-all shadow-xl" title="Zoom Out" onclick="zoomMapOut()">
+<span class="material-symbols-outlined text-[20px]">remove</span>
 </button>
-<button class="w-12 h-12 glass-panel rounded-2xl flex items-center justify-center text-on-surface hover:text-primary transition-colors mt-2" title="Reset View" onclick="resetMapView()">
-<span class="material-symbols-outlined">my_location</span>
+<button class="w-11 h-11 glass-panel rounded-2xl flex items-center justify-center text-on-surface hover:text-secondary hover:border-secondary transition-all shadow-xl mt-1" title="Reset View" onclick="resetMapView()">
+<span class="material-symbols-outlined text-[20px]">my_location</span>
 </button>
-</div>
+<a href="route-analysis.html" class="w-11 h-11 glass-panel rounded-2xl flex items-center justify-center text-secondary hover:text-white bg-secondary/15 hover:bg-secondary/30 border border-secondary/40 transition-all shadow-xl mt-1" title="AI Route Analysis">
+<span class="material-symbols-outlined text-[20px]">alt_route</span>
+</a>
 </div>
 <!-- UI Overlay: Top KPI Carousel (Ticker) -->
-<div class="absolute top-16 md:top-20 left-0 w-full z-10 px-container-padding-mobile md:px-container-padding-desktop pointer-events-none">
+<div class="absolute top-16 md:top-20 left-0 md:left-[432px] right-0 md:right-8 z-10 px-container-padding-mobile md:px-0 pointer-events-none">
 <div class="flex gap-gutter overflow-x-auto pb-4 pt-2 pointer-events-auto snap-x snap-mandatory scrollbar-hide">
 <!-- KPI Card 1 -->
 <div class="glass-panel rounded-3xl p-5 min-w-[220px] flex-shrink-0 snap-start">
@@ -208,7 +298,7 @@
 </div>
 </div>
 <!-- Side Panel: Traffic Feed & Controls -->
-<aside class="absolute left-container-padding-mobile md:left-container-padding-desktop top-48 md:top-40 bottom-24 md:bottom-container-padding-desktop w-[calc(100%-32px)] md:w-96 glass-panel rounded-3xl flex flex-col z-20 overflow-hidden shadow-24px-blur">
+<aside class="absolute left-container-padding-mobile md:left-container-padding-desktop top-[180px] md:top-20 bottom-24 md:bottom-container-padding-desktop w-[calc(100%-32px)] md:w-96 glass-panel rounded-3xl flex flex-col z-20 overflow-hidden shadow-24px-blur">
 <!-- Header & Search -->
 <div class="p-5 border-b border-white/10 shrink-0">
 <div class="flex items-center justify-between mb-4">
@@ -298,24 +388,28 @@ Done
 </div>
 
 </main>
-<!-- BottomNavBar (Mobile Only) -->
-<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-20 px-4 pb-safe bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl z-50 rounded-t-3xl shadow-24px-blur dark:shadow-none border-t border-white/10">
-<a class="nav-home-link flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all" href="#">
-<span class="material-symbols-outlined">dashboard</span>
-<span class="font-label-sm text-label-sm">Home</span>
-</a>
-<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-5 py-1.5 hover:text-secondary transition-all scale-95 duration-150" href="live maps.html">
-<span class="material-symbols-outlined">traffic</span>
-<span class="font-label-sm text-label-sm">Traffic</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all" href="Alerts.html">
-<span class="material-symbols-outlined">warning</span>
-<span class="font-label-sm text-label-sm">Alerts</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-error transition-all" onclick="logout(); return false;" href="#">
-<span class="material-symbols-outlined">logout</span>
-<span class="font-label-sm text-label-sm">Logout</span>
-</a>
+<!-- Mobile Bottom Navigation Bar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 bg-[#131b2e]/90 dark:bg-[#131b2e]/90 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] flex justify-around items-center h-16 px-2">
+    <a class="nav-home-link flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="#">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">dashboard</span>
+        <span class="font-label-sm text-[11px]">Dashboard</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-secondary bg-secondary/15 font-semibold" href="live maps.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">traffic</span>
+        <span class="font-label-sm text-[11px]">Traffic</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="route-analysis.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">alt_route</span>
+        <span class="font-label-sm text-[11px]">Routes</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="Alerts.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">warning</span>
+        <span class="font-label-sm text-[11px]">Alerts</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-error" onclick="logout(); return false;" href="#">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">logout</span>
+        <span class="font-label-sm text-[11px]">Logout</span>
+    </a>
 </nav>
 <style>
     .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -329,13 +423,132 @@ Done
 <script>
 let currentRoads = [];
 let activeFilter = 'all';
+let liveLeafletMap = null;
+let mapRoadLayers = {};
+let mapMarkersGroup = null;
 
 function getCongestionBadgeInfo(level, density) {
     const l = (level || '').toLowerCase();
-    if (l === 'severe' || density >= 28) return { borderClass: 'severity-severe', badgeBg: 'bg-rose-900/30 text-rose-200 border-rose-500', icon: 'error', level: 'Severe', badgeClass: 'text-rose-400' };
-    if (l.includes('high') || density >= 20) return { borderClass: 'severity-red', badgeBg: 'bg-red-900/30 text-red-200 border-red-500', icon: 'warning', level: 'High', badgeClass: 'text-red-400' };
-    if (l.includes('med') || density >= 10) return { borderClass: 'severity-yellow', badgeBg: 'bg-yellow-900/30 text-yellow-200 border-yellow-500', icon: 'schedule', level: 'Medium', badgeClass: 'text-yellow-400' };
-    return { borderClass: 'severity-green', badgeBg: 'bg-emerald-900/30 text-emerald-200 border-emerald-500', icon: 'check_circle', level: 'Low', badgeClass: 'text-emerald-400' };
+    if (l === 'severe' || density >= 28) return { borderClass: 'severity-severe', badgeBg: 'bg-rose-900/30 text-rose-200 border-rose-500', icon: 'error', level: 'Severe', badgeClass: 'text-rose-400', colorHex: '#e11d48' };
+    if (l.includes('high') || density >= 20) return { borderClass: 'severity-red', badgeBg: 'bg-red-900/30 text-red-200 border-red-500', icon: 'warning', level: 'High', badgeClass: 'text-red-400', colorHex: '#ef4444' };
+    if (l.includes('med') || density >= 10) return { borderClass: 'severity-yellow', badgeBg: 'bg-yellow-900/30 text-yellow-200 border-yellow-500', icon: 'schedule', level: 'Medium', badgeClass: 'text-yellow-400', colorHex: '#facc15' };
+    return { borderClass: 'severity-green', badgeBg: 'bg-emerald-900/30 text-emerald-200 border-emerald-500', icon: 'check_circle', level: 'Low', badgeClass: 'text-emerald-400', colorHex: '#4ade80' };
+}
+
+function initLiveMap() {
+    if (liveLeafletMap) return;
+    const center = ROAD_NETWORK_GEOMETRY.center;
+    const zoom = ROAD_NETWORK_GEOMETRY.zoom;
+
+    liveLeafletMap = L.map('live-leaflet-map', {
+        center: center,
+        zoom: zoom,
+        zoomControl: false,
+        attributionControl: false
+    });
+
+    // ESRI World Street Map — free, no API key required, no watermarks
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
+        maxZoom: 20
+    }).addTo(liveLeafletMap);
+
+    mapMarkersGroup = L.layerGroup().addTo(liveLeafletMap);
+}
+
+function renderMapNetwork() {
+    if (!liveLeafletMap || !mapMarkersGroup) return;
+    mapMarkersGroup.clearLayers();
+    mapRoadLayers = {};
+
+    const geometries = routeAPI.getAllRoadGeometries();
+    const hubs = routeAPI.getHubs();
+
+    // 1. Draw Network Hubs
+    hubs.forEach(h => {
+        const hubIcon = L.divIcon({
+            className: 'custom-hub-icon',
+            html: `
+                <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-white/80 shadow-[0_0_12px_${h.color}]" style="background-color: ${h.color};">
+                    <span class="material-symbols-outlined text-white text-[14px]">${h.icon}</span>
+                </div>
+            `,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+
+        const marker = L.marker(h.coords, { icon: hubIcon }).addTo(mapMarkersGroup);
+        marker.bindPopup(`
+            <div class="p-2 font-label-sm">
+                <div class="text-[10px] text-secondary uppercase font-bold">GRID INTERSECTION HUB</div>
+                <div class="text-sm font-headline-lg font-bold text-on-surface">${h.name}</div>
+            </div>
+        `);
+    });
+
+    // 2. Draw Road Segments with live colors
+    currentRoads.forEach(road => {
+        const geom = geometries[road.road_id];
+        if (!geom) return;
+
+        const badge = getCongestionBadgeInfo(road.congestion_level, road.density);
+        const isSevere = badge.level === 'Severe';
+
+        // Glowing base polyline
+        L.polyline(geom.coordinates, {
+            color: badge.colorHex,
+            weight: isSevere ? 12 : 8,
+            opacity: isSevere ? 0.35 : 0.2,
+            lineCap: 'round',
+            lineJoin: 'round'
+        }).addTo(mapMarkersGroup);
+
+        // Core road polyline
+        const line = L.polyline(geom.coordinates, {
+            color: badge.colorHex,
+            weight: 5,
+            opacity: 0.95,
+            lineCap: 'round',
+            lineJoin: 'round'
+        }).addTo(mapMarkersGroup);
+
+        line.bindPopup(`
+            <div class="p-2 font-label-sm space-y-1.5">
+                <div class="text-[10px] text-secondary uppercase font-bold">${road.road_id} • ${road.road_name}</div>
+                <div class="text-sm font-headline-lg font-bold text-on-surface">Speed: ${road.speed}</div>
+                <div class="flex justify-between text-xs text-on-surface-variant">
+                    <span>Density: <strong class="text-primary">${road.density} veh/km</strong></span>
+                    <span>Status: <strong class="${badge.badgeClass}">${road.congestion_level}</strong></span>
+                </div>
+                <button onclick="showRoadDetail('${road.road_id}')" class="w-full mt-2 bg-secondary text-on-secondary px-2 py-1 rounded-lg text-xs font-bold hover:opacity-90">
+                    Open Telemetry & AI Prediction
+                </button>
+            </div>
+        `);
+
+        mapRoadLayers[road.road_id] = line;
+
+        // Add Pulsing Marker on severe bottlenecks
+        if (isSevere && geom.coordinates.length > 2) {
+            const midCoord = geom.coordinates[Math.floor(geom.coordinates.length / 2)];
+            const severeIcon = L.divIcon({
+                className: 'pulse-marker-severe',
+                html: `
+                    <div class="w-6 h-6 rounded-full bg-rose-600 border-2 border-white flex items-center justify-center shadow-[0_0_15px_#e11d48]">
+                        <span class="material-symbols-outlined text-white text-[12px]">warning</span>
+                    </div>
+                `,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+            L.marker(midCoord, { icon: severeIcon }).addTo(mapMarkersGroup).bindPopup(`
+                <div class="p-2 font-label-sm">
+                    <span class="text-rose-400 font-bold text-xs uppercase">CRITICAL GRIDLOCK DETECTED</span>
+                    <div class="text-sm font-bold text-on-surface mt-1">${road.road_name} (${road.density} veh/km)</div>
+                </div>
+            `);
+        }
+    });
 }
 
 async function syncLiveTraffic() {
@@ -355,6 +568,7 @@ async function syncLiveTraffic() {
         document.getElementById('kpi-vehicle-count').textContent = density.total_vehicle_count ?? 171;
 
         filterTrafficFeed();
+        renderMapNetwork();
 
         // Check for URL query search parameter
         const urlParams = new URLSearchParams(window.location.search);
@@ -405,7 +619,7 @@ function filterTrafficFeed() {
         const speed = road.speed || (road.avg_speed_kmph ? `${road.avg_speed_kmph} km/h` : '45 km/h');
 
         return `
-        <div class="bg-surface/50 hover:bg-surface-variant/50 transition-all p-4 rounded-2xl ${badge.borderClass} cursor-pointer group shadow-sm" onclick="showRoadDetail('${road.road_id}')">
+        <div class="bg-surface/50 hover:bg-surface-variant/50 transition-all p-4 rounded-2xl ${badge.borderClass} cursor-pointer group shadow-sm" onclick="focusAndShowRoad('${road.road_id}')">
             <div class="flex justify-between items-start mb-2">
                 <h4 class="font-body-md font-semibold text-on-surface group-hover:text-secondary transition-colors flex items-center gap-1.5">
                     ${road.road_name || road.road_id}
@@ -430,6 +644,15 @@ function filterTrafficFeed() {
             </div>
         </div>`;
     }).join('');
+}
+
+function focusAndShowRoad(roadId) {
+    if (liveLeafletMap && mapRoadLayers[roadId]) {
+        const polyline = mapRoadLayers[roadId];
+        liveLeafletMap.fitBounds(polyline.getBounds(), { padding: [80, 80], maxZoom: 15 });
+        polyline.openPopup();
+    }
+    showRoadDetail(roadId);
 }
 
 async function showRoadDetail(roadId) {
@@ -487,14 +710,23 @@ function closeRoadModal(event) {
     modal.classList.remove('flex');
 }
 
-function zoomMap(factor) {
-    console.log('Map zoom factor:', factor);
+function zoomMapIn() {
+    if (liveLeafletMap) liveLeafletMap.zoomIn();
+}
+
+function zoomMapOut() {
+    if (liveLeafletMap) liveLeafletMap.zoomOut();
 }
 
 function resetMapView() {
-    console.log('Map view reset');
+    if (liveLeafletMap) {
+        liveLeafletMap.setView(ROAD_NETWORK_GEOMETRY.center, ROAD_NETWORK_GEOMETRY.zoom);
+    }
 }
 
-document.addEventListener('DOMContentLoaded', syncLiveTraffic);
+document.addEventListener('DOMContentLoaded', () => {
+    initLiveMap();
+    syncLiveTraffic();
+});
 </script>
 </body></html>

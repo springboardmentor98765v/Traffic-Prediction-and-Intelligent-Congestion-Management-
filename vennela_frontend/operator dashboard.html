@@ -74,12 +74,12 @@
                         "container-padding-mobile": "16px"
                     },
                     "fontFamily": {
-                        "headline-lg": ["Quicksand", "sans-serif"],
+                        "headline-lg": ["Inter", "sans-serif"],
                         "label-sm": ["JetBrains Mono", "monospace"],
                         "data-lg": ["JetBrains Mono", "monospace"],
-                        "display-lg": ["Quicksand", "sans-serif"],
-                        "body-md": ["Quicksand", "sans-serif"],
-                        "headline-lg-mobile": ["Quicksand", "sans-serif"]
+                        "display-lg": ["Inter", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "headline-lg-mobile": ["Inter", "sans-serif"]
                     },
                     "fontSize": {
                         "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
@@ -93,18 +93,29 @@
             }
         }
     </script>
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
         body {
             background-color: #0A0E23; /* Deepest Navy */
             color: #dae2fd;
         }
         .glass-panel {
-            background: rgba(23, 31, 51, 0.6);
+            background: rgba(23, 31, 51, 0.65);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .text-glow {
+            text-shadow: 0 0 12px rgba(141, 205, 255, 0.4);
+        }
+        .text-glow-rose {
+            text-shadow: 0 0 12px rgba(244, 63, 94, 0.5);
+        }
+        .chart-glow {
+            filter: drop-shadow(0 0 8px rgba(141, 205, 255, 0.3));
         }
     </style>
 <style>
@@ -119,151 +130,662 @@
     AuthManager.guardPage(['OPERATOR', 'ADMIN']);
 })();
 </script>
-<!-- TopAppBar -->
-<header class="fixed top-0 w-full z-50 bg-surface-container/60 dark:bg-surface-container/60 backdrop-blur-xl border-b border-white/10 shadow-24px-blur dark:shadow-none flex justify-between items-center px-container-padding-mobile h-16">
-<div class="flex items-center gap-4">
-<span class="material-symbols-outlined text-primary dark:text-primary">analytics</span>
-<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tight text-on-surface dark:text-on-surface md:font-headline-lg md:text-headline-lg">TrafficVision AI</span>
-</div>
-<div class="hidden md:flex items-center gap-6">
-<a class="nav-home-link text-secondary dark:text-secondary hover:bg-white/5 transition-colors px-3 py-1 rounded-xl font-label-sm text-label-sm" href="operator dashboard.html">Home</a>
-<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors px-3 py-1 rounded-xl font-label-sm text-label-sm hover:text-secondary" href="live maps.html">Traffic</a>
-<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-white/5 transition-colors px-3 py-1 rounded-xl font-label-sm text-label-sm hover:text-secondary" href="Alerts.html">Alerts</a>
-</div>
-<div class="flex items-center gap-4">
-<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center rounded-full" onclick="document.documentElement.classList.toggle('dark')" title="Switch Mode">
-<span class="material-symbols-outlined">light_mode</span>
-</button>
-<button class="text-on-surface-variant hover:text-error transition-colors flex items-center justify-center rounded-full" onclick="logout()" title="Logout">
-<span class="material-symbols-outlined">logout</span>
-</button>
-<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden border border-outline-variant">
-<img class="object-cover w-full h-full" data-alt="Operator avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDof8L9SympwevXrnR9dH-aEtphk9WCUuuPpg2kUna4lmgZEGeUJdfxgPGOFxMA3twMAlu--0KPtMtntkF40-zvqFj8KmeE3Y8cgOzS9aE9WgkFOkqUJSbIj85MZfjiNQDaVFAcpRn3wNDjKBhXv8wpFAAQ7uOk7QXDhjfdlN8Ht9W7_IJe6tqaS52GEXnqlHSwHCCTlirrPCC4B8JPP6cCXPnhzPpENx5A-OFhxrm92hjslXUZie_d"/>
-</div>
-</div>
+
+<!-- Toast Notification Container -->
+<div id="toast-container" class="fixed bottom-20 md:bottom-8 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-[#131b2e]/80 dark:bg-[#131b2e]/80 backdrop-blur-2xl border-b border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] flex items-center justify-between px-4 sm:px-6 md:px-8 h-16 transition-all duration-300">
+    <!-- Brand / Logo -->
+    <div class="flex items-center gap-3">
+        <a class="nav-home-link flex items-center gap-3 group focus:outline-none" href="#">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-container via-primary-container/80 to-secondary-container/40 flex items-center justify-center border border-white/15 shadow-[0_0_15px_rgba(0,175,254,0.25)] group-hover:shadow-[0_0_22px_rgba(141,205,255,0.5)] transition-all">
+                <span class="material-symbols-outlined text-secondary text-[24px]" style="font-variation-settings: 'FILL' 1;">analytics</span>
+            </div>
+            <div class="flex flex-col">
+                <span class="font-headline-lg text-[18px] md:text-[20px] font-bold tracking-tight text-on-surface flex items-center gap-1.5 leading-none">
+                    TrafficVision <span class="text-secondary font-black tracking-normal">AI</span>
+                </span>
+                <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest hidden sm:inline-block mt-1">Autonomous Traffic Grid</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Desktop Navigation Links -->
+    <nav class="hidden md:flex items-center gap-1.5 lg:gap-2 bg-surface-container/70 p-1.5 rounded-2xl border border-white/5 shadow-inner">
+        <!-- Dashboard Tab (Active) -->
+        <a class="nav-home-link px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-semibold text-secondary bg-secondary/15 border border-secondary/30 shadow-[0_0_15px_rgba(141,205,255,0.2)] flex items-center gap-2 transition-all" href="#">
+            <span class="material-symbols-outlined text-[18px]">dashboard</span>
+            <span>Dashboard</span>
+        </a>
+        <!-- Live Traffic Tab -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="live maps.html">
+            <span class="material-symbols-outlined text-[18px]">traffic</span>
+            <span>Live Traffic</span>
+        </a>
+        <!-- Route Analysis Tab -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="route-analysis.html">
+            <span class="material-symbols-outlined text-[18px]">alt_route</span>
+            <span>Route Analysis</span>
+        </a>
+        <!-- Alerts Tab -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="Alerts.html">
+            <span class="material-symbols-outlined text-[18px]">warning</span>
+            <span>Alerts</span>
+        </a>
+        <!-- Admin Console Tab (Visible to admin) -->
+        <a class="nav-admin-only hidden px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="admin dashboard.html">
+            <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+            <span>Admin</span>
+        </a>
+    </nav>
+
+    <!-- Right Utility Controls & User Profile -->
+    <div class="flex items-center gap-2.5 sm:gap-3.5">
+        <!-- Live Stream Badge -->
+        <div class="hidden xl:flex items-center gap-2 px-3 py-1 bg-surface-container-high/60 border border-white/5 rounded-full font-label-sm text-[11px] text-on-surface-variant">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Grid Live • Intern 3 AI</span>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all" onclick="document.documentElement.classList.toggle('dark')" title="Toggle Theme">
+            <span class="material-symbols-outlined text-[19px]">light_mode</span>
+        </button>
+
+        <!-- Logout Button -->
+        <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-error/20 hover:border-error/40 border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-error transition-all" onclick="logout()" title="Logout">
+            <span class="material-symbols-outlined text-[19px]">logout</span>
+        </button>
+
+        <!-- User Profile Avatar & Role -->
+        <div class="flex items-center gap-2.5 pl-2 border-l border-white/10">
+            <div class="w-9 h-9 rounded-xl overflow-hidden border border-secondary/30 bg-surface-container-high flex items-center justify-center shadow-inner">
+                <img id="nav-user-avatar" class="w-full h-full object-cover" alt="Operator avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDof8L9SympwevXrnR9dH-aEtphk9WCUuuPpg2kUna4lmgZEGeUJdfxgPGOFxMA3twMAlu--0KPtMtntkF40-zvqFj8KmeE3Y8cgOzS9aE9WgkFOkqUJSbIj85MZfjiNQDaVFAcpRn3wNDjKBhXv8wpFAAQ7uOk7QXDhjfdlN8Ht9W7_IJe6tqaS52GEXnqlHSwHCCTlirrPCC4B8JPP6cCXPnhzPpENx5A-OFhxrm92hjslXUZie_d"/>
+            </div>
+            <div class="hidden lg:flex flex-col text-left">
+                <span id="nav-user-name" class="font-body-md text-[13px] font-semibold text-on-surface leading-tight">Operator</span>
+                <span id="nav-user-role" class="font-label-sm text-[10px] text-secondary uppercase tracking-wider leading-none">OPERATOR</span>
+            </div>
+        </div>
+    </div>
 </header>
+
 <!-- Main Content Canvas -->
-<main class="flex-1 mt-16 mb-20 md:mb-0 p-container-padding-mobile md:p-container-padding-desktop flex flex-col gap-gutter">
-<!-- Welcome Section -->
-<div class="py-4 flex flex-col md:flex-row justify-between md:items-center gap-2">
-<div>
-<h1 class="font-display-lg text-display-lg text-primary" id="operator-greeting">Welcome, Operator</h1>
-<p class="text-on-surface-variant font-body-md mt-2">System Status: <span class="text-emerald-400 font-medium">Online</span>. Real-time traffic monitoring active.</p>
-</div>
-<button class="self-start md:self-auto bg-surface-container-high hover:bg-surface-container border border-white/10 px-4 py-2 rounded-xl text-sm font-label-sm text-secondary flex items-center gap-2 transition-all shadow" onclick="loadOperatorDashboardData()">
-<span class="material-symbols-outlined text-sm">refresh</span> Refresh Stream
-</button>
-</div>
-<!-- Bento Grid Layout -->
-<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
-<!-- Left Column: KPIs & Prediction (7 cols on desktop) -->
-<div class="md:col-span-7 flex flex-col gap-gutter">
-<!-- KPI Ticker / Cards -->
-<div class="grid grid-cols-2 md:grid-cols-3 gap-base md:gap-gutter">
-<!-- KPI 1 -->
-<div class="glass-panel p-4 rounded-xl flex flex-col justify-between h-32 shadow-lg">
-<div class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-widest">City-wide Congestion</div>
-<div class="font-data-lg text-data-lg text-secondary" id="kpi-congestion-pct">--%</div>
-<div class="flex items-center gap-2 mt-2">
-<div class="h-1 flex-1 bg-surface-variant rounded-full overflow-hidden">
-<div class="h-full bg-error rounded-full transition-all duration-700" id="kpi-congestion-bar" style="width: 50%"></div>
-</div>
-<span class="material-symbols-outlined text-error text-[16px]">trending_up</span>
-</div>
-</div>
-<!-- KPI 2 -->
-<div class="glass-panel p-4 rounded-xl flex flex-col justify-between h-32 shadow-lg">
-<div class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-widest">Active Alerts</div>
-<div class="font-data-lg text-data-lg text-error" id="kpi-active-alerts">--</div>
-<div class="flex items-center gap-2 mt-2 text-error">
-<span class="material-symbols-outlined text-[16px]">warning</span>
-<span class="font-label-sm text-label-sm" id="kpi-critical-alerts">Critical: --</span>
-</div>
-</div>
-<!-- KPI 3 -->
-<div class="glass-panel p-4 rounded-xl flex flex-col justify-between h-32 shadow-lg col-span-2 md:col-span-1">
-<div class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-widest">Network Density</div>
-<div class="font-data-lg text-data-lg text-primary" id="kpi-network-density">--</div>
-<div class="flex items-center gap-2 mt-2">
-<div class="h-1 flex-1 bg-surface-variant rounded-full overflow-hidden">
-<div class="h-full bg-primary rounded-full transition-all duration-700" id="kpi-density-bar" style="width: 45%"></div>
-</div>
-<span class="font-label-sm text-label-sm text-on-surface-variant">avg/km</span>
-</div>
-</div>
-</div>
-<!-- AI Prediction -->
-<div class="glass-panel rounded-xl p-6 shadow-lg flex-1 relative overflow-hidden">
-<div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCYjyO89LbbEm5xgcpsMOiSdiqgBPgT9MIgaGc5orQ7hU25O1ECup_l3bl651vrTW3AmN31xeBPC8MMJ6vHAFlnDweMcJz7mJZ4O3RBvhLmdrzBa6IRlyXqCsRJ2rCQdTC-xOx6uenCyhrurwu33KieM9_QIj6Y4IqHSS_MPXWcFfQ54S7K4YzJ94LaDCARyYdioQ8m4Mn1VeMC_4k3L_E8AULhG6F9A6lzy13HFZXN7vaL9cISDUcy')"></div>
-<div class="relative z-10">
-<div class="flex items-center justify-between mb-4">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-secondary">psychology</span>
-<h2 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface">AI Prediction Stub</h2>
-</div>
-<span class="bg-secondary/10 border border-secondary/30 text-secondary font-label-sm text-xs px-2.5 py-1 rounded-full" id="ai-confidence-tag">Confidence: 85%</span>
-</div>
-<div class="bg-surface-container-high/50 p-4 rounded-xl border border-outline-variant/30">
-<div class="font-label-sm text-label-sm text-secondary mb-2 uppercase tracking-wide" id="ai-forecast-header">AI Congestion Analysis • Stub-v0</div>
-<p class="font-body-md text-on-surface" id="ai-forecast-text">Evaluating real-time road density metrics and neural forecasting models...</p>
-<div class="mt-4 flex gap-2">
-<a class="bg-primary text-on-primary px-4 py-2 rounded-lg font-label-sm text-label-sm hover:opacity-90 transition-opacity flex items-center gap-1" href="live maps.html">
-<span class="material-symbols-outlined text-sm">alt_route</span> Deploy Reroute
-</a>
-<a class="border border-secondary text-secondary px-4 py-2 rounded-lg font-label-sm text-label-sm hover:bg-secondary/10 transition-colors bg-transparent flex items-center gap-1" href="Alerts.html">
-<span class="material-symbols-outlined text-sm">open_in_new</span> View Incident Alerts
-</a>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- Right Column: Road Status (5 cols on desktop) -->
-<div class="md:col-span-5 glass-panel rounded-xl flex flex-col shadow-lg overflow-hidden h-[520px] md:h-auto">
-<div class="p-4 border-b border-white/10 bg-surface-container/40 flex justify-between items-center sticky top-0 z-10">
-<div class="flex items-center gap-2">
-<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Road Status</h2>
-<span class="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-label-sm" id="road-count-badge">Live</span>
-</div>
-<a class="text-xs text-secondary hover:underline flex items-center gap-1 font-label-sm" href="live maps.html">
-View Map <span class="material-symbols-outlined text-xs">arrow_forward</span>
-</a>
-</div>
-<div class="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5" id="road-status-container">
-<div class="text-center py-8 text-on-surface-variant font-label-sm">Loading live traffic streams...</div>
-</div>
-</div>
-</div>
+<main class="flex-1 mt-16 mb-20 md:mb-0 p-container-padding-mobile md:p-container-padding-desktop flex flex-col gap-6 pt-6 max-w-7xl mx-auto w-full">
+    <!-- Welcome & Action Bar Section -->
+    <div class="py-2 flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-2.5">
+                <h1 class="font-display-lg text-[28px] md:text-[36px] font-bold text-primary tracking-tight" id="operator-greeting">Welcome, Operator</h1>
+                <span class="bg-primary/10 border border-primary/30 text-primary text-xs font-label-sm px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Prediction Service v1.0
+                </span>
+            </div>
+            <p class="text-on-surface-variant font-body-md text-sm mt-1">
+                Real-time traffic telemetry powered by <span class="text-secondary font-medium">Intern 3 AI Prediction Engine</span>.
+            </p>
+        </div>
+
+        <!-- Action Buttons: Download Prediction Report & Refresh -->
+        <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Download Report Dropdown / Button -->
+            <div class="relative inline-block text-left" id="report-download-group">
+                <button id="btn-download-report" onclick="handleDownloadReport('csv')" class="bg-gradient-to-r from-secondary-container via-secondary/80 to-primary-container text-on-secondary-container font-semibold px-4 py-2.5 rounded-xl text-sm font-label-sm flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(0,175,254,0.3)] hover:shadow-[0_0_28px_rgba(141,205,255,0.6)] hover:scale-[1.02] active:scale-[0.98]">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    <span id="download-btn-label">Download Prediction Report</span>
+                    <span class="text-xs bg-black/20 px-1.5 py-0.5 rounded font-mono">CSV</span>
+                </button>
+            </div>
+
+            <!-- JSON Export Option -->
+            <button onclick="handleDownloadReport('json')" class="bg-surface-container-high hover:bg-surface-container border border-white/10 px-3 py-2.5 rounded-xl text-xs font-label-sm text-on-surface-variant hover:text-secondary flex items-center gap-1.5 transition-all shadow" title="Export as JSON">
+                <span class="material-symbols-outlined text-[16px]">data_object</span>
+                <span>JSON</span>
+            </button>
+
+            <!-- Refresh Stream Button -->
+            <button class="bg-surface-container-high hover:bg-surface-container border border-white/10 px-3.5 py-2.5 rounded-xl text-sm font-label-sm text-secondary flex items-center gap-1.5 transition-all shadow" onclick="loadOperatorDashboardData()">
+                <span class="material-symbols-outlined text-[18px]" id="refresh-icon">refresh</span>
+                <span class="hidden sm:inline">Refresh</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Top KPI Row (4 Cards) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-base md:gap-gutter">
+        <!-- KPI 1: City-wide Congestion -->
+        <div class="glass-panel p-4 rounded-xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
+            <div class="flex justify-between items-start">
+                <span class="text-on-surface-variant font-label-sm text-xs uppercase tracking-wider">City Congestion</span>
+                <span class="material-symbols-outlined text-secondary text-[20px]">traffic</span>
+            </div>
+            <div class="my-2">
+                <div class="font-data-lg text-2xl font-bold text-secondary text-glow" id="kpi-congestion-pct">--%</div>
+                <div class="text-xs text-on-surface-variant font-label-sm mt-0.5" id="kpi-congestion-sub">Analyzing...</div>
+            </div>
+            <div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+                <div class="h-full bg-error rounded-full transition-all duration-700" id="kpi-congestion-bar" style="width: 50%"></div>
+            </div>
+        </div>
+
+        <!-- KPI 2: Active Bottlenecks & Critical Delay -->
+        <div class="glass-panel p-4 rounded-xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
+            <div class="flex justify-between items-start">
+                <span class="text-on-surface-variant font-label-sm text-xs uppercase tracking-wider">Grid Bottlenecks</span>
+                <span class="material-symbols-outlined text-error text-[20px]">warning</span>
+            </div>
+            <div class="my-2">
+                <div class="font-data-lg text-2xl font-bold text-error" id="kpi-active-alerts">--</div>
+                <div class="text-xs text-rose-300/80 font-label-sm mt-0.5" id="kpi-critical-alerts">Severe: -- | High: --</div>
+            </div>
+            <div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+                <div class="h-full bg-rose-500 rounded-full transition-all duration-700" id="kpi-bottleneck-bar" style="width: 35%"></div>
+            </div>
+        </div>
+
+        <!-- KPI 3: Network Density -->
+        <div class="glass-panel p-4 rounded-xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
+            <div class="flex justify-between items-start">
+                <span class="text-on-surface-variant font-label-sm text-xs uppercase tracking-wider">Network Density</span>
+                <span class="material-symbols-outlined text-primary text-[20px]">speed</span>
+            </div>
+            <div class="my-2">
+                <div class="font-data-lg text-2xl font-bold text-primary" id="kpi-network-density">--</div>
+                <div class="text-xs text-on-surface-variant font-label-sm mt-0.5" id="kpi-density-sub">veh/km network average</div>
+            </div>
+            <div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+                <div class="h-full bg-primary rounded-full transition-all duration-700" id="kpi-density-bar" style="width: 45%"></div>
+            </div>
+        </div>
+
+        <!-- KPI 4: AI Prediction Accuracy & Confidence -->
+        <div class="glass-panel p-4 rounded-xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
+            <div class="flex justify-between items-start">
+                <span class="text-on-surface-variant font-label-sm text-xs uppercase tracking-wider">AI Forecast Confidence</span>
+                <span class="material-symbols-outlined text-emerald-400 text-[20px]">psychology</span>
+            </div>
+            <div class="my-2">
+                <div class="font-data-lg text-2xl font-bold text-emerald-300" id="kpi-ai-confidence">94.2%</div>
+                <div class="text-xs text-emerald-400/80 font-label-sm mt-0.5">Model-v1 Trained Neural Grid</div>
+            </div>
+            <div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+                <div class="h-full bg-emerald-400 rounded-full" style="width: 94%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Middle Section: Peak-Hour Chart & Delay Estimates (Bento Grid) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+        <!-- Peak-Hour Prediction Chart (7 cols) -->
+        <div class="lg:col-span-7 glass-panel rounded-2xl p-5 flex flex-col justify-between shadow-xl relative overflow-hidden">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4 pb-3 border-b border-white/10">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-secondary/15 flex items-center justify-center text-secondary border border-secondary/30">
+                        <span class="material-symbols-outlined text-[19px]">stacked_line_chart</span>
+                    </div>
+                    <div>
+                        <h2 class="font-headline-lg-mobile text-[16px] md:text-[18px] font-bold text-on-surface">Peak-Hour Congestion Forecast</h2>
+                        <p class="text-xs text-on-surface-variant font-label-sm">Hourly Traffic Density & Load Curve (07:00 – 21:00)</p>
+                    </div>
+                </div>
+
+                <!-- Road Selector Dropdown for Peak Hour Analysis -->
+                <div class="flex items-center gap-2">
+                    <label for="peak-road-selector" class="text-xs font-label-sm text-on-surface-variant hidden sm:inline">Corridor:</label>
+                    <select id="peak-road-selector" onchange="updatePeakHourChart(this.value)" class="bg-surface-container-high border border-white/15 text-xs text-secondary font-label-sm rounded-xl px-3 py-1.5 focus:outline-none focus:border-secondary transition-all cursor-pointer">
+                        <option value="R006">Airport Road (R006)</option>
+                        <option value="R007">Harbor Tunnel Approach (R007)</option>
+                        <option value="R001">Main Expressway (R001)</option>
+                        <option value="R005">Industrial Highway (R005)</option>
+                        <option value="R002">Central Avenue (R002)</option>
+                        <option value="R003">West Ring Road (R003)</option>
+                        <option value="R004">North Boulevard (R004)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Peak Forecast Summary Pills -->
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                <div class="bg-surface-container-high/60 p-2.5 rounded-xl border border-white/5">
+                    <span class="text-[10px] uppercase font-label-sm text-on-surface-variant block">Morning Peak</span>
+                    <span class="font-data-lg text-sm font-bold text-yellow-300" id="peak-morning-summary">08:00 – 10:00 AM</span>
+                </div>
+                <div class="bg-surface-container-high/60 p-2.5 rounded-xl border border-white/5">
+                    <span class="text-[10px] uppercase font-label-sm text-on-surface-variant block">Evening Peak</span>
+                    <span class="font-data-lg text-sm font-bold text-rose-400" id="peak-evening-summary">05:00 – 07:00 PM</span>
+                </div>
+                <div class="bg-surface-container-high/60 p-2.5 rounded-xl border border-white/5">
+                    <span class="text-[10px] uppercase font-label-sm text-on-surface-variant block">Max Projected Density</span>
+                    <span class="font-data-lg text-sm font-bold text-secondary" id="peak-max-density">35.8 veh/km</span>
+                </div>
+            </div>
+
+            <!-- Chart Canvas -->
+            <div class="relative w-full h-[260px] md:h-[280px]">
+                <canvas id="peakHourChartCanvas"></canvas>
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-xs font-label-sm text-on-surface-variant">
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-secondary"></span> Predicted Density (veh/km)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-rose-500"></span> Severe Threshold (>28)</span>
+                </div>
+                <span class="text-[11px] text-secondary" id="chart-model-tag">Generated by model-v1</span>
+            </div>
+        </div>
+
+        <!-- Live Corridor Delay Estimates (5 cols) -->
+        <div class="lg:col-span-5 glass-panel rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+            <div class="flex justify-between items-center mb-3 pb-3 border-b border-white/10">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-rose-500/15 flex items-center justify-center text-rose-400 border border-rose-500/30">
+                        <span class="material-symbols-outlined text-[19px]">timer</span>
+                    </div>
+                    <div>
+                        <h2 class="font-headline-lg-mobile text-[16px] md:text-[18px] font-bold text-on-surface">Delay Estimates</h2>
+                        <p class="text-xs text-on-surface-variant font-label-sm">Free-Flow Baseline vs. Real-Time Delay</p>
+                    </div>
+                </div>
+                <span class="text-xs bg-surface-container-highest px-2 py-0.5 rounded font-label-sm text-secondary" id="delay-count-badge">7 Corridors</span>
+            </div>
+
+            <!-- Delay Corridor List Container -->
+            <div class="flex-1 overflow-y-auto space-y-2.5 max-h-[340px] pr-1" id="delay-estimates-container">
+                <div class="text-center py-8 text-on-surface-variant font-label-sm">Calculating real-time delay estimates...</div>
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-xs font-label-sm">
+                <span class="text-on-surface-variant">Highest Grid Impact:</span>
+                <span class="text-rose-400 font-bold" id="worst-delay-corridor">Harbor Tunnel (+23.8m delay)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Section: Per-Road Congestion Forecast Matrix & AI Tactical Hub -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+        <!-- Per-Road Multi-Horizon Forecast Explorer (8 cols) -->
+        <div class="lg:col-span-8 glass-panel rounded-2xl p-5 flex flex-col shadow-xl">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4 pb-3 border-b border-white/10">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/30">
+                        <span class="material-symbols-outlined text-[19px]">schedule</span>
+                    </div>
+                    <div>
+                        <h2 class="font-headline-lg-mobile text-[16px] md:text-[18px] font-bold text-on-surface">Per-Road Congestion Forecast</h2>
+                        <p class="text-xs text-on-surface-variant font-label-sm">Multi-Horizon Projections Across All Network Roads</p>
+                    </div>
+                </div>
+
+                <!-- Horizon Selector Tabs -->
+                <div class="flex items-center bg-surface-container-high/80 p-1 rounded-xl border border-white/10 font-label-sm text-xs">
+                    <button class="horizon-btn px-3 py-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all" data-horizon="15" onclick="selectForecastHorizon(15)">+15m</button>
+                    <button class="horizon-btn px-3 py-1 rounded-lg bg-secondary/20 text-secondary border border-secondary/30 font-semibold shadow transition-all" data-horizon="30" onclick="selectForecastHorizon(30)">+30m</button>
+                    <button class="horizon-btn px-3 py-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all" data-horizon="60" onclick="selectForecastHorizon(60)">+60m</button>
+                    <button class="horizon-btn px-3 py-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all" data-horizon="120" onclick="selectForecastHorizon(120)">+2h</button>
+                </div>
+            </div>
+
+            <!-- Per-Road Forecast Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="per-road-forecast-container">
+                <div class="col-span-full text-center py-8 text-on-surface-variant font-label-sm">Loading temporal forecasts...</div>
+            </div>
+        </div>
+
+        <!-- AI Tactical Actions & Real-Time Intelligence (4 cols) -->
+        <div class="lg:col-span-4 glass-panel rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+            <div>
+                <div class="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-400/15 flex items-center justify-center text-emerald-400 border border-emerald-400/30">
+                        <span class="material-symbols-outlined text-[19px]">smart_toy</span>
+                    </div>
+                    <div>
+                        <h2 class="font-headline-lg-mobile text-[16px] font-bold text-on-surface">Tactical Interventions</h2>
+                        <p class="text-xs text-on-surface-variant font-label-sm">AI-Generated Congestion Mitigations</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="bg-surface-container-high/50 p-3 rounded-xl border border-rose-500/20 flex items-start gap-2.5">
+                        <span class="material-symbols-outlined text-rose-400 text-[20px] mt-0.5">alt_route</span>
+                        <div>
+                            <div class="text-xs font-semibold text-rose-300">Reroute Harbor Freight</div>
+                            <div class="text-[11px] text-on-surface-variant mt-0.5">Diverting heavy traffic to West Ring Bypass (R003) will reduce Harbor Tunnel delay by <span class="text-emerald-400 font-semibold">14 mins</span>.</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-container-high/50 p-3 rounded-xl border border-yellow-500/20 flex items-start gap-2.5">
+                        <span class="material-symbols-outlined text-yellow-400 text-[20px] mt-0.5">traffic</span>
+                        <div>
+                            <div class="text-xs font-semibold text-yellow-300">Signal Split Optimization</div>
+                            <div class="text-[11px] text-on-surface-variant mt-0.5">Grant +12s green phase on Airport Road northbound during 17:00-19:00 evening peak.</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-container-high/50 p-3 rounded-xl border border-secondary/20 flex items-start gap-2.5">
+                        <span class="material-symbols-outlined text-secondary text-[20px] mt-0.5">campaign</span>
+                        <div>
+                            <div class="text-xs font-semibold text-secondary">VMS Commuter Advisory</div>
+                            <div class="text-[11px] text-on-surface-variant mt-0.5">Broadcast active +24m tunnel delay to downstream connected navigation devices.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Action Links -->
+            <div class="mt-4 pt-3 border-t border-white/5 flex gap-2">
+                <a href="live maps.html" class="flex-1 bg-primary text-on-primary py-2 rounded-xl text-xs font-label-sm font-semibold flex items-center justify-center gap-1 hover:opacity-90 transition-opacity">
+                    <span class="material-symbols-outlined text-[15px]">map</span> Live Map
+                </a>
+                <a href="route-analysis.html" class="flex-1 border border-secondary text-secondary py-2 rounded-xl text-xs font-label-sm font-semibold flex items-center justify-center gap-1 hover:bg-secondary/10 transition-colors">
+                    <span class="material-symbols-outlined text-[15px]">alt_route</span> Optimize
+                </a>
+            </div>
+        </div>
+    </div>
 </main>
-<!-- BottomNavBar (Mobile Only) -->
-<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-20 px-4 pb-safe bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl border-t border-white/10 shadow-24px-blur dark:shadow-none z-50 rounded-t-full">
-<a class="nav-home-link flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 hover:text-secondary transition-all" href="operator dashboard.html">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-<span class="font-label-sm text-label-sm mt-1">Home</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all" href="live maps.html">
-<span class="material-symbols-outlined">traffic</span>
-<span class="font-label-sm text-label-sm mt-1">Traffic</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all" href="Alerts.html">
-<span class="material-symbols-outlined">warning</span>
-<span class="font-label-sm text-label-sm mt-1">Alerts</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-all" onclick="logout(); return false;" href="#">
-<span class="material-symbols-outlined">logout</span>
-<span class="font-label-sm text-label-sm mt-1">Logout</span>
-</a>
+
+<!-- Mobile Bottom Navigation Bar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 bg-[#131b2e]/90 dark:bg-[#131b2e]/90 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] flex justify-around items-center h-16 px-2">
+    <a class="nav-home-link flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-secondary bg-secondary/15 font-semibold" href="#">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">dashboard</span>
+        <span class="font-label-sm text-[11px]">Dashboard</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="live maps.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">traffic</span>
+        <span class="font-label-sm text-[11px]">Traffic</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="route-analysis.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">alt_route</span>
+        <span class="font-label-sm text-[11px]">Routes</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="Alerts.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">warning</span>
+        <span class="font-label-sm text-[11px]">Alerts</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-error" onclick="logout(); return false;" href="#">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">logout</span>
+        <span class="font-label-sm text-[11px]">Logout</span>
+    </a>
 </nav>
 
 <script>
+let currentPeakChartInstance = null;
+let activeHorizon = 30;
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    const isSuccess = type === 'success';
+    toast.className = `p-3.5 rounded-xl border backdrop-blur-xl flex items-center gap-3 shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 pointer-events-auto ${
+        isSuccess 
+            ? 'bg-surface-container-high/90 border-emerald-400/40 text-emerald-300' 
+            : 'bg-surface-container-high/90 border-rose-500/40 text-rose-300'
+    }`;
+    toast.innerHTML = `
+        <span class="material-symbols-outlined text-[20px]">${isSuccess ? 'check_circle' : 'error'}</span>
+        <span class="font-body-md text-xs font-medium text-on-surface">${message}</span>
+    `;
+
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+    }, 50);
+
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+async function handleDownloadReport(format = 'csv') {
+    const btn = document.getElementById('btn-download-report');
+    const label = document.getElementById('download-btn-label');
+    const prevLabel = label ? label.textContent : 'Download Prediction Report';
+    
+    if (label) label.textContent = `Generating ${format.toUpperCase()}...`;
+    if (btn) btn.classList.add('opacity-75', 'cursor-wait');
+
+    try {
+        const result = await predictAPI.downloadPredictionReport(format);
+        showToast(`Report downloaded: ${result.filename} (${result.count} corridors analyzed)`, 'success');
+    } catch (e) {
+        console.error('Report download failed:', e);
+        showToast(`Download failed: ${e.message}`, 'error');
+    } finally {
+        if (label) label.textContent = prevLabel;
+        if (btn) btn.classList.remove('opacity-75', 'cursor-wait');
+    }
+}
+
+async function renderPeakHourChart(roadId = "R006") {
+    const peakData = await predictAPI.getPeakHourPrediction(roadId);
+    if (!peakData || !peakData.peak_hours) return;
+
+    const ctx = document.getElementById('peakHourChartCanvas');
+    if (!ctx) return;
+
+    const labels = peakData.peak_hours.map(p => `${p.hour}:00`);
+    const densities = peakData.peak_hours.map(p => p.density);
+    const severeThreshold = peakData.peak_hours.map(() => 28);
+    
+    const maxDensity = Math.max(...densities);
+    document.getElementById('peak-max-density').textContent = `${maxDensity} veh/km`;
+    document.getElementById('chart-model-tag').textContent = `Model: ${peakData.generated_by || 'model-v1'} • ${peakData.road_name || roadId}`;
+
+    if (currentPeakChartInstance) {
+        currentPeakChartInstance.destroy();
+    }
+
+    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 260);
+    gradient.addColorStop(0, 'rgba(141, 205, 255, 0.45)');
+    gradient.addColorStop(1, 'rgba(141, 205, 255, 0.02)');
+
+    currentPeakChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Predicted Density (veh/km)',
+                    data: densities,
+                    borderColor: '#8dcdff',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: densities.map(d => d >= 28 ? '#e11d48' : (d >= 20 ? '#ef4444' : (d >= 10 ? '#facc15' : '#4ade80'))),
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                },
+                {
+                    label: 'Severe Gridlock Threshold',
+                    data: severeThreshold,
+                    borderColor: 'rgba(225, 29, 72, 0.65)',
+                    borderWidth: 1.5,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(19, 27, 46, 0.95)',
+                    titleColor: '#dae2fd',
+                    bodyColor: '#8dcdff',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    padding: 10,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.parsed.y;
+                            let lvl = "Optimal Flow";
+                            if (val >= 28) lvl = "Severe Gridlock";
+                            else if (val >= 20) lvl = "Heavy Congestion";
+                            else if (val >= 10) lvl = "Moderate Delay";
+                            return `Forecast: ${val} veh/km (${lvl})`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                    ticks: { color: '#c6c5d4', font: { family: 'JetBrains Mono', size: 10 } }
+                },
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.06)' },
+                    ticks: { color: '#c6c5d4', font: { family: 'JetBrains Mono', size: 10 } },
+                    suggestedMin: 0,
+                    suggestedMax: 35
+                }
+            }
+        }
+    });
+}
+
+function updatePeakHourChart(roadId) {
+    renderPeakHourChart(roadId);
+}
+
+async function renderDelayEstimates() {
+    const container = document.getElementById('delay-estimates-container');
+    if (!container) return;
+
+    try {
+        const delays = await predictAPI.getAllDelayEstimates();
+        // Sort corridors by delay descending
+        delays.sort((a, b) => b.delay_minutes - a.delay_minutes);
+
+        if (delays.length > 0) {
+            const worst = delays[0];
+            const worstEl = document.getElementById('worst-delay-corridor');
+            if (worstEl) worstEl.textContent = `${worst.road_name} (+${worst.delay_minutes}m delay)`;
+        }
+
+        container.innerHTML = delays.map(d => {
+            const isSevere = d.delay_minutes >= 15 || d.congestion_level === 'Severe';
+            const isHigh = d.delay_minutes >= 8 && !isSevere;
+            const badgeBg = isSevere ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : (isHigh ? 'bg-error/20 text-red-300 border-error/40' : (d.delay_minutes >= 3 ? 'bg-yellow-400/20 text-yellow-300 border-yellow-400/40' : 'bg-emerald-400/20 text-emerald-300 border-emerald-400/40'));
+            
+            const pctDelay = Math.min(100, Math.round((d.delay_minutes / 30) * 100));
+
+            return `
+            <div class="bg-surface-container-high/40 hover:bg-surface-container-high p-3 rounded-xl border border-white/5 transition-all">
+                <div class="flex justify-between items-center mb-1">
+                    <div class="font-body-md font-semibold text-xs text-on-surface flex items-center gap-1.5">
+                        <span>${d.road_name}</span>
+                        <span class="text-[10px] text-on-surface-variant font-label-sm font-normal">(${d.length_km}km)</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-label-sm border ${badgeBg}">
+                        +${d.delay_minutes}m delay
+                    </span>
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] font-label-sm text-on-surface-variant mb-1.5">
+                    <span>Free Flow: <strong class="text-on-surface">${d.free_flow_time_min}m</strong></span>
+                    <span>Live Est: <strong class="${d.status_color}">${d.current_time_min}m</strong> (${Math.round(d.current_speed)} km/h)</span>
+                </div>
+
+                <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden flex">
+                    <div class="h-full bg-secondary" style="width: ${Math.max(10, 100 - pctDelay)}%"></div>
+                    <div class="h-full ${isSevere ? 'bg-rose-500' : (isHigh ? 'bg-error' : 'bg-yellow-400')}" style="width: ${pctDelay}%"></div>
+                </div>
+            </div>`;
+        }).join('');
+
+    } catch (e) {
+        console.error('Error rendering delay estimates:', e);
+    }
+}
+
+function selectForecastHorizon(minutes) {
+    activeHorizon = minutes;
+    document.querySelectorAll('.horizon-btn').forEach(btn => {
+        if (Number(btn.dataset.horizon) === minutes) {
+            btn.className = 'horizon-btn px-3 py-1 rounded-lg bg-secondary/20 text-secondary border border-secondary/30 font-semibold shadow transition-all';
+        } else {
+            btn.className = 'horizon-btn px-3 py-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-all';
+        }
+    });
+    renderPerRoadForecasts(minutes);
+}
+
+function renderPerRoadForecasts(horizonMinutes = 30) {
+    const container = document.getElementById('per-road-forecast-container');
+    if (!container) return;
+
+    const forecasts = predictAPI.getAllRoadForecasts(horizonMinutes);
+
+    container.innerHTML = forecasts.map(f => {
+        const badge = getCongestionBadgeInfo(f.predicted_level);
+        const densityDelta = Math.round((f.predicted_density - f.current_density) * 10) / 10;
+        const deltaStr = densityDelta > 0 ? `+${densityDelta}` : `${densityDelta}`;
+        const deltaColor = densityDelta > 0 ? 'text-rose-400' : (densityDelta < 0 ? 'text-emerald-400' : 'text-on-surface-variant');
+
+        return `
+        <div class="bg-surface-container-high/50 p-3.5 rounded-xl border border-white/5 hover:border-secondary/30 transition-all flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="font-body-md text-xs font-semibold text-on-surface block leading-tight">${f.road_name}</span>
+                        <span class="text-[10px] font-label-sm text-on-surface-variant">${f.road_id} • +${horizonMinutes}m Forecast</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-label-sm border ${badge.badgeBg}">
+                        ${badge.level}
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 my-2 py-2 bg-surface-container-lowest/40 rounded-lg px-2 border border-white/5">
+                    <div>
+                        <span class="text-[9px] uppercase font-label-sm text-on-surface-variant block">Forecast Density</span>
+                        <span class="font-data-lg text-xs font-bold text-secondary">${f.predicted_density} <span class="text-[10px] font-normal text-on-surface-variant">veh/km</span></span>
+                        <span class="text-[10px] font-label-sm ${deltaColor} block">${deltaStr} vs live</span>
+                    </div>
+                    <div>
+                        <span class="text-[9px] uppercase font-label-sm text-on-surface-variant block">Projected Speed</span>
+                        <span class="font-data-lg text-xs font-bold text-on-surface">${f.predicted_speed} <span class="text-[10px] font-normal text-on-surface-variant">km/h</span></span>
+                        <span class="text-[10px] font-label-sm text-emerald-400 block">${(f.confidence * 100).toFixed(0)}% conf</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between text-[10px] font-label-sm text-on-surface-variant mt-1">
+                <span>Trend: <strong class="${deltaColor}">${f.trend}</strong></span>
+                <span class="text-secondary hover:underline cursor-pointer" onclick="updatePeakHourChart('${f.road_id}'); document.getElementById('peak-road-selector').value='${f.road_id}';">Analyze Peak →</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
 async function loadOperatorDashboardData() {
+    const refreshIcon = document.getElementById('refresh-icon');
+    if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
     try {
         const [roads, density] = await Promise.all([
             trafficAPI.getLiveTraffic(),
             trafficAPI.getDensitySummary()
         ]);
 
-        // Update Day 6 KPI metrics
         const avgDensity = density.average_density ?? density.average_network_density ?? 8.95;
         const totalVehicles = density.total_vehicle_count ?? 171;
         const severeCount = density.severe_congestion_roads ?? 0;
@@ -271,62 +793,33 @@ async function loadOperatorDashboardData() {
         const congestedCount = density.congested_segments ?? (severeCount + highCount);
         const congestionPct = Math.min(100, Math.round((avgDensity / 25) * 100));
 
+        // Update KPIs
         document.getElementById('kpi-congestion-pct').textContent = `${congestionPct}%`;
         document.getElementById('kpi-congestion-bar').style.width = `${congestionPct}%`;
-        document.getElementById('kpi-active-alerts').textContent = congestedCount > 0 ? (congestedCount + 4) : 2;
-        document.getElementById('kpi-critical-alerts').textContent = severeCount > 0 ? `Severe: ${severeCount} | High: ${highCount}` : `Critical: ${congestedCount}`;
+        document.getElementById('kpi-congestion-sub').textContent = `${totalVehicles} active vehicles`;
+
+        document.getElementById('kpi-active-alerts').textContent = `${congestedCount} Bottlenecks`;
+        document.getElementById('kpi-critical-alerts').textContent = `Severe: ${severeCount} | High: ${highCount}`;
+        document.getElementById('kpi-bottleneck-bar').style.width = `${Math.min(100, congestedCount * 30)}%`;
+
         document.getElementById('kpi-network-density').textContent = `${avgDensity}`;
         document.getElementById('kpi-density-bar').style.width = `${Math.min(100, avgDensity * 4)}%`;
 
-        // Update Road Status List with 4-tier Day 6 classifications
-        const container = document.getElementById('road-status-container');
-        document.getElementById('road-count-badge').textContent = `${roads.length} Roads Live`;
-
-        container.innerHTML = roads.map(road => {
-            const badge = getCongestionBadgeInfo(road.congestion_level, road.density);
-            const speed = road.speed || (road.avg_speed_kmph ? `${road.avg_speed_kmph} km/h` : '45 km/h');
-
-            return `
-            <div class="bg-surface-container-high/50 p-3.5 rounded-xl flex items-center justify-between ${badge.borderClass} hover:bg-surface-container transition-all cursor-pointer" onclick="window.location.href='live maps.html?search=${encodeURIComponent(road.road_id)}'">
-                <div>
-                    <div class="font-body-md text-on-surface font-semibold flex items-center gap-2">
-                        ${road.road_name || road.road_id}
-                        ${badge.level === 'Severe' ? '<span class="text-[10px] bg-rose-900/60 border border-rose-500 text-rose-300 px-1.5 py-0.2 rounded font-label-sm animate-pulse">GRIDLOCK</span>' : ''}
-                    </div>
-                    <div class="font-label-sm text-label-sm ${badge.badgeClass} mt-1 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[14px]">${badge.icon}</span> ${badge.label} (${road.vehicle_count} veh/hr)
-                    </div>
-                </div>
-                <div class="text-right">
-                    <div class="font-data-lg text-data-lg text-on-surface font-bold">${speed}</div>
-                    <div class="text-xs text-on-surface-variant font-label-sm">Density ${road.density} veh/km</div>
-                </div>
-            </div>`;
-        }).join('');
-
-        // Fetch AI Prediction for highest density road or severe/high road
-        const primaryRoad = roads.find(r => r.congestion_level === 'Severe' || r.density >= 25) 
-            || roads.find(r => r.density >= 15) 
-            || roads[0] 
-            || { road_id: 'R006', road_name: 'Airport Road' };
-
-        const prediction = await predictAPI.getCongestion(primaryRoad.road_id);
-
-        document.getElementById('ai-forecast-header').textContent = `FORECAST FOR ${primaryRoad.road_name || primaryRoad.road_id} (${primaryRoad.road_id})`;
-        document.getElementById('ai-confidence-tag').textContent = `Confidence: ${(prediction.confidence * 100).toFixed(0)}%`;
-        
-        let desc = `Model predicts <span class="text-emerald-400 font-semibold">Low Congestion</span> for ${primaryRoad.road_name}. Flow is expected to remain stable.`;
-        if (prediction.predicted_level === 'Severe') {
-            desc = `EMERGENCY ALERT: <span class="text-rose-400 font-bold">Severe Gridlock (${primaryRoad.density} veh/km)</span> detected on ${primaryRoad.road_name}. Road capacity exceeded. Immediate automated perimeter diversions and officer dispatch recommended.`;
-        } else if (prediction.predicted_level === 'High') {
-            desc = `Expect <span class="text-error font-semibold">High Congestion</span> on ${primaryRoad.road_name}. Heuristic analysis indicates heavy congestion buildup. Recommend tactical rerouting.`;
-        } else if (prediction.predicted_level === 'Medium') {
-            desc = `Expect <span class="text-yellow-400 font-semibold">Moderate Congestion</span> on ${primaryRoad.road_name}. Traffic density is rising. Monitor signal timings.`;
-        }
-        document.getElementById('ai-forecast-text').innerHTML = desc;
+        // Render Visualizations
+        const currentSelectedRoad = document.getElementById('peak-road-selector')?.value || 'R006';
+        await Promise.all([
+            renderPeakHourChart(currentSelectedRoad),
+            renderDelayEstimates(),
+            renderPerRoadForecasts(activeHorizon)
+        ]);
 
     } catch (e) {
         console.error('Error updating operator dashboard:', e);
+        showToast(`Sync error: ${e.message}`, 'error');
+    } finally {
+        setTimeout(() => {
+            if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+        }, 500);
     }
 }
 
