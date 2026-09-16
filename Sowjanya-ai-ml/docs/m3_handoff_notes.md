@@ -2,8 +2,8 @@
 
 ## 1. Handoff Overview
 
-This document summarizes the AI/ML work completed during Milestone 2
-and the items to carry forward into Milestone 3.
+This document summarizes the AI/ML and intelligent routing work
+completed during Milestone 2 and the work recommended for Milestone 3.
 
 **Owner:** Intern 3 — AI/ML & Intelligent Routing
 
@@ -13,17 +13,20 @@ and the items to carry forward into Milestone 3.
 
 ### Machine Learning Model
 
-A Decision Tree Classifier was trained for traffic congestion
+A Random Forest Classifier was trained for traffic congestion
 classification.
 
-- **Model version:** model-v1
-- **Algorithm:** Decision Tree Classifier
+- **Model version:** random-forest-v1
+- **Algorithm:** Random Forest Classifier
+- **Number of estimators:** 100
+- **Maximum depth:** 8
+- **Random state:** 42
 - **Classes:** Low, Medium, High
 - **Dataset:** `data/processed_traffic.csv`
 - **Dataset size:** 840 rows
-- **Training/test split:** 80/20
-- **Maximum tree depth:** 5
-- **Random state:** 42
+- **Train/test split:** 80/20
+- **Training samples:** 672
+- **Test samples:** 168
 
 Model artifact:
 
@@ -33,46 +36,47 @@ Model artifact:
 
 ## 3. Model Evaluation
 
-The current model achieved:
+The Random Forest model achieved:
 
-- Test accuracy: **1.00**
-- Precision: **1.00** for all classes
-- Recall: **1.00** for all classes
-- F1-score: **1.00** for all classes
-- 5-fold cross-validation mean: **99.88%**
-- Cross-validation standard deviation: approximately **0.24%**
+- **Test accuracy:** 99.4%
 
-Feature importance analysis showed:
+Confusion matrix:
 
-- Density: **1.00**
-- Other features: **0.00**
+| Actual | High | Low | Medium |
+|---|---:|---:|---:|
+| High | 81 | 0 | 0 |
+| Low | 0 | 23 | 1 |
+| Medium | 0 | 0 | 63 |
 
-These results apply to the current processed dataset and should not
-be interpreted as guaranteed real-world performance.
+The classification report and confusion matrix were generated in:
+
+`notebook/day2_ml_model.ipynb`
 
 ---
 
 ## 4. Prediction Service
 
-The AI/ML service contains the following prediction endpoints:
+The AI/ML prediction service provides:
 
 - `GET /api/v1/predict/congestion`
 - `GET /api/v1/predict/peak-hours`
 - `GET /api/v1/predict/delay`
 - `GET /api/v1/predict/live`
 
-These provide congestion prediction, peak-hour information, delay
-estimation, and live congestion predictions.
+The congestion endpoint loads the trained Random Forest model and
+returns the predicted congestion level and confidence.
+
+The service was tested locally on port `8001`.
 
 ---
 
 ## 5. Intelligent Routing
 
-A prototype congestion-aware route ranking component is available at:
+A congestion-aware route ranking component is available at:
 
 `src/route_ranker.py`
 
-The ranking logic considers:
+The prototype considers:
 
 - Distance
 - Estimated delay
@@ -80,129 +84,124 @@ The ranking logic considers:
 
 Lower calculated scores are ranked first.
 
-This is a prototype ranking approach and can be refined during M3.
-
 ---
 
 ## 6. Testing Completed
 
-### ML Service Tests
+### Model Testing
 
-The ML prediction service tests passed successfully.
+The Random Forest model was successfully loaded and used for direct
+prediction.
 
-### Route Ranking Tests
+Example:
 
-The route-ranking tests passed successfully.
+- Road: `R001`
+- Prediction: High
+- Confidence: approximately 0.95
+- Model version: `random-forest-v1`
 
-### Latency Test
+### API Testing
 
-A 100-prediction latency test passed.
-
-- Total time: approximately **0.247 seconds**
-- Average latency: approximately **2.47 ms/prediction**
-
-### Team Backend Integration
-
-The team Backend was started successfully and tested through its
-Swagger interface.
-
-The following functionality was verified:
+The following endpoints were successfully tested:
 
 - Congestion prediction
 - Peak-hour prediction
 - Delay estimation
-- Live prediction
-- Congestion-aware alternate routing
 
-Alternate routing was tested with:
+### Latency Testing
 
-- Origin: `R001`
-- Destination: `R002`
+A 100-prediction latency test was completed.
 
-The tested endpoints returned successfully.
+- **Total time:** approximately 0.247 seconds
+- **Average latency:** approximately 2.47 ms/prediction
+- **Status:** Passed
+
+### Route Ranking Testing
+
+The route ranking tests were executed successfully.
 
 ---
 
-## 7. Important Integration Note
+## 7. Integration Status
 
-The current team Backend contains its own ML prediction implementation.
+The AI/ML prediction service is operational and exposes prediction
+APIs for integration.
 
-The Backend ML service uses a Random Forest model and a separate
-model artifact:
+The team Backend also has its own ML prediction implementation.
 
-`congestion_model.joblib`
+Therefore, the current successful API testing confirms that the
+AI/ML service is operational, but it does not confirm that the team
+Backend runtime is using this repository's
+`congestion_model.pkl` artifact.
 
-Therefore, the team's current Backend runtime model should not be
-described as using the AI/ML repository's
-`models/congestion_model.pkl` Decision Tree artifact unless a future
-integration explicitly replaces or connects that artifact.
-
-The Day 7 integration test verifies that the current team Backend
-prediction and routing services are functioning; it does not by itself
-prove that the Backend runtime is loading the AI/ML repository's
-Decision Tree artifact.
+Frontend/backend integration with this specific model can be completed
+after coordination with the respective team members.
 
 ---
 
 ## 8. Known Limitations
 
 1. Current training data contains 840 processed records.
-2. Density dominates the current Decision Tree feature importance.
-3. Current high evaluation performance may reflect the relationship
-   between the available features and labels in the dataset.
-4. More representative traffic data is required for stronger
-   real-world validation.
-5. Peak-hour forecasting and delay estimation currently use service
-   logic rather than separate trained forecasting/regression models.
-6. Weather and other external traffic factors are not currently part
-   of the trained feature set.
-7. The team Backend currently uses a separate Random Forest model
-   artifact.
+2. More representative traffic data is needed for real-world
+   validation.
+3. Density has a strong influence on the current congestion labels.
+4. The current test accuracy should not be interpreted as guaranteed
+   real-world performance.
+5. Peak-hour prediction and delay estimation are currently based on
+   service-level logic.
+6. Weather and other external factors are not included in the current
+   trained feature set.
+7. The team Backend maintains a separate ML implementation.
 
 ---
 
-## 9. M3 Handoff Tasks
-
-The following work can be continued in Milestone 3:
+## 9. M3 Recommended Tasks
 
 ### Data & Model
 
 - Expand the traffic dataset.
-- Validate the model using new/live observations.
+- Validate the model on new/live observations.
 - Investigate density dominance.
-- Compare additional classification models.
-- Track performance using Macro F1 and other suitable metrics.
+- Compare additional classification algorithms.
+- Monitor Macro F1, precision, recall and other suitable metrics.
 
 ### Prediction
 
 - Improve peak-hour forecasting.
-- Improve delay estimation using additional historical data.
-- Monitor prediction confidence and model performance.
+- Improve delay estimation.
+- Monitor model confidence and prediction performance.
 
 ### Routing
 
 - Refine congestion-aware route scoring.
 - Evaluate route rankings using realistic traffic scenarios.
-- Continue integration with the Route Analysis service.
+- Continue coordination with the Route Analysis component.
 
 ### Engineering
 
 - Maintain prediction endpoint tests.
 - Continue latency testing.
-- Monitor model compatibility with the Backend environment.
-- Document model versions and dependencies.
+- Maintain model versioning.
+- Maintain dependency/version documentation.
+- Coordinate model integration with the Backend and frontend teams.
 
 ---
 
 ## 10. Handoff Status
 
-**Milestone 2 AI/ML work:** Completed
+**M2 AI/ML work:** Completed
 
-**Day 7 integration testing:** Passed
+**Random Forest model:** Completed
+
+**Prediction API:** Tested successfully
+
+**Route ranking:** Tested successfully
+
+**Latency testing:** Passed
 
 **Model documentation:** Updated
 
-**M3 handoff documentation:** Prepared
+**M3 handoff notes:** Updated
 
-**Next focus:** Model improvement, larger data validation,
-prediction refinement, and routing enhancement.
+**Next focus:** Larger-data validation, model improvement, prediction
+refinement, and routing enhancement.

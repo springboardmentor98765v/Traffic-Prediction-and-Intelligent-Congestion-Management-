@@ -3,8 +3,8 @@
 ## 1. Model Overview
 
 - **Model name:** Traffic Congestion Classifier
-- **Model version:** model-v1
-- **Model type:** Decision Tree Classifier
+- **Model version:** random-forest-v1
+- **Model type:** Random Forest Classifier
 - **Framework:** scikit-learn
 - **Purpose:** Predict traffic congestion level for a road segment.
 - **Prediction classes:** Low, Medium, High
@@ -23,7 +23,7 @@ Smart Traffic Prediction & Congestion Management System.
 
 ### Input Features
 
-The model uses:
+The model uses the following engineered features:
 
 1. `road_id_encoded`
 2. `vehicle_count`
@@ -33,12 +33,18 @@ The model uses:
 6. `day_of_week`
 7. `is_peak_hour`
 
+### Target
+
+- `congestion`
+- Classes: Low, Medium, High
+
 ---
 
 ## 3. Training Configuration
 
-- **Algorithm:** Decision Tree Classifier
-- **Maximum depth:** 5
+- **Algorithm:** Random Forest Classifier
+- **Number of estimators:** 100
+- **Maximum depth:** 8
 - **Random state:** 42
 - **Train/test split:** 80/20
 - **Training samples:** 672
@@ -55,61 +61,74 @@ The trained model is stored as:
 
 ### Test Set
 
-- **Accuracy:** 1.00
-- **Precision:** 1.00 for all classes
-- **Recall:** 1.00 for all classes
-- **F1-score:** 1.00 for all classes
+The Random Forest model achieved:
 
-### Cross-Validation
+- **Test accuracy:** 99.4%
 
-- **Method:** 5-fold cross-validation
-- **Mean accuracy:** 99.88%
-- **Standard deviation:** approximately 0.24%
+The detailed precision, recall and F1-score values are reported in
+the ML notebook.
 
-### Feature Importance
+### Confusion Matrix
 
-- `density`: 1.00
-- Other features: 0.00
+The confusion matrix was generated using the held-out test dataset.
 
-The evaluation shows very strong performance on the current processed
-dataset.
+The observed test predictions were:
+
+| Actual | Predicted High | Predicted Low | Predicted Medium |
+|---|---:|---:|---:|
+| High | 81 | 0 | 0 |
+| Low | 0 | 23 | 1 |
+| Medium | 0 | 0 | 63 |
+
+This indicates that one Low-congestion sample was classified as
+Medium in the test set.
 
 ---
 
 ## 5. Prediction Service
 
-The AI/ML service provides:
+The AI/ML service provides the following endpoints:
 
 - `GET /api/v1/predict/congestion`
 - `GET /api/v1/predict/peak-hours`
 - `GET /api/v1/predict/delay`
 - `GET /api/v1/predict/live`
 
-The service returns congestion predictions and prediction confidence
-where applicable.
+The congestion prediction endpoint uses the trained Random Forest
+model and returns the predicted congestion level and confidence.
 
 ---
 
-## 6. Performance
+## 6. Example Prediction
 
-Local prediction latency testing was completed successfully.
+For a test prediction on road `R001`, the Random Forest service
+successfully returned:
 
-- **Test:** 100 predictions
+- **Predicted level:** High
+- **Confidence:** approximately 0.95
+- **Model version:** `random-forest-v1`
+
+Prediction values may vary depending on the input traffic conditions.
+
+---
+
+## 7. Performance
+
+A local latency test was performed using 100 predictions.
+
 - **Total time:** approximately 0.247 seconds
 - **Average latency:** approximately 2.47 ms per prediction
-
-This is below the project's target latency range of approximately
-1–2 seconds for the service workflow.
+- **Latency test:** Passed
 
 ---
 
-## 7. Routing Component
+## 8. Intelligent Routing
 
 A congestion-aware route ranking prototype is implemented in:
 
 `src/route_ranker.py`
 
-The prototype considers:
+The ranking logic considers:
 
 - Route distance
 - Estimated delay
@@ -120,56 +139,53 @@ first.
 
 ---
 
-## 8. Integration Testing
+## 9. Integration Testing
 
-Milestone 2 Day 7 integration testing was completed successfully.
+The AI/ML service was successfully started and tested through its
+Swagger interface.
 
-Verified through the team Backend Swagger interface:
+Verified functionality includes:
 
-- Backend startup
 - Congestion prediction
 - Peak-hour prediction
 - Delay estimation
-- Live congestion prediction
-- Congestion-aware alternate route endpoint
+- Model loading
+- Random Forest prediction
+- Prediction confidence
 
-The alternate-route endpoint was tested using:
+The team Backend prediction API was also tested separately.
 
-- Origin: `R001`
-- Destination: `R002`
-
-All tested endpoints were working successfully.
+The team Backend currently has its own prediction implementation, so
+the successful Backend response should not be interpreted as proof
+that it is loading this `congestion_model.pkl` artifact.
 
 ---
 
-## 9. Limitations
+## 10. Limitations
 
-The current model has important limitations:
-
-1. The dataset contains 840 processed records and may not represent
-   all real-world traffic conditions.
-2. `density` has complete feature importance in the current Decision
-   Tree model.
-3. The very high evaluation score should not be interpreted as
-   guaranteed real-world accuracy.
-4. More diverse and representative traffic data is required for
-   stronger real-world validation.
-5. Peak-hour forecasting and delay estimation currently include
-   service-level logic and are not separate trained forecasting or
+1. The current dataset contains 840 processed records.
+2. The dataset may not represent all real-world traffic conditions.
+3. Density has a strong relationship with the congestion labels.
+4. High test accuracy should not be interpreted as guaranteed
+   real-world accuracy.
+5. More diverse and representative traffic data is required for
+   stronger validation.
+6. Peak-hour forecasting and delay estimation currently include
+   service-level logic rather than separate trained forecasting and
    regression models.
-6. Weather and other external factors are not currently included in
-   the trained feature set.
+7. Weather and other external traffic factors are not currently
+   included in the trained feature set.
+8. The team Backend currently maintains a separate ML implementation.
 
 ---
 
-## 10. M3 Recommendations
+## 11. Future Improvements
 
-For the next milestone:
-
-- Collect a larger and more representative traffic dataset.
-- Investigate the strong dependence of the model on density.
-- Evaluate additional ML models.
-- Monitor prediction performance on new/live data.
+- Expand the traffic dataset.
+- Validate the model using new/live traffic observations.
+- Compare additional ML algorithms.
+- Monitor model performance on unseen data.
 - Improve peak-hour forecasting.
-- Improve delay estimation using additional historical data.
-- Continue latency and integration testing.
+- Improve delay estimation.
+- Add additional traffic and environmental features.
+- Continue integration and latency testing.
