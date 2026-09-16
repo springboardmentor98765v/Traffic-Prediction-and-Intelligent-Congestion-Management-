@@ -1,0 +1,215 @@
+# ==============================================================================
+# TrafficVision AI — Milestone 2 Local Development & Integration Environment
+# ==============================================================================
+# NOTE: Strictly for LOCAL development and integration testing.
+# Production deployment to AWS, Azure, GCP, or Kubernetes is explicitly
+# OUT OF SCOPE for Milestone 2 and reserved for Milestone 4.
+# ==============================================================================
+
+version: "3.8"
+
+networks:
+  trafficvision-dev-net:
+    driver: bridge
+
+volumes:
+  timescale_data:
+    driver: local
+  redis_data:
+    driver: local
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Primary Relational & Time-Series Database (PostgreSQL + TimescaleDB)
+  # ----------------------------------------------------------------------------
+  timescale-db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: trafficvision-timescale
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: trafficvision
+      POSTGRES_USER: trafficvision
+      POSTGRES_PASSWORD: trafficvision_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    networks:
+      - trafficvision-dev-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trafficvision -d trafficvision"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ----------------------------------------------------------------------------
+  # 2. In-Memory Cache (Redis) for Live Traffic, Conditions & Route Caching
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: trafficvision-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - trafficvision-dev-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+<<<<<<< HEAD
+  # ----------------------------------------------------------------------------
+  # 3. Main API Gateway & Core Backend (FastAPI - Auth, RBAC, Gateway Routing)
+  # ----------------------------------------------------------------------------
+  api-gateway:
+    build:
+      context: ../Backend
+      dockerfile: Dockerfile
+    container_name: trafficvision-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: "TrafficVision AI - API Gateway"
+      APP_VERSION: "2.0.0"
+      ENVIRONMENT: "development"
+      DATABASE_URL: "postgresql://trafficvision:trafficvision_dev_password@timescale-db:5432/trafficvision"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      PREDICTION_SERVICE_URL: "http://prediction-service:8001"
+      ROUTE_ANALYSIS_SERVICE_URL: "http://route-analysis-service:8002"
+      TRAFFIC_MONITORING_SERVICE_URL: "http://traffic-monitoring-service:8003"
+    depends_on:
+      timescale-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - trafficvision-dev-net
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # 4. Real Traffic Prediction Service (FastAPI - scikit-learn / ML Engine)
+  # ----------------------------------------------------------------------------
+  prediction-service:
+    build:
+      context: ../Sowjanya-ai-ml
+      dockerfile: Dockerfile
+    container_name: trafficvision-prediction-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      SERVICE_NAME: "TrafficVision AI - Prediction Engine"
+      SERVICE_PORT: "8001"
+      MODEL_VERSION: "model-v1.0"
+      HISTORICAL_DATA_URL: "http://traffic-monitoring-service:8003/congestion/history"
+      REDIS_URL: "redis://redis:6379/1"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - trafficvision-dev-net
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+=======
+  backend:
+    build:
+      context: ../Backend
+      dockerfile: Dockerfile
+    container_name: trafficvision-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://trafficvision:trafficvision_dev_password@postgres:5432/trafficvision
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: dev-secret-key-trafficvision-m1
+      DEBUG: "True"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+>>>>>>> b5665b307f41bac24ed19a9e7f4e447367cf26b8
+
+  # ----------------------------------------------------------------------------
+  # 5. Route Analysis Service (FastAPI - OpenStreetMap Wrapper & Optimization)
+  # ----------------------------------------------------------------------------
+  route-analysis-service:
+    build:
+      context: ../Backend
+      dockerfile: Dockerfile
+    container_name: trafficvision-route-analysis
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002"]
+    ports:
+      - "8002:8002"
+    environment:
+      SERVICE_NAME: "TrafficVision AI - Route Analysis Service"
+      SERVICE_PORT: "8002"
+      PREDICTION_SERVICE_URL: "http://prediction-service:8001"
+      DATABASE_URL: "postgresql://trafficvision:trafficvision_dev_password@timescale-db:5432/trafficvision"
+      REDIS_URL: "redis://redis:6379/2"
+      OSM_ROUTER_URL: "https://router.project-osrm.org"
+    depends_on:
+      timescale-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - trafficvision-dev-net
+
+  # ----------------------------------------------------------------------------
+  # 6. Historical Data & Traffic Monitoring Ingestion Service (Komal)
+  # ----------------------------------------------------------------------------
+  traffic-monitoring-service:
+    build:
+      context: ../Komal_Data-Engineering-Traffic-Monitoring
+      dockerfile: Dockerfile
+    container_name: trafficvision-traffic-monitoring
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      SERVICE_NAME: "TrafficVision AI - Data Pipeline"
+      DATABASE_URL: "postgresql://trafficvision:trafficvision_dev_password@timescale-db:5432/trafficvision"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+    depends_on:
+      timescale-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - trafficvision-dev-net
+
+  # ----------------------------------------------------------------------------
+  # 7. Frontend User Interface (Next.js + Tailwind CSS + Leaflet.js)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ..
+      dockerfile: Dockerfile.frontend
+    container_name: trafficvision-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_GATEWAY_URL: "http://localhost:8000"
+      NEXT_PUBLIC_MAP_TILE_PROVIDER: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    depends_on:
+      api-gateway:
+        condition: service_started
+    networks:
+      - trafficvision-dev-net
