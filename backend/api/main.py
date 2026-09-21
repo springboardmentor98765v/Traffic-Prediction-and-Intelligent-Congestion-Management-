@@ -5,6 +5,8 @@ import sys
 AIML_ROOT = Path(__file__).resolve().parents[2] / "aiml"
 sys.path.insert(0, str(AIML_ROOT))
 
+from typing import Any
+
 import pandas as pd
 from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,6 +68,24 @@ class DelayResponse(BaseModel):
     predicted_level: str
     estimated_delay_minutes: float = Field(ge=0)
     model_version: str
+
+
+class ModelAccuracyResponse(BaseModel):
+    model_version: str
+    accuracy: float = Field(ge=0, le=1)
+    macro_f1: float = Field(ge=0, le=1)
+
+
+class ModelMetricsResponse(BaseModel):
+    model_version: str
+    accuracy: float = Field(ge=0, le=1)
+    macro_f1: float = Field(ge=0, le=1)
+    training_rows: int = Field(ge=0)
+    test_rows: int = Field(ge=0)
+    rows: int = Field(ge=0)
+    classes: list[str]
+    per_class: dict[str, Any]
+    confusion_matrix: list[list[int]]
 
 
 class RouteCandidate(BaseModel):
@@ -389,6 +409,39 @@ def rank_routes(request: RouteRankingRequest) -> list[RankedRoute]:
     return sorted(ranked, key=lambda route: route.score)
 
 
+def _get_model_metrics() -> dict:
+    metrics = MODEL_ARTIFACT.get("metrics") if isinstance(MODEL_ARTIFACT, dict) else None
+    if not metrics:
+        raise HTTPException(status_code=404, detail="Model evaluation metrics not found in artifact")
+    return metrics
+
+
+@app.get("/model/accuracy", response_model=ModelAccuracyResponse, tags=["Model Evaluation"])
+def get_model_accuracy() -> ModelAccuracyResponse:
+    metrics = _get_model_metrics()
+    return ModelAccuracyResponse(
+        model_version=MODEL_ARTIFACT.get("model_version", MODEL_VERSION),
+        accuracy=round(float(metrics.get("accuracy", 0.0)), 4),
+        macro_f1=round(float(metrics.get("macro_f1", 0.0)), 4),
+    )
+
+
+@app.get("/model/metrics", response_model=ModelMetricsResponse, tags=["Model Evaluation"])
+def get_model_metrics() -> ModelMetricsResponse:
+    metrics = _get_model_metrics()
+    return ModelMetricsResponse(
+        model_version=MODEL_ARTIFACT.get("model_version", MODEL_VERSION),
+        accuracy=round(float(metrics.get("accuracy", 0.0)), 4),
+        macro_f1=round(float(metrics.get("macro_f1", 0.0)), 4),
+        training_rows=int(metrics.get("training_rows", 0)),
+        test_rows=int(metrics.get("test_rows", 0)),
+        rows=int(metrics.get("rows", 0)),
+        classes=list(metrics.get("classes", [])),
+        per_class=metrics.get("per_class", {}),
+        confusion_matrix=metrics.get("confusion_matrix", []),
+    )
+
+
 @api_v1_router.get("/traffic/live")
 def get_live_traffic_v1():
     return get_live_traffic()
@@ -433,6 +486,16 @@ def predict_delay_v1(
 @api_v1_router.post("/route/rank", response_model=list[RankedRoute])
 def rank_routes_v1(request: RouteRankingRequest) -> list[RankedRoute]:
     return rank_routes(request)
+
+
+@api_v1_router.get("/model/accuracy", response_model=ModelAccuracyResponse, tags=["Model Evaluation"])
+def get_model_accuracy_v1():
+    return get_model_accuracy()
+
+
+@api_v1_router.get("/model/metrics", response_model=ModelMetricsResponse, tags=["Model Evaluation"])
+def get_model_metrics_v1():
+    return get_model_metrics()
 
 
 app.include_router(api_v1_router)
