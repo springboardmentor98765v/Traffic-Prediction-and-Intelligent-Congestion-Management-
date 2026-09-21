@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: trafficvision
+      POSTGRES_USER: trafficvision
+      POSTGRES_PASSWORD: trafficvision
+    ports: ["5432:5432"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://trafficvision:trafficvision@postgres:5432/trafficvision
+      JWT_SECRET: ${JWT_SECRET:-development-only-change-me}
+    depends_on: [postgres]
+    ports: ["8001:8001"]
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8001
+      TRAFFIC_SERVICE_URL: ${TRAFFIC_SERVICE_URL:-http://ai-engine:8003}
+      PREDICTION_SERVICE_URL: ${PREDICTION_SERVICE_URL:-http://ai-engine:8003}
+      ROUTE_ANALYSIS_SERVICE_URL: http://route-analysis:8004
+    depends_on: [auth-service, ai-engine]
+    ports: ["8000:8000"]
+  ai-engine:
+    build:
+      context: ..
+      dockerfile: backend/services/ai-engine/Dockerfile
+    ports: ["8003:8003"]
+  route-analysis:
+    build:
+      context: .
+      dockerfile: services/route-analysis/Dockerfile
+    environment:
+      OSRM_BASE_URL: ${OSRM_BASE_URL:-https://router.project-osrm.org}
+      TRAFFIC_SERVICE_URL: ${TRAFFIC_SERVICE_URL:-http://traffic-monitoring:8002}
+      PREDICTION_SERVICE_URL: ${PREDICTION_SERVICE_URL:-http://ai-engine:8003}
+    depends_on: [ai-engine]
+    ports: ["8004:8004"]
+volumes:
+  postgres_data:

@@ -1,0 +1,10 @@
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.env
+.venv/
+venv/
+venv311/
+backend/.vendor/
+backend/*.db
+backend/services/*/app/__pycache__/
