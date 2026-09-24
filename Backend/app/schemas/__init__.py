@@ -11,6 +11,14 @@ from app.schemas.prediction import (
     DelayEstimateResponse, PredictionReportResponse
 )
 from app.schemas.traffic import HistoricalTrafficRecord, TrafficAggregateResponse
+from app.schemas.alert import (
+    AlertCreate, AlertResponse, AlertReadResponse,
+    AlertCreateResponse, AlertPollResponse, TriggerAlertsResponse
+)
+from app.schemas.analytics import (
+    TrendPoint, TrafficTrendResponse, HeatmapResponse, HistoricalReportSummary
+)
+from app.schemas.ai import AnomalyItem, RecommendationItem
 
 __all__ = [
     "UserCreate", "UserResponse", "UserLogin",
@@ -19,5 +27,10 @@ __all__ = [
     "TravelTimeResponse", "RoadConditionResponse", "RoadConditionUpdateRequest",
     "CongestionPredictionResponse", "PeakWindow", "PeakHoursResponse",
     "DelayEstimateResponse", "PredictionReportResponse",
-    "HistoricalTrafficRecord", "TrafficAggregateResponse"
+    "HistoricalTrafficRecord", "TrafficAggregateResponse",
+    "AlertCreate", "AlertResponse", "AlertReadResponse",
+    "AlertCreateResponse", "AlertPollResponse", "TriggerAlertsResponse",
+    "TrendPoint", "TrafficTrendResponse", "HeatmapResponse", "HistoricalReportSummary",
+    "AnomalyItem", "RecommendationItem"
 ]
+
