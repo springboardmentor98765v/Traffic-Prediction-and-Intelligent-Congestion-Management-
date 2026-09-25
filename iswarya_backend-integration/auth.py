@@ -13,8 +13,6 @@ from app.security.config import SECRET_KEY, ALGORITHM
 
 import uuid
 
-from app.schemas.user import UserCreate  # (Or it might be from app.models.user)
-
 router = APIRouter(tags=["Authentication"])
 
 security = HTTPBearer()
@@ -45,12 +43,13 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     
     hashed_pw = hash_password(user.password)
     
+    # SECURE FIX: Hardcode role to "user" so public signups cannot choose admin/operator roles
     new_user = User(
         id=f"USR-{uuid.uuid4().hex[:8].upper()}",
         username=user.name,
         email=user.email,
         password_hash=hashed_pw,  
-        role=user.role,
+        role="user",
         created_at=datetime.utcnow()
     )
 
@@ -70,10 +69,13 @@ def login_user(user_credentials: UserLoginSchema, db: Session = Depends(get_db))
             detail="Incorrect email or password",
         )
     
+    # Map lowercase "user" to uppercase "PUBLIC" for frontend compliance
+    frontend_role = "PUBLIC" if user.role == "user" else user.role
+
     payload = {
         "sub": str(user.id),
-        "username": user.username,  # Fixed from user.name to user.username
-        "role": user.role
+        "username": user.username,
+        "role": frontend_role
     }
     
     access_token = create_access_token(payload)
@@ -83,7 +85,7 @@ def login_user(user_credentials: UserLoginSchema, db: Session = Depends(get_db))
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "role": user.role
+        "role": frontend_role
     }
 
 class RefreshRequest(BaseModel):
@@ -155,8 +157,12 @@ def get_my_profile(current_user: dict = Depends(get_current_user)):
     Get current authenticated user's profile and role details.
     Requires a valid Bearer token in the request header.
     """
+    role = current_user["role"]
+    if role == "user":
+        role = "PUBLIC"
+        
     return {
         "user_id": current_user["user_id"],
         "username": current_user["username"],
-        "role": current_user["role"]
+        "role": role
     }
