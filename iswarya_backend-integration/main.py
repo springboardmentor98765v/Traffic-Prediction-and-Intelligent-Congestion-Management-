@@ -4,17 +4,27 @@ from fastapi.middleware.cors import CORSMiddleware
 # Import your database engine and declarative base for table auto-creation
 from app.database import engine
 from app.models.user import Base  # Adjust path if your models base is located elsewhere
+from app.models import alert      # <-- ADDED: Registers the Alert model for table creation
 
-# Import your service routers (including Milestone 2 route_analysis)
-from app.routes import auth, traffic, predict, route_analysis
+# Import your service routers (including Milestone 3 alerts)
+from app.routes import auth, traffic, predict, route_analysis, alerts  # <-- ADDED: alerts
 
 # ==========================================
 # Initialize FastAPI Application First!
 # ==========================================
 app = FastAPI(
-    title="TrafficVision AI API",
-    version="2.0.0",
-    description="Central API Gateway for TrafficVision AI - Milestone 2"
+    title="Traffic Vision Backend API",
+    description="""
+    Production-ready backend API for real-time traffic monitoring, route analysis, and automated alerts.
+    
+    ## Features:
+    * **Authentication & RBAC:** Secure token-based access with role scoping (`user`, `operator`, `admin`).
+    * **Route Analysis & OSRM Fallback:** Robust routing capabilities with automatic 503 fallback handling if external map services fail.
+    * **Automated Alerts:** Strict severity validation (`Low`, `Medium`, `High`, `Critical`) with timezone-aware UTC timestamps.
+    """,
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 # Add CORS Middleware to allow your frontend (Live Server / local ports) to communicate safely
@@ -64,3 +74,6 @@ app.include_router(predict.router, prefix="/api/v1/predict", tags=["AI Predictio
 
 # 4. Route Analysis Service Routes (Milestone 2: Optimized paths, alternates, travel time)
 app.include_router(route_analysis.router, prefix="/api/v1/route", tags=["Route Analysis"])
+
+# 5. Alert Service Routes (Milestone 3: Automated congestion and anomaly alerts)
+app.include_router(alerts.router, prefix="/api/v1/alerts", tags=["Alerts"])  # <-- ADDED
