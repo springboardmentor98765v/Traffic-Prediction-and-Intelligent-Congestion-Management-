@@ -6,14 +6,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_HOST = os.getenv("AUTH_DB_HOST", "localhost")
-DB_PORT = os.getenv("AUTH_DB_PORT", "5432")
-DB_NAME = os.getenv("AUTH_DB_NAME", "traffic_auth")
-DB_USER = os.getenv("AUTH_DB_USER", "postgres")
-DB_PASSWORD = os.getenv("AUTH_DB_PASSWORD", "postgres")
-
-# Temporary direct connection to bypass .env loading issues
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:12345678@localhost:5432/traffic_auth"
+# Read from the environment variable (which docker-compose sets to postgresql+psycopg2://postgres:12345678@postgres:5432/traffic_auth)
+# Fallback to local postgres if run outside docker without environment variables
+SQLALCHEMY_DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql+psycopg2://postgres:12345678@postgres:5432/traffic_auth"
+)
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
