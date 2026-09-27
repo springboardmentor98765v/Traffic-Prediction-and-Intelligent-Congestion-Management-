@@ -110,3 +110,31 @@ def test_api_v1_prediction_and_cors_headers():
     )
     assert cors.status_code in {200, 204}
     assert cors.headers.get("access-control-allow-origin") in {"http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"}
+
+
+def test_model_accuracy_endpoint():
+    for path in ["/model/accuracy", "/api/v1/model/accuracy"]:
+        response = client.get(path)
+        assert response.status_code == 200
+        payload = response.json()
+        assert "model_version" in payload
+        assert "accuracy" in payload
+        assert "macro_f1" in payload
+        assert 0.0 <= payload["accuracy"] <= 1.0
+        assert 0.0 <= payload["macro_f1"] <= 1.0
+
+
+def test_model_metrics_endpoint():
+    for path in ["/model/metrics", "/api/v1/model/metrics"]:
+        response = client.get(path)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["model_version"] == "ml-v2"
+        assert 0.0 <= payload["accuracy"] <= 1.0
+        assert 0.0 <= payload["macro_f1"] <= 1.0
+        assert payload["training_rows"] > 0
+        assert payload["test_rows"] > 0
+        assert set(payload["classes"]) == {"HIGH", "LOW", "MEDIUM", "SEVERE"}
+        assert "per_class" in payload
+        assert "confusion_matrix" in payload
+
