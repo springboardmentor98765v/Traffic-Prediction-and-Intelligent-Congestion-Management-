@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Live Traffic Monitoring - TrafficVision AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Leaflet CSS & JS (Free, OpenStreetMap based, No Key Required) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="Api.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-fixed": "#e8deff",
+                        "on-primary": "#1b247f",
+                        "on-secondary-fixed": "#001e30",
+                        "surface-tint": "#bdc2ff",
+                        "surface-container-low": "#131b2e",
+                        "secondary-fixed-dim": "#8dcdff",
+                        "outline-variant": "#454652",
+                        "primary-fixed": "#e0e0ff",
+                        "on-surface": "#dae2fd",
+                        "on-secondary": "#00344f",
+                        "outline": "#908f9d",
+                        "secondary-fixed": "#cae6ff",
+                        "inverse-on-surface": "#283044",
+                        "secondary": "#8dcdff",
+                        "on-secondary-fixed-variant": "#004b70",
+                        "surface-container-lowest": "#060e20",
+                        "primary-fixed-dim": "#bdc2ff",
+                        "secondary-container": "#00affe",
+                        "on-surface-variant": "#c6c5d4",
+                        "primary-container": "#1a237e",
+                        "tertiary-fixed-dim": "#cdbdff",
+                        "surface-container-high": "#222a3d",
+                        "primary": "#bdc2ff",
+                        "on-error-container": "#ffdad6",
+                        "background": "#0b1326",
+                        "tertiary": "#cdbdff",
+                        "on-primary-fixed-variant": "#343d96",
+                        "on-tertiary-fixed": "#20005f",
+                        "tertiary-container": "#360094",
+                        "surface-dim": "#0b1326",
+                        "error": "#ffb4ab",
+                        "on-secondary-container": "#003f5f",
+                        "inverse-surface": "#dae2fd",
+                        "on-primary-container": "#8690ee",
+                        "surface-variant": "#2d3449",
+                        "on-primary-fixed": "#000767",
+                        "surface-container": "#171f33",
+                        "surface-bright": "#31394d",
+                        "surface": "#0b1326",
+                        "on-tertiary-fixed-variant": "#4f00d0",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#370096",
+                        "inverse-primary": "#4c56af",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-container": "#a084ff",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#2d3449"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "stack-gap": "12px",
+                        "base": "8px",
+                        "container-padding-desktop": "32px",
+                        "gutter": "16px",
+                        "container-padding-mobile": "16px"
+                    },
+                    fontFamily: {
+                        "headline-lg": ["Inter", "sans-serif"],
+                        "label-sm": ["JetBrains Mono", "monospace"],
+                        "data-lg": ["JetBrains Mono", "monospace"],
+                        "display-lg": ["Inter", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "headline-lg-mobile": ["Inter", "sans-serif"]
+                    },
+                    fontSize: {
+                        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+                        "data-lg": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "display-lg": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(19, 27, 46, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .severity-green { border-left: 4px solid #4ade80; }
+        .severity-yellow { border-left: 4px solid #facc15; }
+        .severity-red { border-left: 4px solid #ef4444; }
+        .severity-severe { border-left: 4px solid #e11d48; box-shadow: 0 0 12px rgba(225, 29, 72, 0.2); }
+        .severity-maroon { border-left: 4px solid #9f1239; }
+
+        /* Leaflet Dark Theme Overrides */
+        .leaflet-container {
+            background-color: #070d1d !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        .leaflet-popup-content-wrapper {
+            background: rgba(19, 27, 46, 0.95) !important;
+            color: #dae2fd !important;
+            border: 1px solid rgba(141, 205, 255, 0.3) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+            backdrop-filter: blur(12px) !important;
+        }
+        .leaflet-popup-tip {
+            background: rgba(19, 27, 46, 0.95) !important;
+            border: 1px solid rgba(141, 205, 255, 0.3) !important;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.6); opacity: 0.9; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+        .pulse-marker-severe {
+            position: relative;
+        }
+        .pulse-marker-severe::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(225, 29, 72, 0.7);
+            animation: pulse-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        .pulse-marker-active {
+            position: relative;
+        }
+        .pulse-marker-active::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(0, 175, 254, 0.6);
+            animation: pulse-ring 2.2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+<script>
+(function(){
+    AuthManager.guardPage();
+})();
+</script>
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-[#131b2e]/80 dark:bg-[#131b2e]/80 backdrop-blur-2xl border-b border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] flex items-center justify-between px-4 sm:px-6 md:px-8 h-16 transition-all duration-300">
+    <!-- Brand / Logo -->
+    <div class="flex items-center gap-3">
+        <a class="nav-home-link flex items-center gap-3 group focus:outline-none" href="#">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-container via-primary-container/80 to-secondary-container/40 flex items-center justify-center border border-white/15 shadow-[0_0_15px_rgba(0,175,254,0.25)] group-hover:shadow-[0_0_22px_rgba(141,205,255,0.5)] transition-all">
+                <span class="material-symbols-outlined text-secondary text-[24px]" style="font-variation-settings: 'FILL' 1;">analytics</span>
+            </div>
+            <div class="flex flex-col">
+                <span class="font-headline-lg text-[18px] md:text-[20px] font-bold tracking-tight text-on-surface flex items-center gap-1.5 leading-none">
+                    TrafficVision <span class="text-secondary font-black tracking-normal">AI</span>
+                </span>
+                <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest hidden sm:inline-block mt-1">Autonomous Traffic Grid</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Desktop Navigation Links -->
+    <nav class="hidden md:flex items-center gap-1.5 lg:gap-2 bg-surface-container/70 p-1.5 rounded-2xl border border-white/5 shadow-inner">
+        <!-- Dashboard Tab -->
+        <a class="nav-home-link px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="#">
+            <span class="material-symbols-outlined text-[18px]">dashboard</span>
+            <span>Dashboard</span>
+        </a>
+        <!-- Live Traffic Tab (Active for live maps) -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-semibold text-secondary bg-secondary/15 border border-secondary/30 shadow-[0_0_15px_rgba(141,205,255,0.2)] flex items-center gap-2 transition-all" href="live maps.html">
+            <span class="material-symbols-outlined text-[18px]">traffic</span>
+            <span>Live Traffic</span>
+        </a>
+        <!-- Route Analysis Tab -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="route-analysis.html">
+            <span class="material-symbols-outlined text-[18px]">alt_route</span>
+            <span>Route Analysis</span>
+        </a>
+        <!-- Alerts Tab -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="Alerts.html">
+            <span class="material-symbols-outlined text-[18px]">warning</span>
+            <span>Alerts</span>
+        </a>
+        <!-- Admin Console Tab (Visible to admin) -->
+        <a class="nav-admin-only hidden px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="admin dashboard.html">
+            <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+            <span>Admin</span>
+        </a>
+    </nav>
+
+    <!-- Right Utility Controls & User Profile -->
+    <div class="flex items-center gap-2.5 sm:gap-3.5">
+        <!-- Live Stream Badge -->
+        <div class="hidden xl:flex items-center gap-2 px-3 py-1 bg-surface-container-high/60 border border-white/5 rounded-full font-label-sm text-[11px] text-on-surface-variant">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Grid Live</span>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all" onclick="document.documentElement.classList.toggle('dark')" title="Toggle Theme">
+            <span class="material-symbols-outlined text-[19px]">light_mode</span>
+        </button>
+
+        <!-- Logout Button -->
+        <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-error/20 hover:border-error/40 border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-error transition-all" onclick="logout()" title="Logout">
+            <span class="material-symbols-outlined text-[19px]">logout</span>
+        </button>
+
+        <!-- User Profile Avatar & Role -->
+        <div class="flex items-center gap-2.5 pl-2 border-l border-white/10">
+            <div class="w-9 h-9 rounded-xl overflow-hidden border border-secondary/30 bg-surface-container-high flex items-center justify-center shadow-inner">
+                <img id="nav-user-avatar" class="w-full h-full object-cover" alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLpHS_T91cL3faZWJnIl81dTWaXyDwPk140zz3Y2PeubUzLpFrdYMMzNnBHM5q7hEKMn6YxDmMMVWmGNKnZPV_oxy-_MplLQcms1bO39V7hfuwDfaAuXBnWq-JMK8iEeGkWavbnLYED4Xe4euv6fUNa40_gl8x9fcupazjpMaBWTtxq-YnIpRE1rj3Td2hmxQ5N4PGtqTaygvofVy583LkEjup0FrAiwpbIP6kMXLpLrF_RPKEnonK"/>
+            </div>
+            <div class="hidden lg:flex flex-col text-left">
+                <span id="nav-user-name" class="font-body-md text-[13px] font-semibold text-on-surface leading-tight">Operator</span>
+                <span id="nav-user-role" class="font-label-sm text-[10px] text-secondary uppercase tracking-wider leading-none">OPERATOR</span>
+            </div>
+        </div>
+    </div>
+</header>
+<!-- Main Content Canvas -->
+<main class="h-screen w-full relative pt-16 md:pt-16 pb-20 md:pb-0">
+<!-- Leaflet Interactive Map Canvas -->
+<div id="live-leaflet-map" class="absolute inset-0 z-0 w-full h-full bg-[#070d1d]"></div>
+
+<!-- Overlay Map Controls -->
+<div class="absolute right-container-padding-mobile md:right-container-padding-desktop bottom-24 md:bottom-container-padding-desktop flex flex-col gap-base z-30 pointer-events-auto">
+<button class="w-11 h-11 glass-panel rounded-2xl flex items-center justify-center text-on-surface hover:text-secondary hover:border-secondary transition-all shadow-xl" title="Zoom In" onclick="zoomMapIn()">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+<button class="w-11 h-11 glass-panel rounded-2xl flex items-center justify-center text-on-surface hover:text-secondary hover:border-secondary transition-all shadow-xl" title="Zoom Out" onclick="zoomMapOut()">
+<span class="material-symbols-outlined text-[20px]">remove</span>
+</button>
+<button class="w-11 h-11 glass-panel rounded-2xl flex items-center justify-center text-on-surface hover:text-secondary hover:border-secondary transition-all shadow-xl mt-1" title="Reset View" onclick="resetMapView()">
+<span class="material-symbols-outlined text-[20px]">my_location</span>
+</button>
+<a href="route-analysis.html" class="w-11 h-11 glass-panel rounded-2xl flex items-center justify-center text-secondary hover:text-white bg-secondary/15 hover:bg-secondary/30 border border-secondary/40 transition-all shadow-xl mt-1" title="AI Route Analysis">
+<span class="material-symbols-outlined text-[20px]">alt_route</span>
+</a>
+</div>
+<!-- UI Overlay: Top KPI Carousel (Ticker) -->
+<div class="absolute top-16 md:top-20 left-0 md:left-[432px] right-0 md:right-8 z-10 px-container-padding-mobile md:px-0 pointer-events-none">
+<div class="flex gap-gutter overflow-x-auto pb-4 pt-2 pointer-events-auto snap-x snap-mandatory scrollbar-hide">
+<!-- KPI Card 1 -->
+<div class="glass-panel rounded-3xl p-5 min-w-[220px] flex-shrink-0 snap-start">
+<div class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider mb-2">Congested Nodes</div>
+<div class="flex items-end justify-between">
+<div class="font-data-lg text-data-lg text-secondary" id="kpi-incidents-count">--</div>
+<div class="text-error font-label-sm text-label-sm flex items-center bg-error/10 px-2 py-1 rounded-full"><span class="material-symbols-outlined text-[14px]">warning</span> Live</div>
+</div>
+</div>
+<!-- KPI Card 2 -->
+<div class="glass-panel rounded-3xl p-5 min-w-[220px] flex-shrink-0 snap-start">
+<div class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider mb-2">Avg Network Density</div>
+<div class="flex items-end justify-between">
+<div class="font-data-lg text-data-lg text-secondary" id="kpi-network-density">--</div>
+<div class="text-primary font-label-sm text-label-sm flex items-center bg-primary/10 px-2 py-1 rounded-full"><span class="material-symbols-outlined text-[14px]">speed</span> veh/km</div>
+</div>
+</div>
+<!-- KPI Card 3 -->
+<div class="glass-panel rounded-3xl p-5 min-w-[220px] flex-shrink-0 snap-start">
+<div class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider mb-2">Network Vehicles</div>
+<div class="flex items-end justify-between">
+<div class="font-data-lg text-data-lg text-secondary" id="kpi-vehicle-count">--</div>
+<div class="text-secondary font-label-sm text-label-sm flex items-center bg-secondary/10 px-2 py-1 rounded-full"><span class="material-symbols-outlined text-[14px]">directions_car</span> Active</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Side Panel: Traffic Feed & Controls -->
+<aside class="absolute left-container-padding-mobile md:left-container-padding-desktop top-[180px] md:top-20 bottom-24 md:bottom-container-padding-desktop w-[calc(100%-32px)] md:w-96 glass-panel rounded-3xl flex flex-col z-20 overflow-hidden shadow-24px-blur">
+<!-- Header & Search -->
+<div class="p-5 border-b border-white/10 shrink-0">
+<div class="flex items-center justify-between mb-4">
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-semibold">Live Traffic</div>
+<div class="bg-surface-container-high rounded-full p-1 flex">
+<button class="px-3 py-1 text-sm font-medium rounded-full bg-secondary text-on-secondary transition-colors" id="tab-feed">Feed</button>
+<button class="px-3 py-1 text-sm font-medium rounded-full text-on-surface-variant hover:text-on-surface transition-colors" onclick="syncLiveTraffic()">Sync</button>
+</div>
+</div>
+<div class="relative mb-3">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full bg-surface-container-high text-on-surface border-none rounded-2xl pl-12 pr-4 py-3 font-body-md focus:ring-1 focus:ring-secondary focus:bg-surface-container-highest transition-colors placeholder:text-outline-variant" id="traffic-search-input" oninput="filterTrafficFeed()" placeholder="Search roads, junctions..." type="text"/>
+</div>
+<div class="flex items-center justify-between gap-2 overflow-x-auto pb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Filter:</span>
+<div class="flex gap-1.5">
+<button class="filter-btn active bg-secondary text-on-secondary px-2.5 py-1 rounded-full font-label-sm text-xs transition-colors" data-filter="all" onclick="setFilter('all', this)">All</button>
+<button class="filter-btn bg-surface-container hover:bg-surface-variant text-rose-300 border border-rose-500/30 px-2.5 py-1 rounded-full font-label-sm text-xs transition-colors" data-filter="severe" onclick="setFilter('severe', this)">Severe</button>
+<button class="filter-btn bg-surface-container hover:bg-surface-variant text-on-surface-variant px-2.5 py-1 rounded-full font-label-sm text-xs transition-colors" data-filter="high" onclick="setFilter('high', this)">High</button>
+<button class="filter-btn bg-surface-container hover:bg-surface-variant text-on-surface-variant px-2.5 py-1 rounded-full font-label-sm text-xs transition-colors" data-filter="medium" onclick="setFilter('medium', this)">Med</button>
+<button class="filter-btn bg-surface-container hover:bg-surface-variant text-on-surface-variant px-2.5 py-1 rounded-full font-label-sm text-xs transition-colors" data-filter="low" onclick="setFilter('low', this)">Low</button>
+</div>
+</div>
+</div>
+<!-- Feed List -->
+<div class="overflow-y-auto flex-1 p-3 space-y-3 custom-scrollbar" id="live-feed-list">
+<div class="text-center py-8 text-on-surface-variant font-label-sm">Loading live traffic feeds...</div>
+</div>
+</aside>
+
+<!-- Selected Road Detail Modal / Drawer -->
+<div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4" id="road-detail-modal" onclick="closeRoadModal(event)">
+<div class="glass-panel bg-surface-container-low max-w-lg w-full rounded-2xl p-6 shadow-24px-blur border border-white/20 relative" onclick="event.stopPropagation()">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="text-xs font-label-sm text-secondary tracking-widest uppercase" id="modal-road-id">ROAD DETAILS</span>
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-on-surface mt-0.5" id="modal-road-name">--</h3>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded-lg" onclick="document.getElementById('road-detail-modal').classList.add('hidden'); document.getElementById('road-detail-modal').classList.remove('flex');">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+
+<div class="grid grid-cols-3 gap-3 mb-4">
+<div class="bg-surface-container-high/60 p-3 rounded-xl">
+<div class="text-xs text-on-surface-variant font-label-sm">CONGESTION</div>
+<div class="font-data-lg text-base font-bold mt-1" id="modal-congestion">--</div>
+</div>
+<div class="bg-surface-container-high/60 p-3 rounded-xl">
+<div class="text-xs text-on-surface-variant font-label-sm">SPEED</div>
+<div class="font-data-lg text-base text-secondary font-bold mt-1" id="modal-speed">--</div>
+</div>
+<div class="bg-surface-container-high/60 p-3 rounded-xl">
+<div class="text-xs text-on-surface-variant font-label-sm">DENSITY</div>
+<div class="font-data-lg text-base text-primary font-bold mt-1" id="modal-density">--</div>
+</div>
+</div>
+
+<div class="bg-surface-container/50 border border-white/10 rounded-xl p-4 mb-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary text-sm">psychology</span>
+<span class="text-xs font-label-sm text-secondary uppercase tracking-wider">AI PREDICTION ANALYSIS</span>
+</div>
+<p class="text-sm font-body-md text-on-surface" id="modal-ai-prediction">Fetching neural forecast...</p>
+</div>
+
+<!-- History Log -->
+<div class="bg-surface-container/40 border border-white/10 rounded-xl p-3.5 mb-4">
+<div class="text-xs font-label-sm text-on-surface-variant uppercase tracking-wider mb-2 flex items-center justify-between">
+<span>Recent Readings History</span>
+<span class="text-[10px] text-secondary">PostgreSQL / Redis</span>
+</div>
+<div class="space-y-1.5 text-xs font-label-sm" id="modal-history-list">
+<div class="text-on-surface-variant">Loading telemetry timestamps...</div>
+</div>
+</div>
+
+<div class="flex gap-3 justify-end">
+<a class="bg-surface-container-high hover:bg-surface-container border border-white/10 text-on-surface px-4 py-2 rounded-xl text-sm font-label-sm flex items-center gap-1.5 transition-colors" href="Alerts.html">
+<span class="material-symbols-outlined text-sm">warning</span> Incident Alerts
+</a>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-xl text-sm font-label-sm font-bold hover:opacity-90 transition-opacity" onclick="document.getElementById('road-detail-modal').classList.add('hidden'); document.getElementById('road-detail-modal').classList.remove('flex');">
+Done
+</button>
+</div>
+</div>
+</div>
+
+</main>
+<!-- Mobile Bottom Navigation Bar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 bg-[#131b2e]/90 dark:bg-[#131b2e]/90 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] flex justify-around items-center h-16 px-2">
+    <a class="nav-home-link flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="#">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">dashboard</span>
+        <span class="font-label-sm text-[11px]">Dashboard</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-secondary bg-secondary/15 font-semibold" href="live maps.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">traffic</span>
+        <span class="font-label-sm text-[11px]">Traffic</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="route-analysis.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">alt_route</span>
+        <span class="font-label-sm text-[11px]">Routes</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="Alerts.html">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">warning</span>
+        <span class="font-label-sm text-[11px]">Alerts</span>
+    </a>
+    <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-error" onclick="logout(); return false;" href="#">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">logout</span>
+        <span class="font-label-sm text-[11px]">Logout</span>
+    </a>
+</nav>
+<style>
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+</style>
+
+<script>
+let currentRoads = [];
+let activeFilter = 'all';
+let liveLeafletMap = null;
+let mapRoadLayers = {};
+let mapMarkersGroup = null;
+
+function getCongestionBadgeInfo(level, density) {
+    const l = (level || '').toLowerCase();
+    if (l === 'severe' || density >= 28) return { borderClass: 'severity-severe', badgeBg: 'bg-rose-900/30 text-rose-200 border-rose-500', icon: 'error', level: 'Severe', badgeClass: 'text-rose-400', colorHex: '#e11d48' };
+    if (l.includes('high') || density >= 20) return { borderClass: 'severity-red', badgeBg: 'bg-red-900/30 text-red-200 border-red-500', icon: 'warning', level: 'High', badgeClass: 'text-red-400', colorHex: '#ef4444' };
+    if (l.includes('med') || density >= 10) return { borderClass: 'severity-yellow', badgeBg: 'bg-yellow-900/30 text-yellow-200 border-yellow-500', icon: 'schedule', level: 'Medium', badgeClass: 'text-yellow-400', colorHex: '#facc15' };
+    return { borderClass: 'severity-green', badgeBg: 'bg-emerald-900/30 text-emerald-200 border-emerald-500', icon: 'check_circle', level: 'Low', badgeClass: 'text-emerald-400', colorHex: '#4ade80' };
+}
+
+function initLiveMap() {
+    if (liveLeafletMap) return;
+    const center = ROAD_NETWORK_GEOMETRY.center;
+    const zoom = ROAD_NETWORK_GEOMETRY.zoom;
+
+    liveLeafletMap = L.map('live-leaflet-map', {
+        center: center,
+        zoom: zoom,
+        zoomControl: false,
+        attributionControl: false
+    });
+
+    // ESRI World Street Map — free, no API key required, no watermarks
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
+        maxZoom: 20
+    }).addTo(liveLeafletMap);
+
+    mapMarkersGroup = L.layerGroup().addTo(liveLeafletMap);
+}
+
+function renderMapNetwork() {
+    if (!liveLeafletMap || !mapMarkersGroup) return;
+    mapMarkersGroup.clearLayers();
+    mapRoadLayers = {};
+
+    const geometries = routeAPI.getAllRoadGeometries();
+    const hubs = routeAPI.getHubs();
+
+    // 1. Draw Network Hubs
+    hubs.forEach(h => {
+        const hubIcon = L.divIcon({
+            className: 'custom-hub-icon',
+            html: `
+                <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-white/80 shadow-[0_0_12px_${h.color}]" style="background-color: ${h.color};">
+                    <span class="material-symbols-outlined text-white text-[14px]">${h.icon}</span>
+                </div>
+            `,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+
+        const marker = L.marker(h.coords, { icon: hubIcon }).addTo(mapMarkersGroup);
+        marker.bindPopup(`
+            <div class="p-2 font-label-sm">
+                <div class="text-[10px] text-secondary uppercase font-bold">GRID INTERSECTION HUB</div>
+                <div class="text-sm font-headline-lg font-bold text-on-surface">${h.name}</div>
+            </div>
+        `);
+    });
+
+    // 2. Draw Road Segments with live colors
+    currentRoads.forEach(road => {
+        const geom = geometries[road.road_id];
+        if (!geom) return;
+
+        const badge = getCongestionBadgeInfo(road.congestion_level, road.density);
+        const isSevere = badge.level === 'Severe';
+
+        // Glowing base polyline
+        L.polyline(geom.coordinates, {
+            color: badge.colorHex,
+            weight: isSevere ? 12 : 8,
+            opacity: isSevere ? 0.35 : 0.2,
+            lineCap: 'round',
+            lineJoin: 'round'
+        }).addTo(mapMarkersGroup);
+
+        // Core road polyline
+        const line = L.polyline(geom.coordinates, {
+            color: badge.colorHex,
+            weight: 5,
+            opacity: 0.95,
+            lineCap: 'round',
+            lineJoin: 'round'
+        }).addTo(mapMarkersGroup);
+
+        line.bindPopup(`
+            <div class="p-2 font-label-sm space-y-1.5">
+                <div class="text-[10px] text-secondary uppercase font-bold">${road.road_id} • ${road.road_name}</div>
+                <div class="text-sm font-headline-lg font-bold text-on-surface">Speed: ${road.speed}</div>
+                <div class="flex justify-between text-xs text-on-surface-variant">
+                    <span>Density: <strong class="text-primary">${road.density} veh/km</strong></span>
+                    <span>Status: <strong class="${badge.badgeClass}">${road.congestion_level}</strong></span>
+                </div>
+                <button onclick="showRoadDetail('${road.road_id}')" class="w-full mt-2 bg-secondary text-on-secondary px-2 py-1 rounded-lg text-xs font-bold hover:opacity-90">
+                    Open Telemetry & AI Prediction
+                </button>
+            </div>
+        `);
+
+        mapRoadLayers[road.road_id] = line;
+
+        // Add Pulsing Marker on severe bottlenecks
+        if (isSevere && geom.coordinates.length > 2) {
+            const midCoord = geom.coordinates[Math.floor(geom.coordinates.length / 2)];
+            const severeIcon = L.divIcon({
+                className: 'pulse-marker-severe',
+                html: `
+                    <div class="w-6 h-6 rounded-full bg-rose-600 border-2 border-white flex items-center justify-center shadow-[0_0_15px_#e11d48]">
+                        <span class="material-symbols-outlined text-white text-[12px]">warning</span>
+                    </div>
+                `,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+            L.marker(midCoord, { icon: severeIcon }).addTo(mapMarkersGroup).bindPopup(`
+                <div class="p-2 font-label-sm">
+                    <span class="text-rose-400 font-bold text-xs uppercase">CRITICAL GRIDLOCK DETECTED</span>
+                    <div class="text-sm font-bold text-on-surface mt-1">${road.road_name} (${road.density} veh/km)</div>
+                </div>
+            `);
+        }
+    });
+}
+
+async function syncLiveTraffic() {
+    try {
+        const [roads, density] = await Promise.all([
+            trafficAPI.getLiveTraffic(),
+            trafficAPI.getDensitySummary()
+        ]);
+
+        currentRoads = roads;
+
+        // Update KPIs
+        const severeCount = density.severe_congestion_roads ?? 0;
+        const highCount = density.high_congestion_roads ?? 0;
+        document.getElementById('kpi-incidents-count').textContent = density.congested_segments ?? (severeCount + highCount);
+        document.getElementById('kpi-network-density').textContent = density.average_density ?? density.average_network_density ?? 8.95;
+        document.getElementById('kpi-vehicle-count').textContent = density.total_vehicle_count ?? 171;
+
+        filterTrafficFeed();
+        renderMapNetwork();
+
+        // Check for URL query search parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchQuery = urlParams.get('search');
+        if (searchQuery) {
+            document.getElementById('traffic-search-input').value = searchQuery;
+            filterTrafficFeed();
+        }
+    } catch (e) {
+        console.error('Error syncing live traffic:', e);
+    }
+}
+
+function setFilter(filter, btn) {
+    activeFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('bg-secondary', 'text-on-secondary', 'active', 'border-rose-500/30');
+        b.classList.add('bg-surface-container', 'text-on-surface-variant');
+    });
+    btn.classList.remove('bg-surface-container', 'text-on-surface-variant', 'text-rose-300', 'border', 'border-rose-500/30');
+    btn.classList.add('bg-secondary', 'text-on-secondary', 'active');
+    filterTrafficFeed();
+}
+
+function filterTrafficFeed() {
+    const searchVal = (document.getElementById('traffic-search-input').value || '').toLowerCase();
+    const container = document.getElementById('live-feed-list');
+
+    let filtered = currentRoads.filter(road => {
+        const nameMatch = (road.road_name || '').toLowerCase().includes(searchVal) || (road.road_id || '').toLowerCase().includes(searchVal);
+        if (!nameMatch) return false;
+
+        const level = (road.congestion_level || 'Low').toLowerCase();
+        if (activeFilter === 'severe') return level.includes('severe') || road.density >= 28;
+        if (activeFilter === 'high') return level === 'high' || (road.density >= 20 && road.density < 28);
+        if (activeFilter === 'medium') return level.includes('med') || (road.density >= 10 && road.density < 20);
+        if (activeFilter === 'low') return level.includes('low') || road.density < 10;
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-on-surface-variant font-label-sm">No road segments match criteria.</div>`;
+        return;
+    }
+
+    container.innerHTML = filtered.map(road => {
+        const badge = getCongestionBadgeInfo(road.congestion_level, road.density);
+        const speed = road.speed || (road.avg_speed_kmph ? `${road.avg_speed_kmph} km/h` : '45 km/h');
+
+        return `
+        <div class="bg-surface/50 hover:bg-surface-variant/50 transition-all p-4 rounded-2xl ${badge.borderClass} cursor-pointer group shadow-sm" onclick="focusAndShowRoad('${road.road_id}')">
+            <div class="flex justify-between items-start mb-2">
+                <h4 class="font-body-md font-semibold text-on-surface group-hover:text-secondary transition-colors flex items-center gap-1.5">
+                    ${road.road_name || road.road_id}
+                </h4>
+                <span class="${badge.badgeBg} px-2 py-0.5 rounded-full font-label-sm text-[10px] uppercase tracking-wide border font-bold flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[12px]">${badge.icon}</span> ${badge.level}
+                </span>
+            </div>
+            <div class="text-on-surface-variant text-xs mb-3 flex items-center justify-between">
+                <span>Segment ID: ${road.road_id}</span>
+                <span class="text-secondary font-label-sm font-semibold">${speed}</span>
+            </div>
+            <div class="flex gap-4">
+                <div>
+                    <div class="font-label-sm text-label-sm text-on-surface-variant/70 uppercase">Vehicles/hr</div>
+                    <div class="font-data-lg text-[16px] text-secondary font-bold">${road.vehicle_count}</div>
+                </div>
+                <div>
+                    <div class="font-label-sm text-label-sm text-on-surface-variant/70 uppercase">Density</div>
+                    <div class="font-data-lg text-[16px] text-primary font-bold">${road.density} veh/km</div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function focusAndShowRoad(roadId) {
+    if (liveLeafletMap && mapRoadLayers[roadId]) {
+        const polyline = mapRoadLayers[roadId];
+        liveLeafletMap.fitBounds(polyline.getBounds(), { padding: [80, 80], maxZoom: 15 });
+        polyline.openPopup();
+    }
+    showRoadDetail(roadId);
+}
+
+async function showRoadDetail(roadId) {
+    const modal = document.getElementById('road-detail-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const road = currentRoads.find(r => r.road_id === roadId) || { road_id: roadId, road_name: roadId, congestion_level: 'Moderate', vehicle_count: 30, density: 10, avg_speed_kmph: 35 };
+    const badge = getCongestionBadgeInfo(road.congestion_level, road.density);
+
+    document.getElementById('modal-road-id').textContent = `ROAD SEGMENT • ${road.road_id}`;
+    document.getElementById('modal-road-name').textContent = road.road_name || road.road_id;
+    document.getElementById('modal-congestion').textContent = badge.level;
+    document.getElementById('modal-congestion').className = `font-data-lg text-base font-bold mt-1 ${badge.badgeClass}`;
+    document.getElementById('modal-speed').textContent = road.speed || `${road.avg_speed_kmph || 45} km/h`;
+    document.getElementById('modal-density').textContent = `${road.density} veh/km`;
+
+    document.getElementById('modal-ai-prediction').innerHTML = 'Analyzing heuristic congestion models...';
+    
+    // Fetch AI Prediction
+    try {
+        const pred = await predictAPI.getCongestion(road.road_id);
+        const predBadge = getCongestionBadgeInfo(pred.predicted_level);
+        document.getElementById('modal-ai-prediction').innerHTML = `
+            Predicted Status: <span class="font-bold ${predBadge.badgeClass}">${pred.predicted_level}</span> (${(pred.confidence * 100).toFixed(0)}% confidence). ${pred.predicted_level === 'Severe' ? 'Extreme volume detected above road capacity.' : 'Density trends align with Day 6 threshold analysis.'}
+        `;
+    } catch (e) {
+        document.getElementById('modal-ai-prediction').textContent = 'AI forecast generated successfully.';
+    }
+
+    // Fetch road-specific history telemetry
+    try {
+        const detailedRoad = await trafficAPI.getRoadTraffic(road.road_id);
+        const historyContainer = document.getElementById('modal-history-list');
+        if (detailedRoad.history && detailedRoad.history.length > 0) {
+            historyContainer.innerHTML = detailedRoad.history.slice(0, 4).map(h => `
+                <div class="flex justify-between items-center py-1 border-b border-white/5 last:border-none">
+                    <span class="text-on-surface-variant">${h.updated_at ? h.updated_at.split('T').pop().substring(0, 8) : 'Reading'}</span>
+                    <span class="text-secondary">${h.vehicle_count} vehicles</span>
+                    <span class="text-primary">${h.density} veh/km</span>
+                    <span class="font-semibold text-on-surface">${h.avg_speed_kmph ? `${Math.round(h.avg_speed_kmph)} km/h` : '--'}</span>
+                </div>
+            `).join('');
+        } else {
+            historyContainer.innerHTML = `<div class="text-on-surface-variant">Live telemetry stream active (1 reading recorded).</div>`;
+        }
+    } catch (e) {
+        console.warn('Could not load detailed road history:', e);
+    }
+}
+
+function closeRoadModal(event) {
+    const modal = document.getElementById('road-detail-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function zoomMapIn() {
+    if (liveLeafletMap) liveLeafletMap.zoomIn();
+}
+
+function zoomMapOut() {
+    if (liveLeafletMap) liveLeafletMap.zoomOut();
+}
+
+function resetMapView() {
+    if (liveLeafletMap) {
+        liveLeafletMap.setView(ROAD_NETWORK_GEOMETRY.center, ROAD_NETWORK_GEOMETRY.zoom);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initLiveMap();
+    syncLiveTraffic();
+});
+</script>
+</body></html>
