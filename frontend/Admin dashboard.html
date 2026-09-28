@@ -776,11 +776,11 @@ function selectAdminHorizon(minutes) {
     renderAdminForecastGrid(minutes);
 }
 
-function renderAdminForecastGrid(horizonMinutes = 30) {
+async function renderAdminForecastGrid(horizonMinutes = 30) {
     const container = document.getElementById('admin-forecast-grid');
     if (!container) return;
 
-    const forecasts = predictAPI.getAllRoadForecasts(horizonMinutes);
+    const forecasts = await predictAPI.getAllRoadForecasts(horizonMinutes);
 
     container.innerHTML = forecasts.map(f => {
         const badge = getCongestionBadgeInfo(f.predicted_level);
@@ -807,9 +807,9 @@ async function syncAdminData() {
 
     try {
         const density = await trafficAPI.getDensitySummary();
-        const totalRoads = density.total_roads ?? density.total_roads_monitored ?? 7;
-        const totalVehicles = density.total_vehicle_count ?? 239;
-        const avgDensity = density.average_density ?? density.average_network_density ?? 11.95;
+        const totalRoads = density.total_roads ?? density.total_roads_monitored ?? 0;
+        const totalVehicles = density.total_vehicle_count ?? 0;
+        const avgDensity = density.average_density ?? density.average_network_density ?? 0;
 
         document.getElementById('admin-road-count').textContent = `${totalRoads} Roads`;
         document.getElementById('admin-vehicles-monitored').textContent = `${totalVehicles} Vehicles`;

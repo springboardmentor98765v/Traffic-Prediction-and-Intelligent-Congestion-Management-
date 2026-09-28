@@ -378,7 +378,7 @@ async function loadPublicData() {
             trafficAPI.getLiveTraffic(),
             trafficAPI.getDensitySummary()
         ]);
-        const avg = density.average_density ?? density.average_network_density ?? 8.95;
+        const avg = density.average_density ?? density.average_network_density ?? 0;
         const severeCount = density.severe_congestion_roads ?? 0;
 
         if (severeCount > 0 || avg > 20) {

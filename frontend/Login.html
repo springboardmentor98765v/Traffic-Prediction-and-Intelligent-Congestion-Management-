@@ -854,7 +854,7 @@
 
                 try {
                     const data = await authAPI.login(email, password);
-                    AuthManager.setSession({
+                    authManager.setSession({
                         access_token: data.access_token,
                         refresh_token: data.refresh_token,
                         role: data.role || currentRole.toUpperCase(),
@@ -862,20 +862,11 @@
                     });
                     window.location.href = AuthManager.getDashboardUrl(data.role || currentRole);
                 } catch (err) {
-                    console.warn('Backend login notice:', err.message);
-                    if (err.message.includes('Failed to fetch') || err.message.includes('Cannot reach') || err.message.includes('NetworkError')) {
-                        // Backend server is offline, initialize preview session
-                        AuthManager.setSession({
-                            access_token: 'mock-dev-token',
-                            refresh_token: 'placeholder-refresh-token',
-                            role: currentRole.toUpperCase(),
-                            name: email ? email.split('@')[0] : 'Operator'
-                        });
-                        window.location.href = AuthManager.getDashboardUrl(currentRole);
-                        return;
-                    }
-
-                    errorTextSpan.textContent = err.message || 'Authentication failed. Please verify credentials.';
+                    // A session must only be established from an actual backend response.
+                    // The local AI engine currently has no authentication endpoint.
+                    errorTextSpan.textContent = err.status === 404
+                        ? 'Authentication is not available from the connected backend.'
+                        : (err.message || 'Authentication failed. Please verify credentials.');
                     errorMessage.classList.remove('hidden');
                     submitBtn.disabled = false;
                     submitText.textContent = 'Initialize Session';

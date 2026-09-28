@@ -327,80 +327,19 @@ let alertsData = [];
 let activeAlertFilter = 'all';
 
 async function loadAlerts() {
-    try {
-        const [roads, density] = await Promise.all([
-            trafficAPI.getLiveTraffic(),
-            trafficAPI.getDensitySummary()
-        ]);
-
-        // Generate alert feed correlated to Day 6 backend road congestion
-        alertsData = [];
-
-        // Add alerts for Severe or High roads
-        roads.forEach((road, idx) => {
-            const level = (road.congestion_level || 'Low').toLowerCase();
-            if (level.includes('severe') || road.density >= 28) {
-                alertsData.push({
-                    id: `SEV-${road.road_id}-99`,
-                    type: "severe-congestion",
-                    severity: "severe",
-                    title: `Severe Gridlock: ${road.road_name}`,
-                    location: `${road.road_name} (${road.road_id}), Critical Bottleneck`,
-                    time: "Just Now",
-                    impact: "-75% FLOW",
-                    road_id: road.road_id,
-                    notes: `Road capacity exceeded (Density ${road.density} veh/km, Avg Speed ${road.speed || `${road.avg_speed_kmph} km/h`}). Automated diversion routes triggered.`
-                });
-            } else if (level.includes('high') || road.density >= 20) {
-                alertsData.push({
-                    id: `ACC-${road.road_id}-42`,
-                    type: "accident",
-                    severity: "critical",
-                    title: `Heavy Congestion Buildup on ${road.road_name}`,
-                    location: `${road.road_name} (${road.road_id}), Sector Alert`,
-                    time: "5m ago",
-                    impact: "-45% FLOW",
-                    road_id: road.road_id,
-                    notes: `High density detected (${road.density} veh/km, ${road.vehicle_count} veh/hr). Traffic speed slowed to ${road.speed || `${road.avg_speed_kmph} km/h`}. Tactical rerouting suggested.`
-                });
-            } else if (level.includes('med') || road.density >= 10) {
-                alertsData.push({
-                    id: `WRN-${road.road_id}-18`,
-                    type: "roadworks",
-                    severity: "warning",
-                    title: `Moderate Delay on ${road.road_name}`,
-                    location: `${road.road_name} (${road.road_id}), Sector Corridor`,
-                    time: "15m ago",
-                    impact: "-20% FLOW",
-                    road_id: road.road_id,
-                    notes: `Rising traffic volume (${road.density} veh/km). Signal timing adjustments recommended.`
-                });
-            }
-        });
-
-        // Ensure at least fallback alerts exist if all roads are low
-        if (alertsData.length === 0) {
-            alertsData.push({
-                id: "INF-SYS-01",
-                type: "system",
-                severity: "info",
-                title: "Network Flow Nominal",
-                location: "All Monitored Arterials",
-                time: "Live",
-                impact: "OPTIMAL",
-                road_id: "ALL",
-                notes: "All 7 monitored segments are operating under capacity with green status."
-            });
-        }
-
-        document.getElementById('count-all').textContent = alertsData.length;
-        document.getElementById('count-severe').textContent = alertsData.filter(a => a.severity === 'severe').length;
-
-        filterAlertList();
-        selectAlert(alertsData[0]);
-    } catch (e) {
-        console.error('Error loading alerts:', e);
-    }
+    // The verified backend contract has no alert endpoint. Do not turn traffic
+    // observations into fictitious incidents or operational actions.
+    alertsData = [];
+    document.getElementById('count-all').textContent = '0';
+    document.getElementById('count-severe').textContent = '0';
+    document.getElementById('alert-list-container').innerHTML = `
+        <div class="text-center py-8 text-on-surface-variant font-label-sm">
+            Alert service is not available from the connected backend.
+        </div>`;
+    document.getElementById('detail-alert-title').textContent = 'Alerts unavailable';
+    document.getElementById('detail-alert-location').textContent = 'No /api/v1/alerts endpoint is implemented.';
+    document.getElementById('detail-alert-notes').textContent = 'Connect the team alert service to view, mark read, or dispatch alerts.';
+    document.getElementById('incident-action-buttons').classList.add('hidden');
 }
 
 function setAlertFilter(filter, btn) {
@@ -495,11 +434,11 @@ function selectAlert(alert) {
 }
 
 function dispatchUnit() {
-    showActionBanner('Emergency response unit dispatched to scene. Sector notified.');
+    showActionBanner('Dispatch is unavailable because the backend does not provide an alert action endpoint.');
 }
 
 function updateIncidentStatus() {
-    showActionBanner('Incident status updated to [IN PROGRESS]. Monitoring telemetry.');
+    showActionBanner('Status updates are unavailable because the backend does not provide an alert action endpoint.');
 }
 
 function showActionBanner(msg) {

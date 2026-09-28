@@ -564,8 +564,8 @@ async function syncLiveTraffic() {
         const severeCount = density.severe_congestion_roads ?? 0;
         const highCount = density.high_congestion_roads ?? 0;
         document.getElementById('kpi-incidents-count').textContent = density.congested_segments ?? (severeCount + highCount);
-        document.getElementById('kpi-network-density').textContent = density.average_density ?? density.average_network_density ?? 8.95;
-        document.getElementById('kpi-vehicle-count').textContent = density.total_vehicle_count ?? 171;
+        document.getElementById('kpi-network-density').textContent = density.average_density ?? density.average_network_density ?? 0;
+        document.getElementById('kpi-vehicle-count').textContent = density.total_vehicle_count ?? 0;
 
         filterTrafficFeed();
         renderMapNetwork();
@@ -667,7 +667,7 @@ async function showRoadDetail(roadId) {
     document.getElementById('modal-road-name').textContent = road.road_name || road.road_id;
     document.getElementById('modal-congestion').textContent = badge.level;
     document.getElementById('modal-congestion').className = `font-data-lg text-base font-bold mt-1 ${badge.badgeClass}`;
-    document.getElementById('modal-speed').textContent = road.speed || `${road.avg_speed_kmph || 45} km/h`;
+    document.getElementById('modal-speed').textContent = road.speed || (road.avg_speed_kmph == null ? '—' : `${road.avg_speed_kmph} km/h`);
     document.getElementById('modal-density').textContent = `${road.density} veh/km`;
 
     document.getElementById('modal-ai-prediction').innerHTML = 'Analyzing heuristic congestion models...';
