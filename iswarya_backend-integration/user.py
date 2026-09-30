@@ -2,18 +2,17 @@ from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from enum import Enum
 
-# 1. Define the allowed roles here
+# 1. Define allowed roles
 class UserRole(str, Enum):
     admin = "admin"
     user = "user"
     operator = "operator"
 
-# 2. Update the role field inside your schema
+# 2. Public User Registration Schema (Role removed so users cannot escalate privileges)
 class UserCreate(BaseModel):
     name: str
     email: EmailStr  
     password: str
-    role: UserRole = UserRole.user  
 
     @field_validator('email')
     @classmethod
@@ -37,11 +36,6 @@ class UserCreate(BaseModel):
             raise ValueError(f"Registration is restricted. Domain '@{domain}' is not supported.")
             
         return v
-
-    @field_validator('role')
-    @classmethod
-    def normalize_role(cls, v: str) -> str:
-        return v.lower()
 
     @field_validator('password')
     @classmethod

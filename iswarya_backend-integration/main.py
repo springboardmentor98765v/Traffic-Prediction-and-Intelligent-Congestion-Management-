@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 # Import your database engine and declarative base for table auto-creation
 from app.database import engine
@@ -8,6 +9,17 @@ from app.models import alert      # <-- ADDED: Registers the Alert model for tab
 
 # Import your service routers (including Milestone 3 alerts)
 from app.routes import auth, traffic, predict, route_analysis, alerts  # <-- ADDED: alerts
+
+# ==========================================
+# Lifespan Context Manager (Modern Startup/Shutdown)
+# ==========================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Automatically creates database tables on application startup 
+    # if they do not already exist in PostgreSQL.
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Shutdown logic (if any) can go here
 
 # ==========================================
 # Initialize FastAPI Application First!
@@ -24,7 +36,8 @@ app = FastAPI(
     """,
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Add CORS Middleware to allow your frontend (Live Server / local ports) to communicate safely
@@ -35,18 +48,6 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all HTTP methods (GET, POST, OPTIONS, PUT, DELETE)
     allow_headers=["*"],  # Allows all headers
 )
-
-# ==========================================
-# Database Startup Event Initialization
-# ==========================================
-@app.on_event("startup")
-def on_startup():
-    """
-    Automatically creates database tables on application startup 
-    if they do not already exist in PostgreSQL.
-    """
-    Base.metadata.create_all(bind=engine)
-
 
 # ==========================================
 # System Health Check Endpoint

@@ -68,6 +68,13 @@ async def alternate_routes(
 
     routes = await maps_service.get_alternate_routes(orig_lat, orig_lng, dest_lat, dest_lng)
     
+    # DEF-M3-004 Fix: Handle OSRM down / None fallback gracefully
+    if not routes:
+        raise HTTPException(
+            status_code=503,
+            detail="External maps service (OSRM) is currently unavailable. Please try again later."
+        )
+    
     ranked_routes = []
     congestion_weights = {"Low": 1, "Medium": 2, "High": 3}
 
