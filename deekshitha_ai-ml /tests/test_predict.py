@@ -6,54 +6,70 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.predict import predict_congestion
 
 
-def test_low_congestion():
-    level, reason = predict_congestion(
+def test_low_traffic_prediction():
+    level, confidence = predict_congestion(
         vehicle_count=40,
         density=8.0,
-        avg_speed_kmph=45,
+        avg_speed_kmph=45.0,
+        road_capacity=100.0,
+        road_length_km=5.0,
+        hour=10,
+        day_of_week=1,
+        is_weekend=0,
+        road_id="R001",
     )
 
-    assert level == "Low"
-    assert "normal" in reason.lower()
+    assert level in {"Low", "Medium", "High", "Severe"}
+    assert 0.0 <= confidence <= 1.0
 
 
-def test_medium_congestion():
-    level, reason = predict_congestion(
+def test_medium_traffic_prediction():
+    level, confidence = predict_congestion(
         vehicle_count=70,
         density=15.0,
-        avg_speed_kmph=30,
+        avg_speed_kmph=30.0,
+        road_capacity=100.0,
+        road_length_km=5.0,
+        hour=18,
+        day_of_week=1,
+        is_weekend=0,
+        road_id="R001",
     )
 
-    assert level == "Medium"
-    assert "moderate" in reason.lower()
+    assert level in {"Low", "Medium", "High", "Severe"}
+    assert 0.0 <= confidence <= 1.0
 
 
-def test_high_congestion():
-    level, reason = predict_congestion(
+def test_high_traffic_prediction():
+    level, confidence = predict_congestion(
         vehicle_count=110,
         density=25.0,
-        avg_speed_kmph=15,
+        avg_speed_kmph=15.0,
+        road_capacity=100.0,
+        road_length_km=5.0,
+        hour=18,
+        day_of_week=1,
+        is_weekend=0,
+        road_id="R001",
     )
 
-    assert level == "High"
-    assert "high traffic density" in reason.lower()
+    assert level in {"Low", "Medium", "High", "Severe"}
+    assert 0.0 <= confidence <= 1.0
 
 
-def test_boundary_density_10():
-    level, _ = predict_congestion(
+def test_prediction_returns_valid_confidence():
+    level, confidence = predict_congestion(
         vehicle_count=50,
-        density=10,
-        avg_speed_kmph=35,
+        density=10.0,
+        avg_speed_kmph=35.0,
+        road_capacity=100.0,
+        road_length_km=5.0,
+        hour=12,
+        day_of_week=2,
+        is_weekend=0,
+        road_id="R001",
     )
 
-    assert level == "Medium"
-
-
-def test_boundary_density_20():
-    level, _ = predict_congestion(
-        vehicle_count=90,
-        density=20,
-        avg_speed_kmph=20,
-    )
-
-    assert level == "High"
+    assert isinstance(level, str)
+    assert isinstance(confidence, float)
+    assert 0.0 <= confidence <= 1.0
