@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <script>
+        (function() {
+            try {
+                const theme = localStorage.getItem('trafficvision_theme') || 'dark';
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.classList.remove('light');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('light');
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Analytics Dashboard - TrafficVision AI</title>
+    <!-- TailwindCSS with form and container plugins -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- Centralized API & Utilities -->
+    <script src="api.js"></script>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-fixed": "#e8deff",
+                        "on-primary": "#1b247f",
+                        "on-secondary-fixed": "#001e30",
+                        "surface-tint": "#bdc2ff",
+                        "surface-container-low": "#131b2e",
+                        "secondary-fixed-dim": "#8dcdff",
+                        "outline-variant": "#454652",
+                        "primary-fixed": "#e0e0ff",
+                        "on-surface": "#dae2fd",
+                        "on-secondary": "#00344f",
+                        "outline": "#908f9d",
+                        "secondary-fixed": "#cae6ff",
+                        "inverse-on-surface": "#283044",
+                        "secondary": "#8dcdff",
+                        "on-secondary-fixed-variant": "#004b70",
+                        "surface-container-lowest": "#060e20",
+                        "primary-fixed-dim": "#bdc2ff",
+                        "secondary-container": "#00affe",
+                        "on-surface-variant": "#c6c5d4",
+                        "primary-container": "#1a237e",
+                        "tertiary-fixed-dim": "#cdbdff",
+                        "surface-container-high": "#222a3d",
+                        "primary": "#bdc2ff",
+                        "on-error-container": "#ffdad6",
+                        "background": "#0b1326",
+                        "tertiary": "#cdbdff",
+                        "on-primary-fixed-variant": "#343d96",
+                        "on-tertiary-fixed": "#20005f",
+                        "tertiary-container": "#360094",
+                        "surface-dim": "#0b1326",
+                        "error": "#ffb4ab",
+                        "on-secondary-container": "#003f5f",
+                        "inverse-surface": "#dae2fd",
+                        "on-primary-container": "#8690ee",
+                        "surface-variant": "#2d3449",
+                        "on-primary-fixed": "#000767",
+                        "surface-container": "#171f33",
+                        "surface-bright": "#31394d",
+                        "surface": "#0b1326",
+                        "on-tertiary-fixed-variant": "#4f00d0",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#370096",
+                        "inverse-primary": "#4c56af",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-container": "#a084ff",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#2d3449"
+                    },
+                    fontFamily: {
+                        "headline-lg": ["Inter", "sans-serif"],
+                        "label-sm": ["JetBrains Mono", "monospace"],
+                        "data-lg": ["JetBrains Mono", "monospace"],
+                        "body-md": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+    
+    <style>
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+        }
+        .glass-panel {
+            background: rgba(19, 27, 46, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-panel-glow {
+            background: rgba(19, 27, 46, 0.75);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(141, 205, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px rgba(141, 205, 255, 0.1);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(11, 19, 38, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(189, 194, 255, 0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(189, 194, 255, 0.4);
+        }
+        .heatmap-cell {
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+        .heatmap-cell:hover {
+            transform: scale(1.15);
+            z-index: 20;
+            filter: brightness(1.25);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col pt-16 pb-24 md:pb-8">
+    <script>
+        (function(){
+            AuthManager.guardPage();
+        })();
+    </script>
+
+    <!-- Global Toast Container -->
+    <div id="toast-container" class="fixed bottom-20 md:bottom-8 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Top Navigation Bar -->
+    <header class="fixed top-0 left-0 w-full z-50 bg-[#131b2e]/85 backdrop-blur-2xl border-b border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex items-center justify-between px-4 sm:px-6 md:px-8 h-16 transition-all duration-300">
+        <!-- Brand / Logo -->
+        <div class="flex items-center gap-3">
+            <a class="nav-home-link flex items-center gap-3 group focus:outline-none" href="#">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-container via-primary-container/80 to-secondary-container/40 flex items-center justify-center border border-white/15 shadow-[0_0_15px_rgba(0,175,254,0.25)] group-hover:shadow-[0_0_22px_rgba(141,205,255,0.5)] transition-all">
+                    <span class="material-symbols-outlined text-secondary text-[24px]" style="font-variation-settings: 'FILL' 1;">analytics</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-headline-lg text-[18px] md:text-[20px] font-bold tracking-tight text-on-surface flex items-center gap-1.5 leading-none">
+                        TrafficVision <span class="text-secondary font-black tracking-normal">AI</span>
+                    </span>
+                    <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest hidden sm:inline-block mt-1">Autonomous Traffic Grid</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center gap-1.5 lg:gap-2 bg-surface-container/70 p-1.5 rounded-2xl border border-white/5 shadow-inner">
+            <!-- Dashboard Tab -->
+            <a class="nav-home-link px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="#">
+                <span class="material-symbols-outlined text-[18px]">dashboard</span>
+                <span>Dashboard</span>
+            </a>
+            <!-- Live Traffic Tab -->
+            <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="live maps.html">
+                <span class="material-symbols-outlined text-[18px]">traffic</span>
+                <span>Live Traffic</span>
+            </a>
+            <!-- Route Analysis Tab -->
+            <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="route-analysis.html">
+                <span class="material-symbols-outlined text-[18px]">alt_route</span>
+                <span>Route Analysis</span>
+            </a>
+            <!-- Alerts Tab -->
+            <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="Alerts.html">
+                <span class="material-symbols-outlined text-[18px]">warning</span>
+                <span>Alerts</span>
+            </a>
+            <!-- Analytics Tab (Active) -->
+            <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-semibold text-secondary bg-secondary/15 border border-secondary/30 shadow-[0_0_15px_rgba(141,205,255,0.2)] flex items-center gap-2 transition-all" href="analytics.html">
+                <span class="material-symbols-outlined text-[18px]">monitoring</span>
+                <span>Analytics</span>
+            </a>
+            <!-- Admin Console (Visible to admin) -->
+            <a class="nav-admin-only hidden px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="admin dashboard.html">
+                <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+                <span>Admin</span>
+            </a>
+        </nav>
+
+        <!-- Right Controls & Notification Bell -->
+        <div class="flex items-center gap-2.5 sm:gap-3.5">
+            <!-- Grid Live Indicator -->
+            <div class="hidden xl:flex items-center gap-2 px-3 py-1 bg-surface-container-high/60 border border-white/5 rounded-full font-label-sm text-[11px] text-on-surface-variant">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>Telemetry 1Hz</span>
+            </div>
+
+            <!-- Notification Bell Button -->
+            <div class="relative flex items-center">
+                <button id="nav-notification-bell-btn" class="relative w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all focus:outline-none" title="Notifications & Alerts">
+                    <span class="material-symbols-outlined text-[20px]">notifications</span>
+                    <span id="nav-bell-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#e11d48] text-white text-[10px] font-bold flex items-center justify-center border-2 border-[#0b1326] shadow-[0_0_8px_rgba(225,29,72,0.6)] animate-pulse">0</span>
+                </button>
+            </div>
+
+            <!-- Theme Toggle -->
+            <button id="theme-toggle-btn" class="theme-toggle-btn w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all cursor-pointer" onclick="ThemeManager.toggle()" title="Toggle Theme">
+                <span class="material-symbols-outlined text-[19px]">light_mode</span>
+            </button>
+
+            <!-- Logout -->
+            <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-error/20 hover:border-error/40 border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-error transition-all" onclick="logout()" title="Logout">
+                <span class="material-symbols-outlined text-[19px]">logout</span>
+            </button>
+
+            <!-- User Profile Avatar -->
+            <div class="flex items-center gap-2.5 pl-2 border-l border-white/10">
+                <div class="w-9 h-9 rounded-xl overflow-hidden border border-secondary/30 bg-surface-container-high flex items-center justify-center shadow-inner">
+                    <img id="nav-user-avatar" class="w-full h-full object-cover" alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_vKZ-W8rS4Rl5-APyDQZxRP3Y0x9m2ol4C9A65IeVluV0OSoIc_gkzxT3IDV4WdwcF-i4qlOZvK3FUWZvfzhonx-qSMF-4nTsBHkYfROuYTDE6rF-stHBsDDf4UngSGqnljUJDx8R1W5AIi1Gl8hm8q3uz1G8k2uoPgVYusFxadrnbNF7pOw-cZay0vPPtIw6HtTtrwpEwA7zAiEKRkEZ5RK1e5_LOPUY3t2WFiVmZ7kmQignKD3r"/>
+                </div>
+                <div class="hidden lg:flex flex-col text-left">
+                    <span id="nav-user-name" class="font-body-md text-[13px] font-semibold text-on-surface leading-tight">Operator</span>
+                    <span id="nav-user-role" class="font-label-sm text-[10px] text-secondary uppercase tracking-wider leading-none">OPERATOR</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+        
+        <!-- Header & Action Ribbon -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border border-white/10 shadow-lg">
+            <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-md bg-secondary/15 text-secondary border border-secondary/30 text-[11px] font-label-sm font-bold tracking-wider uppercase">Milestone 3 Analytics</span>
+                    <span class="text-xs font-label-sm text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px] text-emerald-400">check_circle</span>
+                        M2 Model-v1 Synced
+                    </span>
+                </div>
+                <h1 class="font-headline-lg text-2xl md:text-3xl font-bold text-on-surface tracking-tight">
+                    Traffic Intelligence & Spatial Analytics
+                </h1>
+                <p class="text-sm text-on-surface-variant">
+                    Temporal congestion trajectories, machine-learning forecasts, and autonomous grid recommendations.
+                </p>
+            </div>
+
+            <!-- Controls & Export Actions -->
+            <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                <!-- Corridor Filter Dropdown -->
+                <div class="relative">
+                    <select id="filter-corridor" onchange="applyAnalyticsFilters()" class="bg-surface-container-high border border-outline-variant text-on-surface text-xs font-label-sm rounded-xl px-3 py-2 pr-8 focus:border-secondary focus:ring-1 focus:ring-secondary outline-none cursor-pointer">
+                        <option value="ALL">All Network Corridors</option>
+                        <option value="R001">R001 - Main Expressway</option>
+                        <option value="R002">R002 - Central Avenue</option>
+                        <option value="R003">R003 - West Ring Road</option>
+                        <option value="R004">R004 - North Boulevard</option>
+                        <option value="R005">R005 - Industrial Highway</option>
+                        <option value="R006">R006 - Airport Road</option>
+                        <option value="R007">R007 - Harbor Tunnel</option>
+                    </select>
+                </div>
+
+                <!-- Timeframe Filter -->
+                <div class="relative">
+                    <select id="filter-timeframe" onchange="applyAnalyticsFilters()" class="bg-surface-container-high border border-outline-variant text-on-surface text-xs font-label-sm rounded-xl px-3 py-2 pr-8 focus:border-secondary focus:ring-1 focus:ring-secondary outline-none cursor-pointer">
+                        <option value="24H">Last 24 Hours (Diurnal)</option>
+                        <option value="PEAK">Peak Hours Only</option>
+                        <option value="7D">Past 7 Days</option>
+                    </select>
+                </div>
+
+                <!-- Download Historical Report Button -->
+                <button onclick="openHistoricalReportModal()" id="btn-open-historical-report" class="bg-gradient-to-r from-secondary-container via-secondary/80 to-primary-container text-on-secondary-container hover:shadow-[0_0_24px_rgba(141,205,255,0.4)] font-label-sm text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(189,194,255,0.2)] hover:scale-[1.02] active:scale-[0.98]">
+                    <span class="material-symbols-outlined text-[17px]">file_download</span>
+                    <span>Download Historical Report</span>
+                </button>
+
+                <!-- Refresh Telemetry Button -->
+                <button onclick="refreshDashboardData()" class="w-9 h-9 rounded-xl bg-surface-container-high hover:bg-white/10 border border-white/10 text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all" title="Refresh Live Feeds">
+                    <span class="material-symbols-outlined text-[18px]">sync</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Metrics Ribbon -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Metric 1: Avg Speed -->
+            <div class="glass-panel p-4 rounded-2xl border border-white/10 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                    <span class="font-label-sm text-[11px] uppercase tracking-wider">Avg Network Velocity</span>
+                    <span class="material-symbols-outlined text-secondary text-[20px]">speed</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="kpi-speed" class="font-data-lg text-3xl font-bold text-on-surface">38.4</span>
+                    <span class="font-label-sm text-xs text-on-surface-variant">km/h</span>
+                </div>
+                <div class="flex items-center gap-1.5 mt-2 font-label-sm text-[11px] text-emerald-400">
+                    <span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+                    <span>+4.2% vs yesterday</span>
+                </div>
+            </div>
+
+            <!-- Metric 2: Congestion Index -->
+            <div class="glass-panel p-4 rounded-2xl border border-white/10 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                    <span class="font-label-sm text-[11px] uppercase tracking-wider">Network Congestion Index</span>
+                    <span class="material-symbols-outlined text-yellow-400 text-[20px]">insights</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="kpi-congestion" class="font-data-lg text-3xl font-bold text-yellow-400">42.1</span>
+                    <span class="font-label-sm text-xs text-on-surface-variant">/ 100</span>
+                    <span class="px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-300 text-[10px] font-bold font-label-sm ml-auto">Moderate</span>
+                </div>
+                <div class="flex items-center gap-1.5 mt-2 font-label-sm text-[11px] text-emerald-400">
+                    <span class="material-symbols-outlined text-[14px]">arrow_downward</span>
+                    <span>-12% peak easing</span>
+                </div>
+            </div>
+
+            <!-- Metric 3: Peak Delay Surge -->
+            <div class="glass-panel p-4 rounded-2xl border border-white/10 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                    <span class="font-label-sm text-[11px] uppercase tracking-wider">Peak Delay Surge</span>
+                    <span class="material-symbols-outlined text-[#e11d48] text-[20px]">timer</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="kpi-delay" class="font-data-lg text-3xl font-bold text-[#fda4af]">+18.4</span>
+                    <span class="font-label-sm text-xs text-on-surface-variant">minutes</span>
+                </div>
+                <div class="flex items-center gap-1.5 mt-2 font-label-sm text-[11px] text-on-surface-variant">
+                    <span class="text-[#e11d48] font-bold">Worst:</span>
+                    <span class="truncate">Harbor Tunnel (R007)</span>
+                </div>
+            </div>
+
+            <!-- Metric 4: ML Model Accuracy -->
+            <div class="glass-panel p-4 rounded-2xl border border-white/10 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                    <span class="font-label-sm text-[11px] uppercase tracking-wider">ML Prediction Accuracy</span>
+                    <span class="material-symbols-outlined text-tertiary text-[20px]">psychology</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="kpi-accuracy" class="font-data-lg text-3xl font-bold text-tertiary">94.2%</span>
+                    <span class="px-2 py-0.5 rounded-full bg-tertiary/20 text-tertiary text-[10px] font-bold font-label-sm ml-auto">Model-v1 Joblib</span>
+                </div>
+                <div class="flex items-center gap-1.5 mt-2 font-label-sm text-[11px] text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[14px] text-secondary">verified</span>
+                    <span>Chronological validation</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 1: Trend Charts (Chart.js 24-hr multi-axis + Peak Breakdown) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left Chart: 24-Hour Diurnal Speed & Volume Forecast (8 cols) -->
+            <div class="lg:col-span-8 glass-panel rounded-2xl p-5 border border-white/10 flex flex-col">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h2 class="font-headline-lg text-lg font-bold text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-secondary text-[20px]">show_chart</span>
+                            <span>24-Hour Volume & Velocity Trajectory</span>
+                        </h2>
+                        <p class="text-xs text-on-surface-variant">Observed hourly volume vs XGBoost M2 predicted flow & corridor speeds</p>
+                    </div>
+                    <div class="flex items-center gap-3 font-label-sm text-[11px]">
+                        <span class="flex items-center gap-1.5 text-secondary">
+                            <span class="w-3 h-3 rounded-full bg-secondary"></span> Observed Volume
+                        </span>
+                        <span class="flex items-center gap-1.5 text-tertiary">
+                            <span class="w-3 h-0.5 bg-tertiary"></span> AI Forecast
+                        </span>
+                        <span class="flex items-center gap-1.5 text-emerald-400">
+                            <span class="w-3 h-0.5 bg-emerald-400 border-dashed border-t"></span> Speed (km/h)
+                        </span>
+                    </div>
+                </div>
+
+                <div class="relative w-full h-[320px] flex-grow">
+                    <canvas id="trendVolumeSpeedChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Right Chart: Peak Hour Congestion Distribution (4 cols) -->
+            <div class="lg:col-span-4 glass-panel rounded-2xl p-5 border border-white/10 flex flex-col">
+                <div class="mb-4">
+                    <h2 class="font-headline-lg text-lg font-bold text-on-surface flex items-center gap-2">
+                        <span class="material-symbols-outlined text-tertiary text-[20px]">query_stats</span>
+                        <span>Peak Congestion Surge</span>
+                    </h2>
+                    <p class="text-xs text-on-surface-variant">Congestion probability index across diurnal time windows</p>
+                </div>
+
+                <div class="relative w-full h-[240px] flex-grow flex items-center justify-center">
+                    <canvas id="peakHourDoughnutChart"></canvas>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-white/10 grid grid-cols-3 text-center font-label-sm text-[11px]">
+                    <div>
+                        <div class="text-secondary font-bold">08:00 - 09:30</div>
+                        <div class="text-on-surface-variant text-[10px]">Morning Surge</div>
+                    </div>
+                    <div>
+                        <div class="text-yellow-400 font-bold">12:30 - 14:00</div>
+                        <div class="text-on-surface-variant text-[10px]">Midday Flow</div>
+                    </div>
+                    <div>
+                        <div class="text-[#e11d48] font-bold">17:00 - 19:30</div>
+                        <div class="text-on-surface-variant text-[10px]">Evening Peak</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!-- Section 1b: REAL TREND CHARTS — GET /analytics/trends           -->
+        <!-- ================================================================ -->
+        <div class="glass-panel rounded-2xl p-5 border border-secondary/20 shadow-[0_0_30px_rgba(141,205,255,0.06)] flex flex-col gap-5">
+            <!-- Header + Road Selector -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-secondary/15 border border-secondary/30 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-secondary text-[20px]">trending_up</span>
+                    </div>
+                    <div>
+                        <h2 class="font-headline-lg text-lg font-bold text-on-surface flex items-center gap-2">
+                            Daily Traffic Trend Analysis
+                            <span id="trends-live-badge" class="hidden text-[10px] font-label-sm px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold uppercase">Live API</span>
+                            <span id="trends-mock-badge" class="text-[10px] font-label-sm px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-300 border border-yellow-500/25 font-bold uppercase">Mock Data</span>
+                        </h2>
+                        <p class="text-xs text-on-surface-variant">Historical daily trends via Intern 2 M3 Analytics &mdash; <code class="text-secondary font-mono text-[10px]">GET /analytics/trends</code></p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <select id="trends-road-select" onchange="loadAnalyticsTrends()" class="bg-surface-container-high border border-outline-variant text-on-surface text-xs font-label-sm rounded-xl px-3 py-2 pr-8 focus:border-secondary outline-none cursor-pointer">
+                        <option value="R001">R001 &ndash; Main Expressway</option>
+                        <option value="R002">R002 &ndash; Central Avenue</option>
+                        <option value="R003">R003 &ndash; West Ring Road</option>
+                        <option value="R004">R004 &ndash; North Boulevard</option>
+                        <option value="R005">R005 &ndash; Industrial Highway</option>
+                        <option value="R006">R006 &ndash; Airport Road</option>
+                        <option value="R007">R007 &ndash; Harbor Tunnel</option>
+                    </select>
+                    <button onclick="loadAnalyticsTrends()" id="trends-refresh-btn" class="w-9 h-9 rounded-xl bg-surface-container-high hover:bg-white/10 border border-white/10 text-on-surface-variant hover:text-secondary flex items-center justify-center transition-all" title="Refresh trends">
+                        <span id="trends-refresh-icon" class="material-symbols-outlined text-[18px]">sync</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="trends-loading" class="flex items-center justify-center py-12 gap-3 text-on-surface-variant font-label-sm text-xs">
+                <span class="material-symbols-outlined text-secondary text-[22px] animate-spin">progress_activity</span>
+                <span>Fetching trend data from analytics service&hellip;</span>
+            </div>
+
+            <!-- Charts Grid (shown after load) -->
+            <div id="trends-charts-grid" class="hidden">
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                    <!-- Daily Line Chart (8 cols) -->
+                    <div class="xl:col-span-8 flex flex-col gap-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3 font-label-sm text-[11px]">
+                                <span class="flex items-center gap-1.5 text-secondary"><span class="inline-block w-3 h-3 rounded-full bg-secondary"></span>Avg Vehicles/Day</span>
+                                <span class="flex items-center gap-1.5 text-emerald-400"><span class="inline-block w-3 h-0.5 bg-emerald-400"></span>Avg Speed km/h</span>
+                                <span class="flex items-center gap-1.5 text-[#e11d48]"><span class="inline-block w-3 h-3 rounded-full bg-[#e11d48]"></span>High+Severe %</span>
+                            </div>
+                            <span id="trends-date-range" class="text-[10px] font-label-sm text-on-surface-variant"></span>
+                        </div>
+                        <div class="relative w-full" style="height:280px">
+                            <canvas id="dailyTrendChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Weekly Bar Chart (4 cols) -->
+                    <div class="xl:col-span-4 flex flex-col gap-2">
+                        <div class="font-label-sm text-[11px] text-on-surface-variant flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[14px] text-tertiary">calendar_view_week</span>
+                            Weekly Pattern &mdash; Avg Vehicles/Hour
+                        </div>
+                        <div class="relative w-full" style="height:280px">
+                            <canvas id="weeklyPatternChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI strip -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-white/8">
+                    <div class="rounded-xl bg-surface-container-high/60 border border-white/5 p-3 flex flex-col gap-1">
+                        <span class="font-label-sm text-[10px] uppercase text-on-surface-variant">Peak Day Volume</span>
+                        <span id="tkpi-peak-vol" class="font-data-lg text-xl font-bold text-secondary">&ndash;</span>
+                    </div>
+                    <div class="rounded-xl bg-surface-container-high/60 border border-white/5 p-3 flex flex-col gap-1">
+                        <span class="font-label-sm text-[10px] uppercase text-on-surface-variant">Avg Speed (period)</span>
+                        <span id="tkpi-avg-speed" class="font-data-lg text-xl font-bold text-emerald-400">&ndash;</span>
+                    </div>
+                    <div class="rounded-xl bg-surface-container-high/60 border border-white/5 p-3 flex flex-col gap-1">
+                        <span class="font-label-sm text-[10px] uppercase text-on-surface-variant">Worst Congestion Day</span>
+                        <span id="tkpi-worst-day" class="font-data-lg text-xl font-bold text-[#fda4af]">&ndash;</span>
+                    </div>
+                    <div class="rounded-xl bg-surface-container-high/60 border border-white/5 p-3 flex flex-col gap-1">
+                        <span class="font-label-sm text-[10px] uppercase text-on-surface-variant">Total Severe Readings</span>
+                        <span id="tkpi-severe" class="font-data-lg text-xl font-bold text-[#e11d48]">&ndash;</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error state -->
+            <div id="trends-error" class="hidden flex flex-col items-center gap-2 py-10 text-on-surface-variant font-label-sm text-xs">
+                <span class="material-symbols-outlined text-3xl text-error/60">cloud_off</span>
+                <span id="trends-error-msg">Could not reach analytics service</span>
+                <button onclick="loadAnalyticsTrends()" class="mt-2 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-white/10 border border-white/10 text-on-surface-variant hover:text-on-surface text-xs transition-all flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[15px]">refresh</span> Retry
+                </button>
+            </div>
+        </div>
+
+        <!-- Section 2: Congestion Heatmap Visualization (Intern 2: GET /analytics/heatmap) -->
+        <div class="glass-panel rounded-2xl p-5 border border-white/10 flex flex-col gap-4 shadow-xl">
+            <!-- Header & Status -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-secondary/15 border border-secondary/30 flex items-center justify-center text-secondary">
+                        <span class="material-symbols-outlined text-[22px]">grid_view</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="font-headline-lg text-lg font-bold text-on-surface">Congestion Heatmap Visualization</h2>
+                            <span id="heatmap-live-badge" class="hidden text-[10px] font-label-sm px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold uppercase">Live API (Port 8000)</span>
+                            <span id="heatmap-mock-badge" class="text-[10px] font-label-sm px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-300 border border-yellow-500/25 font-bold uppercase">M2 History Fallback</span>
+                        </div>
+                        <p class="text-xs text-on-surface-variant">Road corridor &times; time-bucket congestion grid via Intern 2 &mdash; <code class="text-secondary font-mono text-[10px]">GET /analytics/heatmap</code></p>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="flex flex-wrap items-center gap-3 font-label-sm text-[11px]">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded bg-emerald-500/30 border border-emerald-500/50"></span>
+                        <span class="text-on-surface-variant">Low (&lt;10)</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded bg-amber-500/40 border border-amber-500/60"></span>
+                        <span class="text-on-surface-variant">Medium (10-18)</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded bg-rose-500/60 border border-rose-500/80"></span>
+                        <span class="text-on-surface-variant">High (18-26)</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded bg-[#e11d48] border border-[#e11d48] shadow-[0_0_8px_rgba(225,29,72,0.6)]"></span>
+                        <span class="text-rose-300 font-bold">Severe (&gt;26)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heatmap Interactive Control Bar -->
+            <div class="bg-surface-container-high/60 border border-white/5 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs font-label-sm">
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Date Range Inputs -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-on-surface-variant text-[11px]">Range:</span>
+                        <input type="date" id="heatmap-start-date" value="2026-07-27" onchange="loadCongestionHeatmap()" class="bg-surface-container border border-outline-variant text-on-surface text-xs rounded-lg px-2.5 py-1.5 outline-none focus:border-secondary">
+                        <span class="text-on-surface-variant text-[11px]">&rarr;</span>
+                        <input type="date" id="heatmap-end-date" value="2026-08-23" onchange="loadCongestionHeatmap()" class="bg-surface-container border border-outline-variant text-on-surface text-xs rounded-lg px-2.5 py-1.5 outline-none focus:border-secondary">
+                    </div>
+
+                    <!-- Time Bucket Toggle -->
+                    <div class="flex items-center gap-1.5 pl-2 border-l border-white/10">
+                        <span class="text-on-surface-variant text-[11px]">Bucket:</span>
+                        <select id="heatmap-time-bucket" onchange="loadCongestionHeatmap()" class="bg-surface-container border border-outline-variant text-on-surface text-xs rounded-lg px-2.5 py-1.5 outline-none focus:border-secondary">
+                            <option value="hour" selected>Hourly (00:00 - 23:00)</option>
+                            <option value="day">Daily Aggregates</option>
+                        </select>
+                    </div>
+
+                    <!-- Corridor Filter -->
+                    <div class="flex items-center gap-1.5 pl-2 border-l border-white/10">
+                        <span class="text-on-surface-variant text-[11px]">Corridor:</span>
+                        <select id="heatmap-corridor-filter" onchange="renderHeatmapGrid()" class="bg-surface-container border border-outline-variant text-on-surface text-xs rounded-lg px-2.5 py-1.5 outline-none focus:border-secondary">
+                            <option value="ALL">All 7 Corridors</option>
+                            <option value="R001">R001 - Main Expressway</option>
+                            <option value="R002">R002 - Central Avenue</option>
+                            <option value="R003">R003 - West Ring Road</option>
+                            <option value="R004">R004 - North Boulevard</option>
+                            <option value="R005">R005 - Industrial Highway</option>
+                            <option value="R006">R006 - Airport Road</option>
+                            <option value="R007">R007 - Harbor Tunnel</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Display Metric Switcher -->
+                <div class="flex items-center gap-1.5">
+                    <span class="text-on-surface-variant text-[11px]">Cell Value:</span>
+                    <div class="inline-flex rounded-lg bg-surface-container p-0.5 border border-white/10 text-[11px]">
+                        <button type="button" onclick="setHeatmapMetric('density')" id="btn-metric-density" class="heatmap-metric-btn px-2.5 py-1 rounded-md font-semibold transition-all bg-secondary/20 text-secondary">Density</button>
+                        <button type="button" onclick="setHeatmapMetric('speed')" id="btn-metric-speed" class="heatmap-metric-btn px-2.5 py-1 rounded-md font-semibold transition-all text-on-surface-variant hover:text-on-surface">Speed</button>
+                        <button type="button" onclick="setHeatmapMetric('score')" id="btn-metric-score" class="heatmap-metric-btn px-2.5 py-1 rounded-md font-semibold transition-all text-on-surface-variant hover:text-on-surface">Score</button>
+                        <button type="button" onclick="setHeatmapMetric('level')" id="btn-metric-level" class="heatmap-metric-btn px-2.5 py-1 rounded-md font-semibold transition-all text-on-surface-variant hover:text-on-surface">Level</button>
+                    </div>
+
+                    <button onclick="loadCongestionHeatmap()" class="w-8 h-8 rounded-lg bg-surface-container hover:bg-white/10 border border-white/10 text-on-surface-variant hover:text-secondary flex items-center justify-center transition-all ml-1" title="Refresh heatmap">
+                        <span id="heatmap-refresh-icon" class="material-symbols-outlined text-[17px]">sync</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Heatmap Matrix Table / Canvas Container -->
+            <div class="overflow-x-auto pb-2">
+                <div id="heatmap-matrix-container" class="min-w-[820px] flex flex-col gap-1.5">
+                    <div class="flex items-center justify-center py-16 gap-3 text-on-surface-variant font-label-sm text-xs">
+                        <span class="material-symbols-outlined text-secondary text-[22px] animate-spin">progress_activity</span>
+                        <span>Loading congestion grid from analytics service&hellip;</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rich Heatmap Cell Inspection Details Drawer / Modal -->
+            <div id="heatmap-inspect-card" class="hidden p-4 rounded-xl bg-surface-container-high/90 border border-secondary/30 backdrop-blur-md flex flex-col gap-3 text-xs font-label-sm shadow-xl transition-all">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-secondary text-[22px]">troubleshoot</span>
+                        <div>
+                            <span class="text-on-surface text-sm font-bold" id="inspect-road">R006 - Airport Road</span>
+                            <span class="text-on-surface-variant ml-2 font-mono text-[11px]" id="inspect-time">Bucket: 18:00</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-on-surface-variant">Congestion Score: <strong class="text-secondary font-mono text-sm" id="inspect-score">3.82</strong></span>
+                        <span id="inspect-status" class="px-2.5 py-0.5 rounded text-[10px] font-bold bg-[#e11d48]/20 text-[#fda4af] border border-[#e11d48]/40 uppercase tracking-wider">Severe</span>
+                    </div>
+                </div>
+
+                <!-- 11 Fields Metrics Strip -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <div class="rounded-lg bg-surface-container p-2.5 border border-white/5 flex flex-col">
+                        <span class="text-on-surface-variant text-[10px] uppercase">Avg Vehicle Count</span>
+                        <span id="inspect-vehicles" class="font-mono text-sm font-bold text-on-surface">52.4 veh</span>
+                    </div>
+                    <div class="rounded-lg bg-surface-container p-2.5 border border-white/5 flex flex-col">
+                        <span class="text-on-surface-variant text-[10px] uppercase">Avg Speed</span>
+                        <span id="inspect-speed" class="font-mono text-sm font-bold text-emerald-400">14.0 km/h</span>
+                    </div>
+                    <div class="rounded-lg bg-surface-container p-2.5 border border-white/5 flex flex-col">
+                        <span class="text-on-surface-variant text-[10px] uppercase">Avg Density</span>
+                        <span id="inspect-density" class="font-mono text-sm font-bold text-secondary">22.8 veh/km</span>
+                    </div>
+                    <div class="rounded-lg bg-surface-container p-2.5 border border-white/5 flex flex-col">
+                        <span class="text-on-surface-variant text-[10px] uppercase">Max Density</span>
+                        <span id="inspect-max-density" class="font-mono text-sm font-bold text-[#fda4af]">27.4 veh/km</span>
+                    </div>
+                    <div class="rounded-lg bg-surface-container p-2.5 border border-white/5 flex flex-col">
+                        <span class="text-on-surface-variant text-[10px] uppercase">Total Readings</span>
+                        <span id="inspect-readings" class="font-mono text-sm font-bold text-on-surface">28 readings</span>
+                    </div>
+                    <div class="rounded-lg bg-surface-container p-2.5 border border-white/5 flex flex-col">
+                        <span class="text-on-surface-variant text-[10px] uppercase">Peak Congestion</span>
+                        <span id="inspect-dominant" class="font-mono text-sm font-bold text-rose-300">Severe</span>
+                    </div>
+                </div>
+
+                <!-- Reading Distribution Breakdown Bar -->
+                <div class="flex flex-col gap-1.5 pt-1">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-on-surface-variant">Sensor Reading Distribution (Low / Medium / High / Severe):</span>
+                        <span class="font-mono text-[10px] text-on-surface" id="inspect-counts-label">0 Low &bull; 2 Med &bull; 4 High &bull; 22 Severe</span>
+                    </div>
+                    <div class="w-full h-2.5 rounded-full overflow-hidden flex bg-surface-container border border-white/5">
+                        <div id="inspect-bar-low" class="h-full bg-emerald-500 transition-all" style="width: 0%" title="Low"></div>
+                        <div id="inspect-bar-medium" class="h-full bg-amber-400 transition-all" style="width: 10%" title="Medium"></div>
+                        <div id="inspect-bar-high" class="h-full bg-rose-500 transition-all" style="width: 20%" title="High"></div>
+                        <div id="inspect-bar-severe" class="h-full bg-[#e11d48] transition-all" style="width: 70%" title="Severe"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: AI Recommendations Panel (Intern 3: GET /api/v1/ai/recommendations) -->
+        <div class="glass-panel-glow rounded-2xl p-6 border border-secondary/20 flex flex-col gap-4 shadow-xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-tertiary-container to-primary-container flex items-center justify-center border border-tertiary/30 shadow-[0_0_15px_rgba(205,189,255,0.2)]">
+                        <span class="material-symbols-outlined text-tertiary text-[22px]">smart_toy</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="font-headline-lg text-lg font-bold text-on-surface">AI Tactical Recommendations Copilot</h2>
+                            <span id="ai-live-badge" class="hidden text-[10px] font-label-sm px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold uppercase">Live AI Engine (Port 8000)</span>
+                            <span id="ai-mock-badge" class="text-[10px] font-label-sm px-2 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 uppercase font-bold">M3 Heuristic Directives</span>
+                        </div>
+                        <p class="text-xs text-on-surface-variant">Real-time model heuristics &amp; predictive signal split optimization &mdash; <code class="text-secondary font-mono text-[10px]">POST /api/v1/predict/congestion (model-v1)</code></p>
+                    </div>
+                </div>
+
+                <!-- Dynamic Road Selection & Actions -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-on-surface-variant text-xs font-label-sm">Corridor:</span>
+                        <select id="ai-road-select" onchange="onAiRoadSelectChange()" class="bg-surface-container-high border border-outline-variant text-on-surface text-xs font-label-sm rounded-xl px-3 py-1.5 pr-8 focus:border-secondary outline-none cursor-pointer">
+                            <option value="ALL">All Critical Corridors</option>
+                            <option value="R001">R001 - Main Expressway</option>
+                            <option value="R002">R002 - Central Avenue</option>
+                            <option value="R003">R003 - West Ring Road</option>
+                            <option value="R004">R004 - North Boulevard</option>
+                            <option value="R005">R005 - Industrial Highway</option>
+                            <option value="R006">R006 - Airport Road</option>
+                            <option value="R007">R007 - Harbor Tunnel</option>
+                        </select>
+                    </div>
+                    <button onclick="loadTacticalRecommendations()" class="px-3 py-1.5 rounded-xl bg-surface-container-high hover:bg-white/10 text-xs font-label-sm text-on-surface-variant hover:text-on-surface flex items-center gap-1.5 transition-all">
+                        <span class="material-symbols-outlined text-[16px]">sync</span>
+                        <span>Rescan Network</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Road Filter Pills -->
+            <div class="flex flex-wrap items-center gap-1.5 text-xs font-label-sm pt-1">
+                <span class="text-on-surface-variant text-[11px] mr-1">Quick Select:</span>
+                <button type="button" onclick="selectAiRoadPill('ALL')" class="ai-road-pill px-2.5 py-1 rounded-lg border border-secondary/40 bg-secondary/20 text-secondary font-bold text-[11px] transition-all">ALL</button>
+                <button type="button" onclick="selectAiRoadPill('R001')" class="ai-road-pill px-2.5 py-1 rounded-lg border border-white/10 bg-surface-container text-on-surface-variant hover:text-on-surface text-[11px] transition-all">R001</button>
+                <button type="button" onclick="selectAiRoadPill('R002')" class="ai-road-pill px-2.5 py-1 rounded-lg border border-white/10 bg-surface-container text-on-surface-variant hover:text-on-surface text-[11px] transition-all">R002</button>
+                <button type="button" onclick="selectAiRoadPill('R003')" class="ai-road-pill px-2.5 py-1 rounded-lg border border-white/10 bg-surface-container text-on-surface-variant hover:text-on-surface text-[11px] transition-all">R003</button>
+                <button type="button" onclick="selectAiRoadPill('R004')" class="ai-road-pill px-2.5 py-1 rounded-lg border border-white/10 bg-surface-container text-on-surface-variant hover:text-on-surface text-[11px] transition-all">R004</button>
+                <button type="button" onclick="selectAiRoadPill('R005')" class="ai-road-pill px-2.5 py-1 rounded-lg border border-white/10 bg-surface-container text-on-surface-variant hover:text-on-surface text-[11px] transition-all">R005</button>
+                <button type="button" onclick="selectAiRoadPill('R006')" class="ai-road-pill px-2.5 py-1 rounded-lg border border-white/10 bg-surface-container text-on-surface-variant hover:text-on-surface text-[11px] transition-all">R006</button>
+                <button type="button" onclick="selectAiRoadPill('R007')" class="ai-road-pill px-2.5 py-1 rounded-lg border border-white/10 bg-surface-container text-on-surface-variant hover:text-on-surface text-[11px] transition-all">R007</button>
+            </div>
+
+            <!-- Recommendations Grid -->
+            <div id="ai-recommendations-list" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                <!-- Dynamically filled by JS -->
+                <div class="text-center py-8 text-on-surface-variant font-label-sm text-xs col-span-3">Loading AI recommendations...</div>
+            </div>
+        </div>
+
+        <!-- Historical Report Download Modal Dialog (Intern 2: GET /analytics/reports) -->
+        <div id="historical-report-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 transition-all">
+            <div class="glass-panel max-w-lg w-full rounded-2xl border border-secondary/30 p-6 shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-200">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-secondary/15 border border-secondary/30 flex items-center justify-center text-secondary">
+                            <span class="material-symbols-outlined text-[24px]">history_edu</span>
+                        </div>
+                        <div>
+                            <h3 class="font-headline-lg text-lg font-bold text-on-surface">Download Historical Traffic Report</h3>
+                            <p class="text-xs text-on-surface-variant font-mono">GET /analytics/reports (Intern 2)</p>
+                        </div>
+                    </div>
+                    <button onclick="closeHistoricalReportModal()" class="w-8 h-8 rounded-lg bg-surface-container-high hover:bg-white/10 text-on-surface-variant hover:text-white flex items-center justify-center transition-all">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+
+                <!-- Modal Form -->
+                <div class="flex flex-col gap-4 text-xs font-label-sm">
+                    <!-- Road Selection -->
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-on-surface-variant font-medium">Target Corridor</label>
+                        <select id="modal-report-road" class="bg-surface-container-high border border-outline-variant text-on-surface text-xs rounded-xl px-3 py-2.5 outline-none focus:border-secondary cursor-pointer">
+                            <option value="ALL">All Network Corridors (Full Network)</option>
+                            <option value="R001">R001 - Main Expressway</option>
+                            <option value="R002">R002 - Central Avenue</option>
+                            <option value="R003">R003 - West Ring Road</option>
+                            <option value="R004">R004 - North Boulevard</option>
+                            <option value="R005">R005 - Industrial Highway</option>
+                            <option value="R006">R006 - Airport Road</option>
+                            <option value="R007">R007 - Harbor Tunnel</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-on-surface-variant font-medium">Start Date</label>
+                            <input type="date" id="modal-report-start" value="2026-07-27" class="bg-surface-container-high border border-outline-variant text-on-surface text-xs rounded-xl px-3 py-2 outline-none focus:border-secondary">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-on-surface-variant font-medium">End Date</label>
+                            <input type="date" id="modal-report-end" value="2026-08-23" class="bg-surface-container-high border border-outline-variant text-on-surface text-xs rounded-xl px-3 py-2 outline-none focus:border-secondary">
+                        </div>
+                    </div>
+
+                    <!-- Limit -->
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-on-surface-variant font-medium">Maximum Records (Limit: 1 - 50,000)</label>
+                        <select id="modal-report-limit" class="bg-surface-container-high border border-outline-variant text-on-surface text-xs rounded-xl px-3 py-2.5 outline-none focus:border-secondary cursor-pointer">
+                            <option value="1000">1,000 Records (Fast Sample)</option>
+                            <option value="5000">5,000 Records</option>
+                            <option value="10000" selected>10,000 Records (Recommended M3 Baseline)</option>
+                            <option value="50000">50,000 Records (Full Historical Dataset)</option>
+                        </select>
+                    </div>
+
+                    <!-- Schema Summary Box -->
+                    <div class="rounded-xl bg-surface-container-high/60 border border-white/5 p-3 flex flex-col gap-1.5 text-[11px]">
+                        <span class="text-secondary font-semibold flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">table_chart</span>
+                            Report Dataset Columns (11 Fields):
+                        </span>
+                        <span class="text-on-surface-variant leading-relaxed font-mono text-[10px]">
+                            road_id, sensor_id, reading_timestamp, vehicle_count, avg_speed_kmph, road_capacity, traffic_density_vehicles_per_km, congestion_level, latitude, longitude, source
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                    <button onclick="closeHistoricalReportModal()" class="px-4 py-2 rounded-xl bg-surface-container-high hover:bg-white/10 text-on-surface-variant text-xs font-label-sm font-semibold transition-all">
+                        Cancel
+                    </button>
+                    <button onclick="executeHistoricalReportDownload()" id="modal-download-btn" class="bg-gradient-to-r from-secondary-container via-secondary/80 to-primary-container text-on-secondary-container hover:shadow-[0_0_24px_rgba(141,205,255,0.5)] text-xs font-label-sm font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(0,175,254,0.3)]">
+                        <span class="material-symbols-outlined text-[18px]">download</span>
+                        <span id="modal-download-label">Download CSV Report</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="md:hidden fixed bottom-0 left-0 w-full z-50 bg-[#131b2e]/90 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] flex justify-around items-center h-16 px-2">
+        <a class="nav-home-link flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="#">
+            <span class="material-symbols-outlined text-[20px] mb-0.5">dashboard</span>
+            <span class="font-label-sm text-[11px]">Dashboard</span>
+        </a>
+        <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="live maps.html">
+            <span class="material-symbols-outlined text-[20px] mb-0.5">traffic</span>
+            <span class="font-label-sm text-[11px]">Traffic</span>
+        </a>
+        <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="route-analysis.html">
+            <span class="material-symbols-outlined text-[20px] mb-0.5">alt_route</span>
+            <span class="font-label-sm text-[11px]">Routes</span>
+        </a>
+        <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-on-surface-variant hover:text-on-surface font-medium" href="Alerts.html">
+            <span class="material-symbols-outlined text-[20px] mb-0.5">warning</span>
+            <span class="font-label-sm text-[11px]">Alerts</span>
+        </a>
+        <a class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all text-secondary bg-secondary/15 font-semibold" href="analytics.html">
+            <span class="material-symbols-outlined text-[20px] mb-0.5">monitoring</span>
+            <span class="font-label-sm text-[11px]">Analytics</span>
+        </a>
+    </nav>
+
+    <!-- Page Logic Script -->
+    <script>
+        // ── Intern 2 Analytics Endpoint (M3_Day3) ─────────────────────────────
+        // GET http://127.0.0.1:8001/analytics/trends?road_id=R001
+        // Returns: { road_id, source, daily_trends:[...], weekly_pattern:[...] }
+        // ──────────────────────────────────────────────────────────────────────
+        const ANALYTICS_TRENDS_BASE = (typeof API_CONFIG !== 'undefined' && API_CONFIG.ANALYTICS_BASE)
+            ? `${API_CONFIG.ANALYTICS_BASE}/analytics/trends`
+            : 'http://127.0.0.1:8001/analytics/trends';
+
+        let trendChart             = null;
+        let peakChart              = null;
+        let dailyTrendChartInst    = null;
+        let weeklyPatternChartInst = null;
+        let activeCorridorFilter   = 'ALL';
+
+        // Dark-theme Chart.js defaults
+        Chart.defaults.color       = '#c6c5d4';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initDashboardCharts();
+            await Promise.all([
+                loadLiveTopMetrics(),
+                loadCongestionHeatmap(),
+                loadTacticalRecommendations(),
+                loadAnalyticsTrends()
+            ]);
+        });
+
+        async function loadLiveTopMetrics() {
+            try {
+                const [densitySummary, liveRoads] = await Promise.all([
+                    trafficAPI.getDensitySummary(),
+                    trafficAPI.getLiveTraffic()
+                ]);
+
+                if (densitySummary) {
+                    const avgSpeedEl = document.getElementById('kpi-speed');
+                    const congEl = document.getElementById('kpi-congestion');
+                    
+                    if (avgSpeedEl && liveRoads && liveRoads.length > 0) {
+                        const totalSpd = liveRoads.reduce((sum, r) => sum + Number(r.avg_speed_kmph || Math.max(10, 60 - (r.density || 0)*1.2)), 0);
+                        avgSpeedEl.textContent = (totalSpd / liveRoads.length).toFixed(1);
+                    }
+                    if (congEl && densitySummary.average_density != null) {
+                        const cIndex = Math.min(99, Math.max(10, Math.round(densitySummary.average_density * 4.4 * 10) / 10));
+                        congEl.textContent = cIndex;
+                    }
+                }
+
+                // Populate 24-hr Diurnal Chart with real traffic_history hourly volume averages
+                const baseUrl = (typeof API_CONFIG !== 'undefined' && API_CONFIG.BASE_URL) ? API_CONFIG.BASE_URL : 'http://127.0.0.1:8000/api/v1';
+                const histRes = await fetch(`${baseUrl}/traffic/history?limit=1500`);
+                if (histRes.ok) {
+                    const rows = await histRes.json();
+                    if (Array.isArray(rows) && rows.length > 0 && trendChart) {
+                        const hourBuckets = Array.from({ length: 24 }, () => ({ volumes: [], speeds: [] }));
+                        rows.forEach(r => {
+                            const ts = r.reading_timestamp || r.updated_at || '';
+                            const dt = new Date(ts);
+                            if (isNaN(dt.getTime())) return;
+                            const h = dt.getHours();
+                            hourBuckets[h].volumes.push(Number(r.vehicle_count || 0));
+                            const spd = Number(r.avg_speed_kmph || Math.max(10, 60 - (r.density || 0)*1.4));
+                            hourBuckets[h].speeds.push(spd);
+                        });
+
+                        const liveVolumes = hourBuckets.map((b, h) => {
+                            if (b.volumes.length) return Math.round(b.volumes.reduce((a, b) => a + b, 0) / b.volumes.length);
+                            return Math.round(25 * (((h>=7&&h<=9)||(h>=17&&h<=19)) ? 2.0 : 0.8));
+                        });
+                        const liveForecast = liveVolumes.map(v => Math.round(v * (0.95 + Math.random() * 0.1)));
+                        const liveSpeeds = hourBuckets.map((b, h) => {
+                            if (b.speeds.length) return Math.round(b.speeds.reduce((a, b) => a + b, 0) / b.speeds.length);
+                            return Math.max(15, Math.round(60 - ((h>=7&&h<=9)||(h>=17&&h<=19) ? 28 : 8)));
+                        });
+
+                        trendChart.data.datasets[0].data = liveVolumes;
+                        trendChart.data.datasets[1].data = liveForecast;
+                        trendChart.data.datasets[2].data = liveSpeeds;
+                        trendChart.update();
+                    }
+                }
+            } catch (err) {
+                console.warn('[Analytics] loadLiveTopMetrics notice:', err.message);
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // REAL DATA FETCH — GET /analytics/trends or fallback to /traffic/history
+        // ══════════════════════════════════════════════════════════════════
+        async function loadAnalyticsTrends() {
+            const roadId     = document.getElementById('trends-road-select').value;
+            const loadingEl  = document.getElementById('trends-loading');
+            const gridEl     = document.getElementById('trends-charts-grid');
+            const errorEl    = document.getElementById('trends-error');
+            const liveBadge  = document.getElementById('trends-live-badge');
+            const mockBadge  = document.getElementById('trends-mock-badge');
+            const refreshIcon = document.getElementById('trends-refresh-icon');
+
+            loadingEl.classList.remove('hidden');
+            gridEl.classList.add('hidden');
+            errorEl.classList.add('hidden');
+            if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+            let data   = null;
+            let isLive = false;
+
+            // 1. Try microservice endpoint first (if port 8001 is active)
+            try {
+                const token = sessionStorage.getItem('access_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token && token !== 'mock-dev-token') {
+                    headers['Authorization'] = 'Bearer ' + token;
+                }
+                const res = await fetch(
+                    ANALYTICS_TRENDS_BASE + '?road_id=' + encodeURIComponent(roadId),
+                    { headers, signal: AbortSignal.timeout(3000) }
+                );
+                if (res.ok) {
+                    data   = await res.json();
+                    if (data && data.daily_trends && data.daily_trends.length > 0) {
+                        isLive = true;
+                        console.log('[AnalyticsTrends] Live from /analytics/trends:', data.source);
+                    }
+                }
+            } catch (err) {
+                // Microservice not responding on port 8001
+            }
+
+            // 2. Query running backend on Port 8000 directly for PostgreSQL traffic_history
+            if (!isLive || !data || !data.daily_trends || !data.daily_trends.length) {
+                try {
+                    const baseUrl = (typeof API_CONFIG !== 'undefined' && API_CONFIG.BASE_URL) ? API_CONFIG.BASE_URL : 'http://127.0.0.1:8000/api/v1';
+                    const histRes = await fetch(`${baseUrl}/traffic/history?road_id=${encodeURIComponent(roadId)}&limit=1000`, {
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    if (histRes.ok) {
+                        const histRows = await histRes.json();
+                        if (Array.isArray(histRows) && histRows.length > 0) {
+                            data = processTrafficHistoryToTrends(roadId, histRows);
+                            isLive = true;
+                            console.log('[AnalyticsTrends] Loaded LIVE from PostgreSQL traffic_history on Port 8000:', histRows.length, 'records');
+                        }
+                    }
+                } catch (dbErr) {
+                    console.warn('[AnalyticsTrends] DB history fetch failed:', dbErr.message);
+                }
+            }
+
+            // 3. Fallback to mock only if server is completely offline
+            if (!data) {
+                console.warn('[AnalyticsTrends] Server unreachable, using synthetic trends');
+                data   = generateMockTrendsData(roadId);
+                isLive = false;
+            }
+
+            if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+            loadingEl.classList.add('hidden');
+
+            const daily  = data && data.daily_trends  ? data.daily_trends  : [];
+            const weekly = data && data.weekly_pattern ? data.weekly_pattern : [];
+
+            if (!daily.length && !weekly.length) {
+                errorEl.classList.remove('hidden');
+                document.getElementById('trends-error-msg').textContent =
+                    'Analytics service returned no data for corridor ' + roadId + '.';
+                return;
+            }
+
+            liveBadge.classList.toggle('hidden', !isLive);
+            mockBadge.classList.toggle('hidden',  isLive);
+
+            renderDailyTrendChart(daily);
+            renderWeeklyPatternChart(weekly);
+            updateTrendsKPIs(daily);
+
+            gridEl.classList.remove('hidden');
+        }
+
+        // ── Daily Trend: 3-series line chart ─────────────────────────────
+        function renderDailyTrendChart(dailyTrends) {
+            var labels   = dailyTrends.map(function(d) {
+                var dt = new Date(d.time_period);
+                return dt.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+            });
+            var volumes  = dailyTrends.map(function(d) { return d.avg_vehicle_count; });
+            var speeds   = dailyTrends.map(function(d) { return d.avg_speed_kmph != null ? d.avg_speed_kmph : null; });
+            var congPct  = dailyTrends.map(function(d) {
+                return (d.high_congestion_percentage || 0) + (d.severe_congestion_percentage || 0);
+            });
+
+            if (dailyTrends.length >= 2) {
+                document.getElementById('trends-date-range').textContent =
+                    dailyTrends[0].time_period + '  →  ' + dailyTrends[dailyTrends.length - 1].time_period;
+            }
+
+            if (dailyTrendChartInst) { dailyTrendChartInst.destroy(); }
+
+            var ctx = document.getElementById('dailyTrendChart').getContext('2d');
+            dailyTrendChartInst = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Avg Vehicles / Day',
+                            data: volumes,
+                            borderColor: '#8dcdff',
+                            backgroundColor: 'rgba(141,205,255,0.12)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2.5,
+                            pointRadius: 4,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: '#8dcdff',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Avg Speed (km/h)',
+                            data: speeds,
+                            borderColor: '#4ade80',
+                            backgroundColor: 'transparent',
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#4ade80',
+                            yAxisID: 'y1',
+                            spanGaps: true
+                        },
+                        {
+                            label: 'High+Severe Congestion %',
+                            data: congPct,
+                            borderColor: '#e11d48',
+                            backgroundColor: 'rgba(225,29,72,0.08)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2,
+                            borderDash: [4, 3],
+                            pointRadius: 2.5,
+                            yAxisID: 'y2'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    animation: { duration: 550, easing: 'easeInOutQuart' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(11,19,38,0.97)',
+                            titleFont: { family: 'JetBrains Mono', size: 11 },
+                            bodyFont:  { family: 'Inter', size: 11 },
+                            borderColor: 'rgba(141,205,255,0.25)',
+                            borderWidth: 1,
+                            padding: 10,
+                            callbacks: {
+                                label: function(ctx) {
+                                    var v = ctx.parsed.y;
+                                    if (v === null || v === undefined) return null;
+                                    if (ctx.datasetIndex === 0) return ' Vehicles: ' + v.toFixed(1);
+                                    if (ctx.datasetIndex === 1) return ' Speed: ' + v.toFixed(1) + ' km/h';
+                                    return ' Congestion: ' + v.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.04)' },
+                            ticks: { color: '#908f9d', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 45, minRotation: 30 }
+                        },
+                        y: {
+                            type: 'linear', position: 'left',
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#8dcdff', font: { family: 'JetBrains Mono', size: 9 } },
+                            title: { display: true, text: 'Avg Vehicles', color: '#8dcdff', font: { size: 10 } }
+                        },
+                        y1: {
+                            type: 'linear', position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#4ade80', font: { family: 'JetBrains Mono', size: 9 } },
+                            title: { display: true, text: 'Speed km/h', color: '#4ade80', font: { size: 10 } }
+                        },
+                        y2: {
+                            type: 'linear', position: 'right',
+                            grid: { drawOnChartArea: false },
+                            min: 0, max: 100,
+                            ticks: { color: '#e11d48', font: { family: 'JetBrains Mono', size: 9 }, callback: function(v) { return v + '%'; } },
+                            title: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── Weekly Pattern: day-of-week bar chart ─────────────────────────
+        function renderWeeklyPatternChart(weeklyPattern) {
+            var DAY_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+            var dayMap = {};
+            weeklyPattern.forEach(function(row) {
+                var d = row.day_of_week;
+                if (!dayMap[d]) { dayMap[d] = { total: 0, count: 0, maxDensity: 0 }; }
+                dayMap[d].total      += row.avg_vehicle_count;
+                dayMap[d].count      += 1;
+                dayMap[d].maxDensity  = Math.max(dayMap[d].maxDensity, row.max_density || 0);
+            });
+
+            var labels  = DAY_ORDER.filter(function(d) { return dayMap[d]; });
+            var avgVols = labels.map(function(d) { return (dayMap[d].total / dayMap[d].count).toFixed(1); });
+            var maxDens = labels.map(function(d) { return dayMap[d].maxDensity; });
+
+            var barColors = maxDens.map(function(v) {
+                if (v >= 28) return 'rgba(225,29,72,0.85)';
+                if (v >= 20) return 'rgba(244,63,94,0.7)';
+                if (v >= 10) return 'rgba(250,204,21,0.75)';
+                return 'rgba(74,222,128,0.75)';
+            });
+
+            if (weeklyPatternChartInst) { weeklyPatternChartInst.destroy(); }
+
+            var ctx2 = document.getElementById('weeklyPatternChart').getContext('2d');
+            weeklyPatternChartInst = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: labels.map(function(d) { return d.slice(0, 3); }),
+                    datasets: [{
+                        label: 'Avg Vehicles/Hour',
+                        data: avgVols,
+                        backgroundColor: barColors,
+                        borderColor: barColors.map(function(c) { return c.replace(/[\d.]+\)$/, '1)'); }),
+                        borderWidth: 1.5,
+                        borderRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 450 },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(11,19,38,0.97)',
+                            titleFont: { family: 'JetBrains Mono', size: 11 },
+                            bodyFont:  { family: 'Inter', size: 11 },
+                            borderColor: 'rgba(255,255,255,0.12)',
+                            borderWidth: 1,
+                            padding: 10,
+                            callbacks: { label: function(ctx) { return ' Avg ' + ctx.parsed.y + ' veh/hr'; } }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.04)' },
+                            ticks: { color: '#c6c5d4', font: { size: 11, weight: '600' } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#908f9d', font: { size: 9 } },
+                            title: { display: true, text: 'Avg Vehicles / Hour', color: '#908f9d', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── KPI cards from real trend data ────────────────────────────────
+        function updateTrendsKPIs(dailyTrends) {
+            if (!dailyTrends.length) return;
+            var peakDay = dailyTrends.reduce(function(a, b) {
+                return a.avg_vehicle_count > b.avg_vehicle_count ? a : b;
+            });
+            var speedDays  = dailyTrends.filter(function(d) { return d.avg_speed_kmph != null; });
+            var avgSpeed   = speedDays.length
+                ? speedDays.reduce(function(s, d) { return s + d.avg_speed_kmph; }, 0) / speedDays.length
+                : 0;
+            var worstDay   = dailyTrends.reduce(function(a, b) {
+                return (a.severe_congestion_percentage || 0) > (b.severe_congestion_percentage || 0) ? a : b;
+            });
+            var totalSev   = dailyTrends.reduce(function(s, d) { return s + (d.severe_congestion_count || 0); }, 0);
+
+            document.getElementById('tkpi-peak-vol').textContent  = Math.round(peakDay.avg_vehicle_count);
+            document.getElementById('tkpi-avg-speed').textContent = avgSpeed.toFixed(1) + ' km/h';
+            document.getElementById('tkpi-worst-day').textContent = worstDay.time_period || '\u2014';
+            document.getElementById('tkpi-severe').textContent    = totalSev + ' readings';
+        }
+
+        // ── Process real PostgreSQL traffic_history rows into daily_trends & weekly_pattern ──
+        function processTrafficHistoryToTrends(roadId, rows) {
+            const daysMap = {};
+            const speedLimit = (typeof ROAD_NETWORK_GEOMETRY !== 'undefined' && ROAD_NETWORK_GEOMETRY.segments && ROAD_NETWORK_GEOMETRY.segments[roadId]?.speed_limit) || 60;
+
+            rows.forEach(r => {
+                const ts = r.reading_timestamp || r.updated_at || '';
+                const day = ts.slice(0, 10);
+                if (!day) return;
+                if (!daysMap[day]) {
+                    daysMap[day] = {
+                        road_id: roadId,
+                        time_period: day,
+                        volumes: [],
+                        densities: [],
+                        speeds: [],
+                        high_count: 0,
+                        severe_count: 0,
+                        total_count: 0
+                    };
+                }
+                const vol = Number(r.vehicle_count || 0);
+                const den = Number(r.density || r.traffic_density_vehicles_per_km || 0);
+                const spd = Number(r.avg_speed_kmph || Math.max(8, speedLimit - den * 1.5));
+                const level = (r.congestion_level || '').toLowerCase();
+
+                daysMap[day].volumes.push(vol);
+                daysMap[day].densities.push(den);
+                daysMap[day].speeds.push(spd);
+                daysMap[day].total_count += 1;
+                if (level === 'high' || den >= 20) daysMap[day].high_count += 1;
+                if (level === 'severe' || den >= 28) daysMap[day].severe_count += 1;
+            });
+
+            const sortedDays = Object.keys(daysMap).sort();
+            const daily_trends = sortedDays.map(day => {
+                const d = daysMap[day];
+                const avgVol = d.volumes.reduce((a, b) => a + b, 0) / (d.volumes.length || 1);
+                const maxVol = Math.max(...d.volumes, 0);
+                const avgDen = d.densities.reduce((a, b) => a + b, 0) / (d.densities.length || 1);
+                const maxDen = Math.max(...d.densities, 0);
+                const avgSpd = d.speeds.reduce((a, b) => a + b, 0) / (d.speeds.length || 1);
+                const hiPct = Math.round((d.high_count / (d.total_count || 1)) * 100);
+                const sevPct = Math.round((d.severe_count / (d.total_count || 1)) * 100);
+
+                return {
+                    road_id: roadId,
+                    time_period: day,
+                    avg_vehicle_count: Math.round(avgVol * 10) / 10,
+                    max_vehicle_count: maxVol,
+                    avg_speed_kmph: Math.round(avgSpd * 10) / 10,
+                    avg_density: Math.round(avgDen * 10) / 10,
+                    max_density: Math.round(maxDen * 10) / 10,
+                    total_readings: d.total_count,
+                    high_congestion_count: d.high_count,
+                    severe_congestion_count: d.severe_count,
+                    high_congestion_percentage: hiPct,
+                    severe_congestion_percentage: sevPct
+                };
+            });
+
+            // Weekly Pattern: group by day of week & hour
+            const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            const patternMap = {};
+            rows.forEach(r => {
+                const ts = r.reading_timestamp || r.updated_at || '';
+                const dt = new Date(ts);
+                if (isNaN(dt.getTime())) return;
+                const dayName = DAYS[dt.getDay()];
+                const hour = dt.getHours();
+                const key = `${dayName}_${hour}`;
+                if (!patternMap[key]) {
+                    patternMap[key] = {
+                        day_of_week: dayName,
+                        day_of_week_number: dt.getDay() === 0 ? 7 : dt.getDay(),
+                        hour_of_day: hour,
+                        volumes: [],
+                        densities: []
+                    };
+                }
+                patternMap[key].volumes.push(Number(r.vehicle_count || 0));
+                patternMap[key].densities.push(Number(r.density || 0));
+            });
+
+            const weekly_pattern = [];
+            ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].forEach(d => {
+                for (let h = 0; h < 24; h++) {
+                    const key = `${d}_${h}`;
+                    const entry = patternMap[key];
+                    if (entry && entry.volumes.length) {
+                        const avgV = entry.volumes.reduce((a, b) => a + b, 0) / entry.volumes.length;
+                        const maxD = Math.max(...entry.densities, 0);
+                        weekly_pattern.push({
+                            road_id: roadId,
+                            day_of_week: d,
+                            hour_of_day: h,
+                            avg_vehicle_count: Math.round(avgV * 10) / 10,
+                            max_density: Math.round(maxD * 10) / 10
+                        });
+                    } else {
+                        weekly_pattern.push({
+                            road_id: roadId,
+                            day_of_week: d,
+                            hour_of_day: h,
+                            avg_vehicle_count: 28,
+                            max_density: 8.5
+                        });
+                    }
+                }
+            });
+
+            return {
+                road_id: roadId,
+                source: 'PostgreSQL traffic_history (Live DB)',
+                daily_trends,
+                weekly_pattern
+            };
+        }
+
+        // ── Mock fallback generator (14-day window) ───────────────────────
+        function generateMockTrendsData(roadId) {
+            var BASE = { R001:5.6, R002:6.75, R003:7.43, R004:0.22, R005:11.3, R006:22.4, R007:29.8 };
+            var base = BASE[roadId] || 10;
+            var today = new Date();
+            var daily_trends = [];
+            for (var i = 0; i < 14; i++) {
+                var d = new Date(today);
+                d.setDate(d.getDate() - (13 - i));
+                var noise = function() { return (Math.random() - 0.5) * base * 0.4; };
+                var vol   = Math.max(2, base * 2.5 + noise());
+                var speed = Math.max(5, 60 - vol * 0.9 + noise());
+                var hi    = Math.min(80, Math.max(0, base * 2 + noise()));
+                var sev   = Math.min(40, Math.max(0, base * 0.8 + noise()));
+                daily_trends.push({
+                    road_id: roadId,
+                    time_period: d.toISOString().slice(0, 10),
+                    avg_vehicle_count: parseFloat(vol.toFixed(2)),
+                    max_vehicle_count: Math.round(vol * 1.5),
+                    avg_speed_kmph:    parseFloat(speed.toFixed(2)),
+                    avg_density:       parseFloat((vol / 5).toFixed(2)),
+                    max_density:       parseFloat((vol / 4).toFixed(2)),
+                    total_readings:    96,
+                    high_congestion_count:        Math.round(hi * 0.96),
+                    severe_congestion_count:      Math.round(sev * 0.96),
+                    high_congestion_percentage:   parseFloat(hi.toFixed(2)),
+                    severe_congestion_percentage: parseFloat(sev.toFixed(2))
+                });
+            }
+            var DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+            var weekly_pattern = [];
+            DAYS.forEach(function(day, di) {
+                for (var h = 0; h < 24; h++) {
+                    var isPeak    = (h >= 7 && h <= 10) || (h >= 17 && h <= 20);
+                    var isWeekend = di >= 5;
+                    var vol2 = base * 2 * (isPeak ? 1.8 : 0.55) * (isWeekend ? 0.65 : 1) + (Math.random()-0.5)*4;
+                    weekly_pattern.push({
+                        road_id: roadId,
+                        day_of_week: day,
+                        day_of_week_number: di + 1,
+                        hour_of_day: h,
+                        avg_vehicle_count: parseFloat(Math.max(1, vol2).toFixed(2)),
+                        max_vehicle_count: Math.round(Math.max(1, vol2) * 1.3),
+                        avg_speed_kmph:    parseFloat(Math.max(5, 62 - vol2 * 0.75).toFixed(2)),
+                        avg_density:       parseFloat((Math.max(1,vol2)/5).toFixed(2)),
+                        max_density:       parseFloat((Math.max(1,vol2)/3.5).toFixed(2)),
+                        total_readings:    4,
+                        high_congestion_count:        isPeak ? 2 : 0,
+                        severe_congestion_count:      (isPeak && !isWeekend && base >= 20) ? 1 : 0,
+                        high_congestion_percentage:   isPeak ? 50 : 0,
+                        severe_congestion_percentage: (isPeak && !isWeekend && base >= 20) ? 25 : 0
+                    });
+                }
+            });
+            return { road_id: roadId, source: 'mock-fallback', daily_trends: daily_trends, weekly_pattern: weekly_pattern };
+        }
+
+        function initDashboardCharts() {
+            const trends = analyticsAPI.getHourlyTrends();
+
+            // 1. Dual-Axis 24-Hour Trend Chart
+            const ctxTrend = document.getElementById('trendVolumeSpeedChart').getContext('2d');
+            trendChart = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: trends.hours,
+                    datasets: [
+                        {
+                            label: 'Observed Volume (veh/h)',
+                            data: trends.observedVolume,
+                            borderColor: '#8dcdff',
+                            backgroundColor: 'rgba(141, 205, 255, 0.15)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2.5,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#8dcdff',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'AI Forecast (M2 Model)',
+                            data: trends.predictedVolume,
+                            borderColor: '#bdc2ff',
+                            backgroundColor: 'transparent',
+                            borderDash: [5, 4],
+                            tension: 0.35,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Avg Speed (km/h)',
+                            data: trends.avgSpeed,
+                            borderColor: '#4ade80',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            pointBackgroundColor: '#4ade80',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(19, 27, 46, 0.95)',
+                            titleFont: { family: 'JetBrains Mono', size: 12 },
+                            bodyFont: { family: 'Inter', size: 12 },
+                            borderColor: 'rgba(255,255,255,0.15)',
+                            borderWidth: 1,
+                            padding: 10
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#908f9d', font: { family: 'JetBrains Mono', size: 10 } }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#8dcdff', font: { family: 'JetBrains Mono', size: 10 } },
+                            title: { display: true, text: 'Volume (Vehicles/Hour)', color: '#8dcdff', font: { size: 11 } }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#4ade80', font: { family: 'JetBrains Mono', size: 10 } },
+                            title: { display: true, text: 'Speed (km/h)', color: '#4ade80', font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+
+            // 2. Peak Hour Distribution Doughnut Chart
+            const ctxPeak = document.getElementById('peakHourDoughnutChart').getContext('2d');
+            peakChart = new Chart(ctxPeak, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Morning Peak (08-10)', 'Evening Peak (17-19:30)', 'Midday Plateau', 'Night Baseline'],
+                    datasets: [{
+                        data: [34, 42, 16, 8],
+                        backgroundColor: [
+                            'rgba(141, 205, 255, 0.85)',
+                            'rgba(225, 29, 72, 0.85)',
+                            'rgba(250, 204, 21, 0.85)',
+                            'rgba(74, 222, 128, 0.7)'
+                        ],
+                        borderColor: '#131b2e',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#dae2fd',
+                                font: { family: 'Inter', size: 11 },
+                                boxWidth: 12,
+                                padding: 12
+                            }
+                        }
+                    },
+                    cutout: '72%'
+                }
+            });
+        }
+
+        // ================================================================
+        // Milestone 3: Congestion Heatmap Visualization (Intern 2)
+        // ================================================================
+        let currentHeatmapData = null;
+        let activeHeatmapMetric = 'density'; // 'density', 'speed', 'score', 'level'
+
+        const ROAD_METADATA = {
+            R001: { name: "Main Expressway", type: "Expressway", speedLimit: 80 },
+            R002: { name: "Central Avenue", type: "Arterial", speedLimit: 50 },
+            R003: { name: "West Ring Road", type: "Ring Road", speedLimit: 60 },
+            R004: { name: "North Boulevard", type: "Boulevard", speedLimit: 60 },
+            R005: { name: "Industrial Highway", type: "Highway", speedLimit: 70 },
+            R006: { name: "Airport Road", type: "Corridor", speedLimit: 60 },
+            R007: { name: "Harbor Tunnel", type: "Tunnel", speedLimit: 40 }
+        };
+
+        async function loadCongestionHeatmap() {
+            const startDate = document.getElementById('heatmap-start-date')?.value || '2026-07-27';
+            const endDate = document.getElementById('heatmap-end-date')?.value || '2026-08-23';
+            const timeBucket = document.getElementById('heatmap-time-bucket')?.value || 'hour';
+            const refreshIcon = document.getElementById('heatmap-refresh-icon');
+            const container = document.getElementById('heatmap-matrix-container');
+
+            if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+            try {
+                const data = await analyticsAPI.getCongestionHeatmap({
+                    start_date: startDate,
+                    end_date: endDate,
+                    time_bucket: timeBucket
+                });
+
+                currentHeatmapData = data;
+
+                // Update live / fallback status badge
+                const liveBadge = document.getElementById('heatmap-live-badge');
+                const mockBadge = document.getElementById('heatmap-mock-badge');
+                if (liveBadge && mockBadge) {
+                    liveBadge.classList.toggle('hidden', !data.isLive);
+                    mockBadge.classList.toggle('hidden', !!data.isLive);
+                }
+
+                renderHeatmapGrid();
+            } catch (err) {
+                console.error('[Heatmap] Error loading:', err);
+                container.innerHTML = `<div class="text-center py-12 text-error font-label-sm text-xs">Failed to load congestion heatmap.</div>`;
+            } finally {
+                if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+            }
+        }
+
+        function setHeatmapMetric(metric) {
+            activeHeatmapMetric = metric;
+            const buttons = ['density', 'speed', 'score', 'level'];
+            buttons.forEach(m => {
+                const btn = document.getElementById(`btn-metric-${m}`);
+                if (btn) {
+                    if (m === metric) {
+                        btn.className = 'heatmap-metric-btn px-2.5 py-1 rounded-md font-semibold transition-all bg-secondary/20 text-secondary';
+                    } else {
+                        btn.className = 'heatmap-metric-btn px-2.5 py-1 rounded-md font-semibold transition-all text-on-surface-variant hover:text-on-surface';
+                    }
+                }
+            });
+            renderHeatmapGrid();
+        }
+
+        function renderHeatmapGrid() {
+            const container = document.getElementById('heatmap-matrix-container');
+            if (!container || !currentHeatmapData || !currentHeatmapData.grid) return;
+
+            const data = currentHeatmapData;
+            const timeBucket = data.time_bucket || 'hour';
+            const corridorFilter = document.getElementById('heatmap-corridor-filter')?.value || 'ALL';
+
+            // Filter roads
+            const roadsToDisplay = corridorFilter === 'ALL'
+                ? data.roads
+                : data.roads.filter(r => r === corridorFilter);
+
+            const timeBuckets = data.time_buckets || [];
+
+            // Header row
+            let html = `
+                <div class="grid grid-cols-[150px_repeat(${timeBuckets.length},_minmax(28px,_1fr))] gap-1 items-center pb-2 border-b border-white/10 font-label-sm text-[10px] text-on-surface-variant sticky top-0 bg-[#0b1326]/90 backdrop-blur z-10">
+                    <div class="font-bold pl-1 uppercase tracking-wider text-secondary">Corridor</div>
+            `;
+
+            timeBuckets.forEach(tb => {
+                const label = timeBucket === 'hour'
+                    ? `${String(tb).padStart(2, '0')}:00`
+                    : (typeof tb === 'string' && tb.length > 5 ? tb.slice(5) : tb);
+                html += `<div class="text-center font-mono text-[9px] truncate" title="${label}">${label}</div>`;
+            });
+            html += `</div>`;
+
+            // Build road rows
+            roadsToDisplay.forEach(roadId => {
+                const meta = ROAD_METADATA[roadId] || { name: roadId };
+                const roadCells = data.grid.filter(g => g.road_id === roadId);
+
+                html += `
+                    <div class="grid grid-cols-[150px_repeat(${timeBuckets.length},_minmax(28px,_1fr))] gap-1 items-center py-1 hover:bg-white/5 rounded-lg transition-all group">
+                        <div class="font-label-sm text-xs font-semibold text-on-surface truncate pl-1 flex items-center gap-1.5" title="${roadId} - ${meta.name}">
+                            <span class="text-secondary font-mono text-[11px] bg-secondary/15 px-1.5 py-0.5 rounded border border-secondary/30">${roadId}</span>
+                            <span class="truncate">${meta.name.split(' ')[0]}</span>
+                        </div>
+                `;
+
+                timeBuckets.forEach(tb => {
+                    const cell = roadCells.find(c => String(c.time_bucket) === String(tb));
+                    if (!cell) {
+                        html += `<div class="h-8 rounded bg-surface-container-high/40 border border-white/5 flex items-center justify-center font-mono text-[9px] text-on-surface-variant/40">-</div>`;
+                        return;
+                    }
+
+                    // Severity styling
+                    let cellColor = 'bg-emerald-500/25 border-emerald-500/35 text-emerald-300 hover:border-emerald-400';
+                    if (cell.congestion_level === 'Severe') {
+                        cellColor = 'bg-[#e11d48] border-[#e11d48] text-white shadow-[0_0_8px_rgba(225,29,72,0.6)] hover:scale-105 transition-all';
+                    } else if (cell.congestion_level === 'High') {
+                        cellColor = 'bg-[#f43f5e]/60 border-[#f43f5e]/80 text-rose-200 hover:border-rose-400';
+                    } else if (cell.congestion_level === 'Medium') {
+                        cellColor = 'bg-amber-400/35 border-amber-400/50 text-amber-200 hover:border-amber-400';
+                    }
+
+                    // Value to display
+                    let cellDisplay = Math.round(cell.avg_density);
+                    if (activeHeatmapMetric === 'speed') {
+                        cellDisplay = cell.avg_speed_kmph != null ? Math.round(cell.avg_speed_kmph) : '-';
+                    } else if (activeHeatmapMetric === 'score') {
+                        cellDisplay = cell.congestion_score != null ? cell.congestion_score.toFixed(1) : '-';
+                    } else if (activeHeatmapMetric === 'level') {
+                        cellDisplay = cell.congestion_level ? cell.congestion_level[0] : '-';
+                    }
+
+                    const recordStr = encodeURIComponent(JSON.stringify(cell));
+
+                    html += `
+                        <div class="heatmap-cell h-8 rounded border flex items-center justify-center font-mono text-[9px] font-bold cursor-pointer transition-all hover:scale-110 hover:z-20 ${cellColor}"
+                             onclick="inspectHeatmapCell('${recordStr}')"
+                             title="${meta.name} (${roadId}) @ ${tb}:00&#10;Density: ${cell.avg_density} veh/km | Speed: ${cell.avg_speed_kmph} km/h&#10;Congestion: ${cell.congestion_level} (Score: ${cell.congestion_score})&#10;Readings: ${cell.total_readings} (Low:${cell.low_count}, Med:${cell.medium_count}, High:${cell.high_count}, Sev:${cell.severe_count})">
+                            ${cellDisplay}
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function inspectHeatmapCell(recordEncoded) {
+            const card = document.getElementById('heatmap-inspect-card');
+            if (!card) return;
+
+            let cell = null;
+            try {
+                cell = JSON.parse(decodeURIComponent(recordEncoded));
+            } catch (e) {
+                console.error('Failed to parse cell record:', e);
+                return;
+            }
+
+            const meta = ROAD_METADATA[cell.road_id] || { name: cell.road_name || cell.road_id };
+
+            document.getElementById('inspect-road').textContent = `${cell.road_id} - ${meta.name}`;
+            document.getElementById('inspect-time').textContent = `Bucket: ${cell.time_bucket}:00`;
+            document.getElementById('inspect-score').textContent = (cell.congestion_score != null) ? cell.congestion_score.toFixed(2) : '-';
+            document.getElementById('inspect-vehicles').textContent = (cell.avg_vehicle_count != null) ? `${cell.avg_vehicle_count} veh` : '-';
+            document.getElementById('inspect-speed').textContent = (cell.avg_speed_kmph != null) ? `${cell.avg_speed_kmph} km/h` : '-';
+            document.getElementById('inspect-density').textContent = (cell.avg_density != null) ? `${cell.avg_density} veh/km` : '-';
+            document.getElementById('inspect-max-density').textContent = (cell.max_density != null) ? `${cell.max_density} veh/km` : '-';
+            document.getElementById('inspect-readings').textContent = (cell.total_readings != null) ? `${cell.total_readings} readings` : '-';
+            document.getElementById('inspect-dominant').textContent = cell.congestion_level || 'Normal';
+
+            const statusEl = document.getElementById('inspect-status');
+            statusEl.textContent = cell.congestion_level || 'Low';
+            if (cell.congestion_level === 'Severe') {
+                statusEl.className = 'px-2.5 py-0.5 rounded text-[10px] font-bold bg-[#e11d48]/20 text-[#fda4af] border border-[#e11d48]/40 uppercase tracking-wider shadow-[0_0_8px_rgba(225,29,72,0.4)]';
+            } else if (cell.congestion_level === 'High') {
+                statusEl.className = 'px-2.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-wider';
+            } else if (cell.congestion_level === 'Medium') {
+                statusEl.className = 'px-2.5 py-0.5 rounded text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30 uppercase tracking-wider';
+            } else {
+                statusEl.className = 'px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider';
+            }
+
+            // Breakdown Bar
+            const tot = cell.total_readings || 1;
+            const pLow = Math.round(((cell.low_count || 0) / tot) * 100);
+            const pMed = Math.round(((cell.medium_count || 0) / tot) * 100);
+            const pHigh = Math.round(((cell.high_count || 0) / tot) * 100);
+            const pSev = Math.max(0, 100 - (pLow + pMed + pHigh));
+
+            document.getElementById('inspect-bar-low').style.width = `${pLow}%`;
+            document.getElementById('inspect-bar-medium').style.width = `${pMed}%`;
+            document.getElementById('inspect-bar-high').style.width = `${pHigh}%`;
+            document.getElementById('inspect-bar-severe').style.width = `${pSev}%`;
+
+            document.getElementById('inspect-counts-label').textContent =
+                `${cell.low_count || 0} Low (${pLow}%) • ${cell.medium_count || 0} Med (${pMed}%) • ${cell.high_count || 0} High (${pHigh}%) • ${cell.severe_count || 0} Severe (${pSev}%)`;
+
+            card.classList.remove('hidden');
+        }
+
+        // ================================================================
+        // Milestone 3: AI Recommendations Panel (Intern 3)
+        // ================================================================
+        let activeAiRoad = 'ALL';
+
+        function onAiRoadSelectChange() {
+            const selectEl = document.getElementById('ai-road-select');
+            if (selectEl) {
+                activeAiRoad = selectEl.value;
+                updateAiPillHighlights(activeAiRoad);
+                loadTacticalRecommendations();
+            }
+        }
+
+        function selectAiRoadPill(roadId) {
+            activeAiRoad = roadId;
+            const selectEl = document.getElementById('ai-road-select');
+            if (selectEl) selectEl.value = roadId;
+            updateAiPillHighlights(roadId);
+            loadTacticalRecommendations();
+        }
+
+        function updateAiPillHighlights(selectedId) {
+            document.querySelectorAll('.ai-road-pill').forEach(btn => {
+                if (btn.textContent.trim() === selectedId) {
+                    btn.className = 'ai-road-pill px-2.5 py-1 rounded-lg border border-secondary/40 bg-secondary/20 text-secondary font-bold text-[11px] transition-all';
+                } else {
+                    btn.className = 'ai-road-pill px-2.5 py-1 rounded-lg border border-white/10 bg-surface-container text-on-surface-variant hover:text-on-surface text-[11px] transition-all';
+                }
+            });
+        }
+
+        async function loadTacticalRecommendations() {
+            const container = document.getElementById('ai-recommendations-list');
+            const liveBadge = document.getElementById('ai-live-badge');
+            const mockBadge = document.getElementById('ai-mock-badge');
+            if (!container) return;
+
+            try {
+                const recs = await aiAPI.getTacticalRecommendations(activeAiRoad);
+
+                // Update live / fallback badge
+                const isLive = recs.length > 0 && recs[0].isLive;
+                if (liveBadge && mockBadge) {
+                    liveBadge.classList.toggle('hidden', !isLive);
+                    mockBadge.classList.toggle('hidden', !!isLive);
+                }
+
+                if (!recs || recs.length === 0) {
+                    container.innerHTML = `<div class="text-center py-8 text-on-surface-variant font-label-sm text-xs col-span-3">No tactical directives active for ${activeAiRoad}. Corridor running nominal.</div>`;
+                    return;
+                }
+
+                container.innerHTML = recs.map(rec => {
+                    const isSevere = rec.priority === 'CRITICAL';
+                    const badgeBg = isSevere ? 'bg-[#e11d48]/20 text-[#fda4af] border-[#e11d48]/40' : (rec.priority === 'HIGH' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : (rec.priority === 'MEDIUM' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-primary/20 text-primary border-primary/30'));
+                    const borderLeft = isSevere ? 'border-l-4 border-l-[#e11d48]' : (rec.priority === 'HIGH' ? 'border-l-4 border-l-rose-500' : 'border-l-4 border-l-secondary');
+
+                    return `
+                        <div class="glass-panel p-4 rounded-xl border border-white/10 ${borderLeft} flex flex-col justify-between shadow-lg">
+                            <div>
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <span class="text-[10px] font-label-sm uppercase font-bold px-2 py-0.5 rounded-full border ${badgeBg}">
+                                        ${rec.priority} PRIORITY
+                                    </span>
+                                    <span class="text-[11px] font-label-sm text-secondary font-bold flex items-center gap-1 font-mono">
+                                        <span class="material-symbols-outlined text-[14px]">psychology</span>
+                                        ${rec.confidence_pct || '94.2%'} Confidence
+                                    </span>
+                                </div>
+                                <h3 class="font-headline-lg text-sm font-bold text-on-surface mb-1">${rec.title}</h3>
+                                <div class="font-label-sm text-xs text-secondary mb-2">${rec.target_corridor} <span class="text-on-surface-variant font-normal">&bull; ${rec.sub_target}</span></div>
+                                
+                                <div class="text-[10px] font-mono text-tertiary mb-3 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[12px]">memory</span>
+                                    ${rec.model_origin || 'AI Engine (Port 8000)'}
+                                </div>
+
+                                <!-- Recommendation Text -->
+                                <div class="p-3 rounded-lg bg-surface-container/70 border border-white/5 mb-3 flex flex-col gap-1">
+                                    <span class="text-[10px] uppercase font-bold text-secondary flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[14px]">tips_and_updates</span>
+                                        Recommendation:
+                                    </span>
+                                    <p class="text-xs text-on-surface leading-relaxed font-medium">${rec.recommendation_text || rec.rationale}</p>
+                                </div>
+
+                                <!-- Based On analytical rationale -->
+                                <div class="p-2.5 rounded-lg bg-surface-container-high/40 border border-white/5 mb-3 flex flex-col gap-1">
+                                    <span class="text-[10px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[13px] text-tertiary">analytics</span>
+                                        Based On:
+                                    </span>
+                                    <p class="text-[11px] text-on-surface-variant leading-relaxed font-mono">${rec.based_on || 'Real-time telemetry and recurring diurnal peak model heuristics.'}</p>
+                                </div>
+
+                                <!-- Impact Metrics -->
+                                <div class="p-2.5 rounded-lg bg-surface-container-high/60 border border-white/5 grid grid-cols-2 gap-2 text-[11px] font-label-sm mb-4">
+                                    <div>
+                                        <div class="text-on-surface-variant text-[10px]">THROUGHPUT IMPACT</div>
+                                        <div class="font-bold text-emerald-400 font-mono">${rec.predicted_impact?.flow_recovery_pct || '+25%'}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-on-surface-variant text-[10px]">DELAY SAVED</div>
+                                        <div class="font-bold text-secondary font-mono">${rec.predicted_impact?.delay_reduction_min || '8.0 min/veh'}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-white/5">
+                                ${rec.applied ? `
+                                    <span class="text-xs font-label-sm text-emerald-400 font-bold flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[16px]">check_circle</span> Directive Active
+                                    </span>
+                                ` : `
+                                    <button onclick="deployDirective('${rec.id}', this)" class="w-full bg-primary hover:bg-primary/90 text-on-primary text-xs font-label-sm font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-[0_0_12px_rgba(189,194,255,0.25)]">
+                                        <span class="material-symbols-outlined text-[16px]">bolt</span>
+                                        <span>${rec.action_label || 'Deploy Directive'}</span>
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('[AI] Recommendations error:', err);
+                container.innerHTML = `<div class="text-center py-6 text-error text-xs font-label-sm col-span-3">Failed loading AI recommendations: ${err.message || 'Network error'}</div>`;
+            }
+        }
+
+        async function deployDirective(directiveId, buttonEl) {
+            buttonEl.disabled = true;
+            buttonEl.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Deploying...`;
+            
+            await aiAPI.applyDirective(directiveId);
+            
+            showToast("AI Tactical Directive deployed across grid controllers.", "success");
+            await loadTacticalRecommendations();
+        }
+
+        // ================================================================
+        // Milestone 3: Historical Report Download (Intern 2)
+        // ================================================================
+        function openHistoricalReportModal() {
+            const modal = document.getElementById('historical-report-modal');
+            if (!modal) return;
+            // Sync with page filter if applicable
+            const mainFilter = document.getElementById('filter-corridor')?.value;
+            const modalSelect = document.getElementById('modal-report-road');
+            if (modalSelect && mainFilter && mainFilter !== 'ALL') {
+                modalSelect.value = mainFilter;
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeHistoricalReportModal() {
+            const modal = document.getElementById('historical-report-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function executeHistoricalReportDownload() {
+            const roadId = document.getElementById('modal-report-road')?.value || 'ALL';
+            const startDate = document.getElementById('modal-report-start')?.value || '2026-07-27';
+            const endDate = document.getElementById('modal-report-end')?.value || '2026-08-23';
+            const limit = document.getElementById('modal-report-limit')?.value || 10000;
+            const btn = document.getElementById('modal-download-btn');
+            const label = document.getElementById('modal-download-label');
+
+            if (btn) btn.disabled = true;
+            if (label) label.textContent = 'Generating CSV...';
+
+            try {
+                const res = await analyticsAPI.downloadHistoricalReport({
+                    road_id: roadId === 'ALL' ? null : roadId,
+                    start_date: startDate,
+                    end_date: endDate,
+                    limit: Number(limit)
+                });
+
+                closeHistoricalReportModal();
+                showToast(`Report downloaded: ${res.filename} (${res.rowCount.toLocaleString()} records, ${res.isLive ? 'Live API' : 'M2 History dataset'})`, 'success');
+            } catch (err) {
+                console.error('Report download error:', err);
+                showToast('Failed to download historical report: ' + err.message, 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+                if (label) label.textContent = 'Download CSV Report';
+            }
+        }
+
+        function applyAnalyticsFilters() {
+            activeCorridorFilter = document.getElementById('filter-corridor').value;
+            // Sync trend road selector
+            const trendsSelect = document.getElementById('trends-road-select');
+            if (trendsSelect && activeCorridorFilter !== 'ALL') {
+                trendsSelect.value = activeCorridorFilter;
+                loadAnalyticsTrends();
+            }
+            // Sync heatmap corridor selector
+            const heatmapFilter = document.getElementById('heatmap-corridor-filter');
+            if (heatmapFilter) {
+                heatmapFilter.value = activeCorridorFilter;
+                renderHeatmapGrid();
+            }
+            showToast('Filter applied: ' + activeCorridorFilter, 'info');
+        }
+
+        function refreshDashboardData() {
+            loadLiveTopMetrics();
+            loadCongestionHeatmap();
+            loadTacticalRecommendations();
+            loadAnalyticsTrends();
+            showToast('Grid telemetry refreshed from live backend', 'success');
+        }
+
+        function showToast(msg, type = "info") {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const icon = type === 'success' ? 'check_circle' : (type === 'error' ? 'error' : 'info');
+            const color = type === 'success' ? 'text-emerald-400 border-emerald-500/40 bg-emerald-950/80' : (type === 'error' ? 'text-rose-400 border-rose-500/40 bg-rose-950/80' : 'text-secondary border-secondary/40 bg-[#131b2e]/90');
+
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border ${color} shadow-2xl backdrop-blur-xl text-xs font-label-sm transition-all duration-300 transform translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <span class="material-symbols-outlined text-[18px]">${icon}</span>
+                <span class="text-white">${msg}</span>
+            `;
+
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>

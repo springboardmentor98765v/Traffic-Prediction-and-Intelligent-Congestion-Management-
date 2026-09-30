@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 
 <html class="dark" lang="en"><head>
+    <script>
+        (function() {
+            try {
+                const theme = localStorage.getItem('trafficvision_theme') || 'dark';
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.classList.remove('light');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('light');
+                }
+            } catch (e) {}
+        })();
+    </script>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>TrafficVision AI - Admin Dashboard</title>
@@ -158,6 +172,11 @@
             <span class="material-symbols-outlined text-[18px]">warning</span>
             <span>Alerts</span>
         </a>
+        <!-- Analytics Tab -->
+        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="analytics.html">
+            <span class="material-symbols-outlined text-[18px]">monitoring</span>
+            <span>Analytics</span>
+        </a>
     </nav>
 
     <!-- Right Utility Controls & User Profile -->
@@ -171,8 +190,16 @@
             <span>Grid Live • Intern 3 AI</span>
         </div>
 
+        <!-- Notification Bell Button -->
+        <div class="relative flex items-center">
+            <button id="nav-notification-bell-btn" class="relative w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all focus:outline-none" title="Notifications & Incident Alerts">
+                <span class="material-symbols-outlined text-[20px]">notifications</span>
+                <span id="nav-bell-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#e11d48] text-white text-[10px] font-bold flex items-center justify-center border-2 border-[#0b1326] shadow-[0_0_8px_rgba(225,29,72,0.6)] animate-pulse">0</span>
+            </button>
+        </div>
+
         <!-- Theme Toggle -->
-        <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all" onclick="document.documentElement.classList.toggle('dark')" title="Toggle Theme">
+        <button id="theme-toggle-btn" class="theme-toggle-btn w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all cursor-pointer" onclick="ThemeManager.toggle()" title="Toggle Theme">
             <span class="material-symbols-outlined text-[19px]">light_mode</span>
         </button>
 
@@ -219,6 +246,12 @@
             <button onclick="handleAdminDownloadReport('json')" class="bg-surface-container-high hover:bg-surface-container border border-white/10 px-3 py-2.5 rounded-xl text-xs font-label-sm text-on-surface-variant hover:text-secondary flex items-center gap-1.5 transition-all shadow" title="Export JSON">
                 <span class="material-symbols-outlined text-[16px]">data_object</span>
                 <span>JSON</span>
+            </button>
+
+            <!-- M3 Historical Report Download -->
+            <button onclick="handleAdminHistoricalReport()" class="bg-surface-container-high hover:bg-surface-container border border-secondary/30 px-3.5 py-2.5 rounded-xl text-xs font-label-sm text-on-surface hover:text-secondary flex items-center gap-1.5 transition-all shadow hover:border-secondary" title="Download M3 Historical Traffic CSV Report (/analytics/reports)">
+                <span class="material-symbols-outlined text-[16px] text-secondary">history_edu</span>
+                <span>Historical Report</span>
             </button>
 
             <!-- Sync Button -->
@@ -655,6 +688,17 @@ async function handleAdminDownloadReport(format = 'csv') {
     } finally {
         if (label) label.textContent = prevLabel;
         if (btn) btn.classList.remove('opacity-75', 'cursor-wait');
+    }
+}
+
+async function handleAdminHistoricalReport() {
+    showAdminToast("Preparing historical traffic CSV report from M3 analytics service...", "info");
+    try {
+        const res = await analyticsAPI.downloadHistoricalReport();
+        showAdminToast(`Historical report downloaded: ${res.filename} (${res.rowCount.toLocaleString()} records, ${res.isLive ? 'Live API' : 'M2 History dataset'})`, "success");
+    } catch (err) {
+        console.error('Historical report download error:', err);
+        showAdminToast(`Historical report download failed: ${err.message}`, "error");
     }
 }
 
