@@ -13,3 +13,4 @@ def add_time_features(data: pd.DataFrame, timestamp_column: str) -> pd.DataFrame
     result["day_of_week"] = timestamp.dt.dayofweek
     result["is_weekend"] = timestamp.dt.dayofweek >= 5
     return result
+
