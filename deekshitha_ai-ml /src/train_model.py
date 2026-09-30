@@ -22,7 +22,7 @@ from sklearn.metrics import (
 # PATHS
 # ============================================================
 #loaded the available traffic dataset from traffic.csv.
-# The dataset contains 1,446 traffic records with traffic measurements, road information, timestamps and congestion labels.
+# The dataset contains 4k+ traffic records with traffic measurements, road information, timestamps and congestion labels.
 DATA_PATH = "ai-engine/data/traffic.csv"
 MODEL_PATH = "ai-engine/models/model-v1.joblib"
 
