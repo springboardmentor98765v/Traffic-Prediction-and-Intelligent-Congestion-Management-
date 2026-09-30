@@ -1,0 +1,16 @@
+...........................................................              [100%]
+============================== warnings summary ===============================
+..\..\.venv\Lib\site-packages\starlette\_utils.py:40: 18 warnings
+Data/M3_Day5_Traffic_Monitoring_/tests/test_m2_day3_history.py: 10 warnings
+Data/M3_Day5_Traffic_Monitoring_/tests/test_m3_day5_reports.py: 5 warnings
+Data/M3_Day5_Traffic_Monitoring_/tests/test_m3_day6_qa_fixes.py: 8 warnings
+Data/M3_Day5_Traffic_Monitoring_/tests/test_traffic_api.py: 9 warnings
+  D:\infosys\Traffic-Prediction-and-Intelligent-Congestion-Management-\.venv\Lib\site-packages\starlette\_utils.py:40: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    return asyncio.iscoroutinefunction(obj) or (callable(obj) and asyncio.iscoroutinefunction(obj.__call__))
+
+..\..\.venv\Lib\site-packages\fastapi\routing.py:233: 12 warnings
+  D:\infosys\Traffic-Prediction-and-Intelligent-Congestion-Management-\.venv\Lib\site-packages\fastapi\routing.py:233: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    is_coroutine = asyncio.iscoroutinefunction(dependant.call)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+59 passed, 62 warnings in 3.50s
