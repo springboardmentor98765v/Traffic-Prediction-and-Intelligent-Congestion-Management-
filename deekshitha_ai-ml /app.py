@@ -1,8 +1,18 @@
 from fastapi import FastAPI, HTTPException, Query
+from pathlib import Path
+import sys
 from pydantic import BaseModel
 import httpx
 
+# M3 AI modules
+AI_ENGINE_DIR = Path(__file__).resolve().parent
+SRC_DIR = AI_ENGINE_DIR / "src"
 
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from anomaly_detector import AnomalyDetector
+from recommendation_engine import RecommendationEngine
 app = FastAPI(
     title="TrafficVision AI Engine",
     description="Traffic congestion prediction service",
@@ -11,9 +21,14 @@ app = FastAPI(
 
 
 # Intern 2 Traffic Monitoring API
-TRAFFIC_API_URL = "http://127.0.0.1:8000/api/v1/traffic/live"
+TRAFFIC_API_URL = "http://127.0.0.1:8000/api/v1/traffic/live"   
 
+# ============================================================
+# M3 - Anomaly Detection
+# ============================================================
 
+anomaly_detector = AnomalyDetector()
+recommendation_engine = RecommendationEngine()
 # ============================================================
 # Request / Response Models
 # ============================================================
@@ -222,3 +237,106 @@ async def predict_congestion_by_road(
         confidence=0.85,
         generated_by="heuristic-v0",
     )
+# ============================================================
+# M3 - AI Anomaly Detection
+# GET /api/v1/ai/anomalies
+# ============================================================
+
+@app.get("/api/v1/ai/anomalies")
+def get_anomalies(
+    road_id: str | None = Query(
+        default=None,
+        description="Optional road ID such as R001"
+    )
+):
+    """
+    Detect unusual traffic patterns using the historical baseline.
+
+    This endpoint identifies:
+    - normal traffic
+    - traffic anomalies
+    - possible incidents
+
+    A possible incident is a proxy signal and does not confirm
+    that an actual accident occurred.
+    """
+
+    # Load the historical traffic data
+    import pandas as pd
+
+    traffic = pd.read_csv(
+        anomaly_detector.traffic_path
+    )
+
+    traffic["timestamp"] = pd.to_datetime(
+        traffic["timestamp"]
+    )
+
+    # Optional road filtering
+    if road_id is not None:
+        traffic = traffic[
+            traffic["road_id"] == road_id
+        ]
+
+        if traffic.empty:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No historical traffic found for road {road_id}",
+            )
+
+    anomalies = []
+
+    for _, row in traffic.iterrows():
+
+        result = anomaly_detector.analyze(
+            road_id=row["road_id"],
+            timestamp=row["timestamp"],
+            vehicle_count=float(row["vehicle_count"]),
+            avg_speed_kmph=float(row["avg_speed_kmph"]),
+            traffic_density=float(
+                row["traffic_density_vehicles_per_km"]
+            ),
+            observed_congestion=row["congestion_level"],
+        )
+
+        if result["anomaly_class"] in {
+            "traffic_anomaly",
+            "possible_incident",
+        }:
+            anomalies.append(
+                {
+                    "road_id": result["road_id"],
+                    "time": result["time"],
+                    "expected_level": result["expected_level"],
+                    "observed_level": row["congestion_level"],
+                    "flagged_as": result["anomaly_class"],
+                }
+            )
+
+    return anomalies
+# ============================================================
+# M3 - AI Traffic Recommendations
+# GET /api/v1/ai/recommendations
+# ============================================================
+
+@app.get("/api/v1/ai/recommendations")
+def get_recommendations(
+    road_id: str = Query(
+        ...,
+        description="Road ID such as R001"
+    )
+):
+    """
+    Generate explainable traffic recommendations using
+    the M2 trained model and historical traffic trends.
+    """
+
+    recommendations = recommendation_engine.generate(road_id)
+
+    if not recommendations:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No recommendation data found for road {road_id}",
+        )
+
+    return recommendations
