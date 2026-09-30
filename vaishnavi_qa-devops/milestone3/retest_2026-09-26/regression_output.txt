@@ -1,0 +1,54 @@
+PASS REG-API-01 Register                                                     -> 201 
+PASS REG-API-02 Login returns JWT                                            -> 200 
+PASS REG-API-03 /me returns PUBLIC role                                      -> PUBLIC 
+PASS REG-API-04 Refresh token                                                -> 200 
+PASS REG-API-05 Wrong password rejected                                      -> 401 
+PASS REG-API-06 /me without token rejected                                   -> 401 
+PASS REG-API-07 Live traffic (6 roads)                                       -> 6 
+PASS REG-API-08 Road R001 detail + history                                   -> 200 
+PASS REG-API-09 Density summary                                              -> 200 
+PASS REG-API-10 Unknown road                                                 -> 404 
+PASS HIST-001   History for valid road                                       -> 200, 5 rows 
+FAIL HIST-002   Aggregate for road R001 + date range                         -> roads ['R001', 'R002', 'R003', 'R004', 'R005', 'R006'] DEF-M3-022
+PASS HIST-003   Road condition for valid road                                -> 200 
+FAIL HIST-004   History for invalid road                                     -> 200 [] DEF-M3-022
+FAIL HIST-005   History time window 00:00–05:00 applied                      -> 500 rows DEF-M3-022
+FAIL HIST-005b  Inverted history range rejected                              -> 200 DEF-M3-022
+PASS HIST-006   History response fields                                      -> ['congestion_level', 'density', 'reading_timestamp', 'road_id', 'vehic 
+PASS PRED-001   Congestion prediction R001                                   -> Low 
+PASS PRED-004   model_version present                                        -> model-v1 
+PASS PRED-005   Confidence in [0, 1]                                         -> 0.9167 
+PASS PRED-007   Prediction latency, 6 roads (max)                            -> 349 ms 
+PASS PRED-002   Peak-hour windows                                            -> [{'start': '08:00', 'end': '10:00'}, {'start': '17:00', 'end': '20:00' 
+PASS PRED-003   Delay estimate (minutes)                                     -> 3.21 
+PASS PRED-006   Invalid road                                                 -> 404 
+PASS ROUTE-001  Optimized route                                              -> 200 
+PASS ROUTE-006  Optimize response fields                                     -> ['congestion_score', 'distance_km', 'path', 'predicted_level', 'route_ 
+PASS ROUTE-002  Alternate routes, maps API unreachable: fallback or clear 50 -> 503 External maps service (OSRM) is currently unavailable. Please try  
+PASS ROUTE-003  Travel time (minutes)                                        -> 18.5 
+PASS ROUTE-004  Conditions along route                                       -> CLEAR 
+PASS ROUTE-005  Invalid coordinates                                          -> 400 
+PASS ROUTE-00A  Route without token rejected (RBAC)                          -> 401 
+PASS INT-001    Auth → Live → Prediction(busiest road) → Route               -> live 200, predict R005:200, route 200 
+PASS REG-002    Login as user lands on its dashboard                         -> public dashboard.html 
+PASS REG-001    Login as operator lands on its dashboard                     -> operator dashboard.html 
+PASS REG-003    Live traffic feed populated                                  -> 6 
+PASS MAP-001    Live map renders tiles + road layers                         -> tiles 35, road paths 12 
+PASS MAP-005    Road modal (R001) with congestion/speed/density + AI predict -> visible=True, id=ROAD SEGMENT • R001, prediction='Predicted Status: Lo 
+PASS FE-M2-001  Route page loads with no JS errors                           -> 0 [] 
+PASS ROUTE-007  Choose destination → route cards + ETA/distance KPIs         -> cards 3, ETA '9 mins', distance '7.8 km' 
+PASS FE-M2-003  Travel time updates after route change                       -> ETA '10 mins' → '9 mins' 
+PASS MAP-002    Route map draws the selected route                           -> 4 paths, label 'Express Arterial Route (AI Optimal)' 
+PASS MAP-006    Map label matches a route card                               -> Express Arterial Route (AI Opt 
+PASS ROUTE-008  Switch optimisation mode to Eco                              -> True 
+PASS ROUTE-009  Forecast horizon 0 → 60 min updates cards                    -> changed 
+PASS FE-M2-002  Speed-profile / forecast chart painted                       -> True 
+PASS FE-M2-004  Road-conditions panel matches API (hidden when clear)        -> hidden (API status CLEAR) 
+PASS MAP-003    Tile toggle OSM ↔ Terrain                                    -> True 
+PASS MAP-004    Heatmap overlay toggles                                      -> layers 0→1, button active=False 
+FAIL REG-004    Operator dashboard loads KPIs, delay estimates, peak chart   -> placeholders=yes, JS errors ['Unexpected end of input'] DEF-M3-023
+FAIL FE-M2-005  Operator dashboard 'Download Prediction Report'              -> no download: Timeout 20000ms exceeded while waiting for event "downloa DEF-M3-023
+PASS FE-M2-006  Route page calls live /route/* APIs                          -> 8 
+PASS REG-002    Login as admin lands on its dashboard                        -> admin dashboard.html 
+PASS FE-M2-007  Backend unreachable → fallback shown, no blank page          -> 2739 chars, badge '● MOCK DATA' 
+{'PASS': 47, 'FAIL': 6}

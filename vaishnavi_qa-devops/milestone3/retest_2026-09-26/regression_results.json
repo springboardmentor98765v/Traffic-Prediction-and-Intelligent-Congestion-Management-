@@ -1,0 +1,538 @@
+{
+  "summary": {
+    "PASS": 47,
+    "FAIL": 6
+  },
+  "results": [
+    {
+      "tc": "REG-API-01",
+      "area": "M1 Auth",
+      "check": "Register",
+      "expected": "201",
+      "actual": "201",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 893
+    },
+    {
+      "tc": "REG-API-02",
+      "area": "M1 Auth",
+      "check": "Login returns JWT",
+      "expected": "200 + token",
+      "actual": "200",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 781
+    },
+    {
+      "tc": "REG-API-03",
+      "area": "M1 Auth",
+      "check": "/me returns PUBLIC role",
+      "expected": "PUBLIC",
+      "actual": "PUBLIC",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 12
+    },
+    {
+      "tc": "REG-API-04",
+      "area": "M1 Auth",
+      "check": "Refresh token",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 13
+    },
+    {
+      "tc": "REG-API-05",
+      "area": "M1 Auth",
+      "check": "Wrong password rejected",
+      "expected": "401",
+      "actual": "401",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 793
+    },
+    {
+      "tc": "REG-API-06",
+      "area": "M1 Auth",
+      "check": "/me without token rejected",
+      "expected": "401/403",
+      "actual": "401",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 17
+    },
+    {
+      "tc": "REG-API-07",
+      "area": "M1 Monitoring",
+      "check": "Live traffic (6 roads)",
+      "expected": "6",
+      "actual": "6",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 15
+    },
+    {
+      "tc": "REG-API-08",
+      "area": "M1 Monitoring",
+      "check": "Road R001 detail + history",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 34
+    },
+    {
+      "tc": "REG-API-09",
+      "area": "M1 Monitoring",
+      "check": "Density summary",
+      "expected": "200 + total_roads",
+      "actual": "200",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 19
+    },
+    {
+      "tc": "REG-API-10",
+      "area": "M1 Monitoring",
+      "check": "Unknown road",
+      "expected": "404",
+      "actual": "404",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 16
+    },
+    {
+      "tc": "HIST-001",
+      "area": "M2 Historical",
+      "check": "History for valid road",
+      "expected": "200, 5 R001 rows",
+      "actual": "200, 5 rows",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 25
+    },
+    {
+      "tc": "HIST-002",
+      "area": "M2 Historical",
+      "check": "Aggregate for road R001 + date range",
+      "expected": "only R001, range applied",
+      "actual": "roads ['R001', 'R002', 'R003', 'R004', 'R005', 'R006']",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-022",
+      "ms": 33
+    },
+    {
+      "tc": "HIST-003",
+      "area": "M2 Historical",
+      "check": "Road condition for valid road",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 17
+    },
+    {
+      "tc": "HIST-004",
+      "area": "M2 Historical",
+      "check": "History for invalid road",
+      "expected": "404/400",
+      "actual": "200 []",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-022",
+      "ms": 15
+    },
+    {
+      "tc": "HIST-005",
+      "area": "M2 Historical",
+      "check": "History time window 00:00\u201305:00 applied",
+      "expected": "\u2264 6 rows",
+      "actual": "500 rows",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-022",
+      "ms": 66
+    },
+    {
+      "tc": "HIST-005b",
+      "area": "M2 Historical",
+      "check": "Inverted history range rejected",
+      "expected": "400",
+      "actual": "200",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-022",
+      "ms": 11
+    },
+    {
+      "tc": "HIST-006",
+      "area": "M2 Historical",
+      "check": "History response fields",
+      "expected": "['congestion_level', 'density', 'reading_timestamp', 'road_id', 'vehicle_count']",
+      "actual": "['congestion_level', 'density', 'reading_timestamp', 'road_id', 'vehicle_count']",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 10
+    },
+    {
+      "tc": "PRED-001",
+      "area": "M2 Prediction",
+      "check": "Congestion prediction R001",
+      "expected": "200 + predicted_level",
+      "actual": "Low",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 396
+    },
+    {
+      "tc": "PRED-004",
+      "area": "M2 Prediction",
+      "check": "model_version present",
+      "expected": "non-empty",
+      "actual": "model-v1",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "PRED-005",
+      "area": "M2 Prediction",
+      "check": "Confidence in [0, 1]",
+      "expected": "0\u20131",
+      "actual": "0.9167",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "PRED-007",
+      "area": "M2 Prediction",
+      "check": "Prediction latency, 6 roads (max)",
+      "expected": "< 2000 ms",
+      "actual": "349 ms",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 349
+    },
+    {
+      "tc": "PRED-002",
+      "area": "M2 Prediction",
+      "check": "Peak-hour windows",
+      "expected": "200 + windows",
+      "actual": "[{'start': '08:00', 'end': '10:00'}, {'start': '17:00', 'end': '20:00'}]",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 31
+    },
+    {
+      "tc": "PRED-003",
+      "area": "M2 Prediction",
+      "check": "Delay estimate (minutes)",
+      "expected": "200 + minutes",
+      "actual": "3.21",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 16
+    },
+    {
+      "tc": "PRED-006",
+      "area": "M2 Prediction",
+      "check": "Invalid road",
+      "expected": "400/404",
+      "actual": "404",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 10
+    },
+    {
+      "tc": "ROUTE-001",
+      "area": "M2 Route",
+      "check": "Optimized route",
+      "expected": "200 + path",
+      "actual": "200",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 706
+    },
+    {
+      "tc": "ROUTE-006",
+      "area": "M2 Route",
+      "check": "Optimize response fields",
+      "expected": "['congestion_score', 'distance_km', 'path', 'predicted_level', 'route_id']",
+      "actual": "['congestion_score', 'distance_km', 'path', 'predicted_level', 'route_id']",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "ROUTE-002",
+      "area": "M2 Route",
+      "check": "Alternate routes, maps API unreachable: fallback or clear 503",
+      "expected": "200, or 503 with detail",
+      "actual": "503 External maps service (OSRM) is currently unavailable. Please try again late",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 411
+    },
+    {
+      "tc": "ROUTE-003",
+      "area": "M2 Route",
+      "check": "Travel time (minutes)",
+      "expected": "200 + estimated_minutes",
+      "actual": "18.5",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 365
+    },
+    {
+      "tc": "ROUTE-004",
+      "area": "M2 Route",
+      "check": "Conditions along route",
+      "expected": "200 + status/hazards",
+      "actual": "CLEAR",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 34
+    },
+    {
+      "tc": "ROUTE-005",
+      "area": "M2 Route",
+      "check": "Invalid coordinates",
+      "expected": "400",
+      "actual": "400",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 11
+    },
+    {
+      "tc": "ROUTE-00A",
+      "area": "M2 Route",
+      "check": "Route without token rejected (RBAC)",
+      "expected": "401",
+      "actual": "401",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": 10
+    },
+    {
+      "tc": "INT-001",
+      "area": "Integration",
+      "check": "Auth \u2192 Live \u2192 Prediction(busiest road) \u2192 Route",
+      "expected": "all 200, route bound to user",
+      "actual": "live 200, predict R005:200, route 200",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "REG-002",
+      "area": "M1 UI",
+      "check": "Login as user lands on its dashboard",
+      "expected": "public dashboard.html",
+      "actual": "public dashboard.html",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "REG-001",
+      "area": "M1 UI",
+      "check": "Login as operator lands on its dashboard",
+      "expected": "operator dashboard.html",
+      "actual": "operator dashboard.html",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "REG-003",
+      "area": "M1 UI",
+      "check": "Live traffic feed populated",
+      "expected": "\u2265 6 items",
+      "actual": "6",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "MAP-001",
+      "area": "M2 Maps",
+      "check": "Live map renders tiles + road layers",
+      "expected": "tiles > 0, roads \u2265 6",
+      "actual": "tiles 35, road paths 12",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "MAP-005",
+      "area": "M2 Maps",
+      "check": "Road modal (R001) with congestion/speed/density + AI prediction",
+      "expected": "visible, R001, prediction",
+      "actual": "visible=True, id=ROAD SEGMENT \u2022 R001, prediction='Predicted Status: Low (96% confidence). '",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "FE-M2-001",
+      "area": "M2 Frontend",
+      "check": "Route page loads with no JS errors",
+      "expected": "0",
+      "actual": "0 []",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "ROUTE-007",
+      "area": "M2 Route UI",
+      "check": "Choose destination \u2192 route cards + ETA/distance KPIs",
+      "expected": "cards \u2265 1, ETA + distance",
+      "actual": "cards 3, ETA '9 mins', distance '7.8 km'",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "FE-M2-003",
+      "area": "M2 Frontend",
+      "check": "Travel time updates after route change",
+      "expected": "ETA/cards change",
+      "actual": "ETA '10 mins' \u2192 '9 mins'",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "MAP-002",
+      "area": "M2 Maps",
+      "check": "Route map draws the selected route",
+      "expected": "\u2265 1 path",
+      "actual": "4 paths, label 'Express Arterial Route (AI Optimal)'",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "MAP-006",
+      "area": "M2 Maps",
+      "check": "Map label matches a route card",
+      "expected": "label in cards",
+      "actual": "Express Arterial Route (AI Opt",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "ROUTE-008",
+      "area": "M2 Route UI",
+      "check": "Switch optimisation mode to Eco",
+      "expected": "Eco active",
+      "actual": "True",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "ROUTE-009",
+      "area": "M2 Route UI",
+      "check": "Forecast horizon 0 \u2192 60 min updates cards",
+      "expected": "cards change",
+      "actual": "changed",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "FE-M2-002",
+      "area": "M2 Frontend",
+      "check": "Speed-profile / forecast chart painted",
+      "expected": "True",
+      "actual": "True",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "FE-M2-004",
+      "area": "M2 Frontend",
+      "check": "Road-conditions panel matches API (hidden when clear)",
+      "expected": "hidden",
+      "actual": "hidden (API status CLEAR)",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "MAP-003",
+      "area": "M2 Maps",
+      "check": "Tile toggle OSM \u2194 Terrain",
+      "expected": "Terrain active",
+      "actual": "True",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "MAP-004",
+      "area": "M2 Maps",
+      "check": "Heatmap overlay toggles",
+      "expected": "overlay/button state changes",
+      "actual": "layers 0\u21921, button active=False",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "REG-004",
+      "area": "M1/M2 UI",
+      "check": "Operator dashboard loads KPIs, delay estimates, peak chart",
+      "expected": "no placeholders, no JS errors",
+      "actual": "placeholders=yes, JS errors ['Unexpected end of input']",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-023",
+      "ms": null
+    },
+    {
+      "tc": "FE-M2-005",
+      "area": "M2 Frontend",
+      "check": "Operator dashboard 'Download Prediction Report'",
+      "expected": "file downloaded",
+      "actual": "no download: Timeout 20000ms exceeded while waiting for event \"download\"\n",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-023",
+      "ms": null
+    },
+    {
+      "tc": "FE-M2-006",
+      "area": "M2 Frontend",
+      "check": "Route page calls live /route/* APIs",
+      "expected": "\u2265 1 call",
+      "actual": "8",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "REG-002",
+      "area": "M1 UI",
+      "check": "Login as admin lands on its dashboard",
+      "expected": "admin dashboard.html",
+      "actual": "admin dashboard.html",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    },
+    {
+      "tc": "FE-M2-007",
+      "area": "M2 Frontend",
+      "check": "Backend unreachable \u2192 fallback shown, no blank page",
+      "expected": "page renders + fallback badge",
+      "actual": "2739 chars, badge '\u25cf MOCK DATA'",
+      "verdict": "PASS",
+      "ref": "",
+      "ms": null
+    }
+  ]
+}

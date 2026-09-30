@@ -1,0 +1,821 @@
+{
+  "summary": {
+    "PASS": 17,
+    "FAIL": 14
+  },
+  "results": [
+    {
+      "role": "user",
+      "check": "UI login lands on role dashboard",
+      "expected": "public dashboard.html",
+      "actual": "public dashboard.html",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "user",
+      "check": "Session holds a real JWT (not mock-dev-token)",
+      "expected": "JWT",
+      "actual": "JWT",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "user",
+      "check": "Alerts page list shows the Alert Service accident alert (R004, High)",
+      "expected": "True",
+      "actual": "False",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-018"
+    },
+    {
+      "role": "user",
+      "check": "Bell drawer shows detector accident alert (High)",
+      "expected": "False",
+      "actual": "True",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-007"
+    },
+    {
+      "role": "user",
+      "check": "Bell drawer shows Critical accident alert",
+      "expected": "False",
+      "actual": "False",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "user",
+      "check": "Bell drawer is live data, not seeded mock notifications",
+      "expected": "False",
+      "actual": "False",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "user",
+      "check": "Alerts UI calls GET /alerts/my with the user's role",
+      "expected": "role sent",
+      "actual": "1 call(s), role NOT sent",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "user",
+      "check": "Analytics page loads live data from Analytics service (:8001)",
+      "expected": ">=1 call with 200",
+      "actual": "0 ok; calls: 127.0.0.1:8000/analytics/heatmap \u2192 404; 192.168.1.4:8000/analytics/heatmap \u2192 FAILED net::ERR_ABORTED; 192.168.1.4:8000/analytics/trends \u2192 FAILED net::ERR_CONNECTION_REFUSED",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-013/014"
+    },
+    {
+      "role": "user",
+      "check": "AI recommendations load from AI Insights (:8010)",
+      "expected": "200",
+      "actual": "FAILED net::ERR_CONNECTION_REFUSED",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-017"
+    },
+    {
+      "role": "user",
+      "check": "Route analysis page reaches /route/* with 200",
+      "expected": ">=1",
+      "actual": "3",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "user",
+      "check": "Public user opening admin dashboard is redirected",
+      "expected": "not admin dashboard",
+      "actual": "public dashboard.html",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "operator",
+      "check": "UI login lands on role dashboard",
+      "expected": "operator dashboard.html",
+      "actual": "operator dashboard.html",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "operator",
+      "check": "Session holds a real JWT (not mock-dev-token)",
+      "expected": "JWT",
+      "actual": "JWT",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "operator",
+      "check": "Alerts page list shows the Alert Service accident alert (R004, High)",
+      "expected": "True",
+      "actual": "False",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-018"
+    },
+    {
+      "role": "operator",
+      "check": "Bell drawer shows detector accident alert (High)",
+      "expected": "True",
+      "actual": "True",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "operator",
+      "check": "Bell drawer shows Critical accident alert",
+      "expected": "True",
+      "actual": "False",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-012"
+    },
+    {
+      "role": "operator",
+      "check": "Bell drawer is live data, not seeded mock notifications",
+      "expected": "False",
+      "actual": "False",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "operator",
+      "check": "Alerts UI calls GET /alerts/my with the user's role",
+      "expected": "role sent",
+      "actual": "1 call(s), role NOT sent",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-012"
+    },
+    {
+      "role": "operator",
+      "check": "Analytics page loads live data from Analytics service (:8001)",
+      "expected": ">=1 call with 200",
+      "actual": "0 ok; calls: 127.0.0.1:8000/analytics/heatmap \u2192 404; 192.168.1.4:8000/analytics/trends \u2192 FAILED net::ERR_CONNECTION_REFUSED; 192.168.1.4:8000/analytics/heatmap \u2192 FAILED net::ERR_CONNECTION_REFUSED",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-013/014"
+    },
+    {
+      "role": "operator",
+      "check": "AI recommendations load from AI Insights (:8010)",
+      "expected": "200",
+      "actual": "FAILED net::ERR_ABORTED; FAILED net::ERR_CONNECTION_REFUSED",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-017"
+    },
+    {
+      "role": "operator",
+      "check": "Route analysis page reaches /route/* with 200",
+      "expected": ">=1",
+      "actual": "3",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "admin",
+      "check": "UI login lands on role dashboard",
+      "expected": "admin dashboard.html",
+      "actual": "admin dashboard.html",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "admin",
+      "check": "Session holds a real JWT (not mock-dev-token)",
+      "expected": "JWT",
+      "actual": "JWT",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "admin",
+      "check": "Alerts page list shows the Alert Service accident alert (R004, High)",
+      "expected": "True",
+      "actual": "False",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-018"
+    },
+    {
+      "role": "admin",
+      "check": "Bell drawer shows detector accident alert (High)",
+      "expected": "True",
+      "actual": "True",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "admin",
+      "check": "Bell drawer shows Critical accident alert",
+      "expected": "True",
+      "actual": "False",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-012"
+    },
+    {
+      "role": "admin",
+      "check": "Bell drawer is live data, not seeded mock notifications",
+      "expected": "False",
+      "actual": "False",
+      "verdict": "PASS",
+      "ref": ""
+    },
+    {
+      "role": "admin",
+      "check": "Alerts UI calls GET /alerts/my with the user's role",
+      "expected": "role sent",
+      "actual": "0 call(s), role NOT sent",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-012"
+    },
+    {
+      "role": "admin",
+      "check": "Analytics page loads live data from Analytics service (:8001)",
+      "expected": ">=1 call with 200",
+      "actual": "0 ok; calls: 192.168.1.4:8000/analytics/trends \u2192 FAILED net::ERR_CONNECTION_REFUSED; 127.0.0.1:8000/analytics/heatmap \u2192 404; 192.168.1.4:8000/analytics/heatmap \u2192 FAILED net::ERR_CONNECTION_REFUSED",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-013/014"
+    },
+    {
+      "role": "admin",
+      "check": "AI recommendations load from AI Insights (:8010)",
+      "expected": "200",
+      "actual": "FAILED net::ERR_CONNECTION_REFUSED",
+      "verdict": "FAIL",
+      "ref": "DEF-M3-017"
+    },
+    {
+      "role": "admin",
+      "check": "Route analysis page reaches /route/* with 200",
+      "expected": ">=1",
+      "actual": "3",
+      "verdict": "PASS",
+      "ref": ""
+    }
+  ],
+  "network": {
+    "user \u00b7 public dashboard.html": {
+      "calls": [
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        ["POST", "http://127.0.0.1:8000/api/v1/auth/login", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/traffic/live", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/traffic/density", 200]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation"
+      ]
+    },
+    "user \u00b7 Alerts.html": {
+      "calls": [
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/traffic/density", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/traffic/live", 200],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_ABORTED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_ABORTED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_ABORTED"
+        ]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Error loading alerts: ReferenceError: activeAlertFilter is not defined\n    at http://127.0.0.1:5500/Alerts.html:470:9\n    at Array.filter (<anonymous>)\n    at filterAlertList (http://127.0.0.1:5500/Alerts.html:467:33)\n    at loadAlerts (http://127.0.0.1:5500/Alerts.html:445:9)"
+      ]
+    },
+    "user \u00b7 analytics.html": {
+      "calls": [
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8000/analytics/heatmap?start_date=2026-07-27&end_date=2026-08-23&time_bucket=hour",
+          404
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8000/analytics/heatmap?start_date=2026-07-27&end_date=2026-08-23&time_bucket=hour",
+          "FAILED net::ERR_ABORTED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8000/analytics/trends?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "warning: [AnalyticsTrends] Fallback to mock \u2014 Failed to fetch"
+      ]
+    },
+    "user \u00b7 route-analysis.html": {
+      "calls": [
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/conditions?origin=12.975,77.585&destination=12.935,77.625",
+          200
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/travel-time?origin=12.975,77.585&destination=12.935,77.625",
+          200
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/alternate?origin=12.975,77.585&destination=12.935,77.625",
+          "FAILED net::ERR_FAILED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/optimize?origin=12.975,77.585&destination=12.935,77.625",
+          200
+        ],
+        ["GET", "http://127.0.0.1:8000/api/v1/traffic/live", 200]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "error: Access to fetch at 'http://127.0.0.1:8000/api/v1/route/alternate?origin=12.975,77.585&destination=12.935,77.625' from origin 'http://127.0.0.1:5500' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "error: Failed to load resource: net::ERR_FAILED",
+        "warning: \u26a0\ufe0f Backend route API unavailable, falling back to BFS mock: Failed to fetch"
+      ]
+    },
+    "operator \u00b7 operator dashboard.html": {
+      "calls": [
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        ["POST", "http://127.0.0.1:8000/api/v1/auth/login", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation"
+      ]
+    },
+    "operator \u00b7 Alerts.html": {
+      "calls": [
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/traffic/live", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/traffic/density", 200],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Error loading alerts: ReferenceError: activeAlertFilter is not defined\n    at http://127.0.0.1:5500/Alerts.html:470:9\n    at Array.filter (<anonymous>)\n    at filterAlertList (http://127.0.0.1:5500/Alerts.html:467:33)\n    at loadAlerts (http://127.0.0.1:5500/Alerts.html:445:9)"
+      ]
+    },
+    "operator \u00b7 analytics.html": {
+      "calls": [
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8000/analytics/heatmap?start_date=2026-07-27&end_date=2026-08-23&time_bucket=hour",
+          404
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8000/analytics/trends?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_ABORTED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8000/analytics/heatmap?start_date=2026-07-27&end_date=2026-08-23&time_bucket=hour",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "warning: [AnalyticsTrends] Fallback to mock \u2014 Failed to fetch",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED"
+      ]
+    },
+    "operator \u00b7 route-analysis.html": {
+      "calls": [
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/conditions?origin=12.975,77.585&destination=12.935,77.625",
+          200
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/optimize?origin=12.975,77.585&destination=12.935,77.625",
+          200
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/alternate?origin=12.975,77.585&destination=12.935,77.625",
+          "FAILED net::ERR_FAILED"
+        ],
+        ["GET", "http://127.0.0.1:8000/api/v1/traffic/live", 200],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/travel-time?origin=12.975,77.585&destination=12.935,77.625",
+          200
+        ]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "error: Access to fetch at 'http://127.0.0.1:8000/api/v1/route/alternate?origin=12.975,77.585&destination=12.935,77.625' from origin 'http://127.0.0.1:5500' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "error: Failed to load resource: net::ERR_FAILED",
+        "warning: \u26a0\ufe0f Backend route API unavailable, falling back to BFS mock: Failed to fetch"
+      ]
+    },
+    "admin \u00b7 admin dashboard.html": {
+      "calls": [
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        ["POST", "http://127.0.0.1:8000/api/v1/auth/login", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/traffic/density", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/traffic/live", 200],
+        ["GET", "http://127.0.0.1:8000/api/v1/predict/peak-hours?road_id=R006", 200]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation"
+      ]
+    },
+    "admin \u00b7 Alerts.html": {
+      "calls": [
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED"
+      ]
+    },
+    "admin \u00b7 analytics.html": {
+      "calls": [
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8010/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8000/analytics/trends?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R006",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R007",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8010/api/v1/ai/recommendations?road_id=R001",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ],
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        [
+          "GET",
+          "http://127.0.0.1:8000/analytics/heatmap?start_date=2026-07-27&end_date=2026-08-23&time_bucket=hour",
+          404
+        ],
+        [
+          "GET",
+          "http://192.168.1.4:8000/analytics/heatmap?start_date=2026-07-27&end_date=2026-08-23&time_bucket=hour",
+          "FAILED net::ERR_CONNECTION_REFUSED"
+        ]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "warning: [AnalyticsTrends] Fallback to mock \u2014 Failed to fetch",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "error: Failed to load resource: net::ERR_CONNECTION_REFUSED"
+      ]
+    },
+    "admin \u00b7 route-analysis.html": {
+      "calls": [
+        ["GET", "http://127.0.0.1:8000/api/v1/alerts/my", 200],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/conditions?origin=12.975,77.585&destination=12.935,77.625",
+          200
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/optimize?origin=12.975,77.585&destination=12.935,77.625",
+          200
+        ],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/alternate?origin=12.975,77.585&destination=12.935,77.625",
+          "FAILED net::ERR_FAILED"
+        ],
+        ["GET", "http://127.0.0.1:8000/api/v1/traffic/live", 200],
+        [
+          "GET",
+          "http://127.0.0.1:8000/api/v1/route/travel-time?origin=12.975,77.585&destination=12.935,77.625",
+          200
+        ]
+      ],
+      "console": [
+        "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+        "error: Access to fetch at 'http://127.0.0.1:8000/api/v1/route/alternate?origin=12.975,77.585&destination=12.935,77.625' from origin 'http://127.0.0.1:5500' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "error: Failed to load resource: net::ERR_FAILED",
+        "warning: \u26a0\ufe0f Backend route API unavailable, falling back to BFS mock: Failed to fetch"
+      ]
+    }
+  }
+}
