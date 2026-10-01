@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TrafficVision | Traffic Overview</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="Api.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: dark; --ink: #e7eef2; --muted: #96a7af; --panel: #14252b; --line: #294149; --cyan: #76d5d0; --lime: #d8ec7a; --red: #ff8678; --gold: #f5c66a; --bg: #0c171c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: radial-gradient(ellipse at 90% 0%, #1d3940 0, transparent 36%), linear-gradient(150deg, #101d22, var(--bg) 65%); font: 15px "DM Sans", sans-serif; min-height: 100vh; }
+    button, select, input { font: inherit; }
+    button, select { color: var(--ink); background: #1b3037; border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; }
+    button { cursor: pointer; }
+    button:hover { border-color: var(--cyan); }
+    button:disabled { cursor: wait; opacity: .55; }
+    .shell { max-width: 1440px; margin: 0 auto; padding: 28px clamp(16px, 3vw, 42px) 48px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .mark { width: 39px; height: 39px; display: grid; place-items: center; color: #0d2024; background: var(--cyan); border-radius: 5px; font: 600 18px "IBM Plex Mono", monospace; }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: 19px; font-weight: 600; }
+    .subhead { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .actions { display: flex; align-items: center; gap: 10px; }
+    .quiet { color: var(--muted); font-size: 12px; }
+    main { padding-top: 22px; }
+    .status { min-height: 38px; display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--muted); font-size: 13px; }
+    .status.error { color: var(--red); }
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 12px 0 20px; }
+    .metric { background: rgba(20,37,43,.84); border: 1px solid var(--line); border-radius: 5px; padding: 16px; min-height: 100px; }
+    .metric-label, .eyebrow { color: var(--muted); text-transform: uppercase; font: 500 10px "IBM Plex Mono", monospace; letter-spacing: .08em; }
+    .metric-value { margin-top: 12px; font: 500 26px "IBM Plex Mono", monospace; color: var(--cyan); }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(310px, .9fr); gap: 14px; align-items: start; }
+    .column { display: grid; gap: 14px; }
+    .panel { background: rgba(20,37,43,.84); border: 1px solid var(--line); border-radius: 5px; padding: 17px; min-width: 0; }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+    h2 { font-size: 15px; font-weight: 600; }
+    .mono { font-family: "IBM Plex Mono", monospace; }
+    .road-picker { display: flex; align-items: center; gap: 9px; }
+    .road-picker label { color: var(--muted); font-size: 12px; }
+    .road-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .road-stat { padding: 14px 10px 14px 0; }
+    .road-stat + .road-stat { padding-left: 12px; border-left: 1px solid var(--line); }
+    .road-stat strong { display: block; margin-top: 8px; font: 500 18px "IBM Plex Mono", monospace; }
+    .prediction { display: flex; align-items: center; gap: 10px; margin-top: 14px; color: var(--muted); font-size: 13px; }
+    .badge { display: inline-block; border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; color: var(--lime); font: 500 11px "IBM Plex Mono", monospace; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; white-space: nowrap; }
+    th { color: var(--muted); font: 500 10px "IBM Plex Mono", monospace; text-transform: uppercase; padding: 9px 8px; border-bottom: 1px solid var(--line); }
+    td { padding: 10px 8px; border-bottom: 1px solid rgba(41,65,73,.65); }
+    tr:last-child td { border-bottom: 0; }
+    .items { display: grid; gap: 0; }
+    .item { padding: 12px 0; border-bottom: 1px solid rgba(41,65,73,.65); }
+    .item:last-child { border-bottom: 0; }
+    .item-title { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 600; }
+    .item-detail { color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 4px; }
+    .empty { color: var(--muted); padding: 12px 0; font-size: 13px; }
+    .history { display: grid; grid-template-columns: repeat(12, minmax(8px, 1fr)); align-items: end; gap: 5px; height: 80px; margin: 15px 0 8px; }
+    .bar { min-height: 3px; background: var(--cyan); border-radius: 2px 2px 0 0; opacity: .8; }
+    .history-labels { display: flex; justify-content: space-between; color: var(--muted); font: 10px "IBM Plex Mono", monospace; }
+    .trend-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 6px; color: var(--muted); font: 10px "IBM Plex Mono", monospace; }
+    .trend-stats span { min-width: 0; overflow-wrap: anywhere; }
+    .history-table-wrap { max-height: 250px; overflow: auto; margin-top: 12px; }
+    .trend-bars { height: 150px; display: grid; grid-template-columns: repeat(24, minmax(4px, 1fr)); align-items: end; gap: 3px; margin-top: 16px; }
+    .trend-bar { min-height: 2px; background: var(--cyan); border-radius: 2px 2px 0 0; }
+    .heatmap-scroll { width: 100%; max-width: 100%; overflow-x: auto; margin-top: 12px; }
+    .heatmap-grid { display: grid; width: max-content; min-width: 100%; gap: 3px; }
+    .heat-cell { min-width: 14px; height: 20px; border-radius: 2px; background: #24383e; }
+    .leaflet-map { min-height: 260px; height: 32vh; max-height: 420px; background: #0c171c; border: 1px solid var(--line); border-radius: 5px; margin-top: 12px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
+    .form-field { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
+    .form-field input { width: 100%; color: var(--ink); background: #1b3037; border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; }
+    .inline-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .small-button { font-size: 11px; padding: 5px 8px; }
+    .source-note { color: var(--muted); font-size: 11px; line-height: 1.55; margin-top: 13px; }
+    .footer { display: flex; justify-content: space-between; gap: 16px; padding-top: 16px; color: var(--muted); font-size: 11px; }
+    .error-text { color: var(--red); }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 650px) { .shell { padding-top: 16px; } header { align-items: flex-start; } .actions { flex-direction: column-reverse; align-items: flex-end; } .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .road-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .road-stat:nth-child(3) { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); } .road-stat:nth-child(4) { border-top: 1px solid var(--line); } .panel-head { align-items: flex-start; flex-direction: column; } .status { align-items: flex-start; flex-direction: column; padding: 5px 0; } }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } .trend-bars { gap: 2px; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="mark" aria-hidden="true">TV</div>
+        <div><h1>TrafficVision</h1><p class="subhead">Traffic intelligence overview</p></div>
+      </div>
+      <div class="actions">
+        <span id="user-name" class="quiet"></span>
+        <button id="refresh-button" type="button" title="Fetch current data from the backend">Refresh data</button>
+        <button id="logout-button" type="button" title="Sign out">Sign out</button>
+      </div>
+    </header>
+
+    <main>
+      <div id="status" class="status" role="status" aria-live="polite"><span>Loading traffic data...</span></div>
+      <section class="metrics" aria-label="Traffic summary">
+        <article class="metric"><div class="metric-label">Vehicles across roads</div><div id="total-vehicles" class="metric-value">--</div></article>
+        <article class="metric"><div class="metric-label">Average road speed</div><div id="average-speed" class="metric-value">--</div></article>
+        <article class="metric"><div class="metric-label">Average density</div><div id="average-density" class="metric-value">--</div></article>
+        <article class="metric"><div class="metric-label">Roads monitored</div><div id="road-count" class="metric-value">--</div></article>
+      </section>
+
+      <div class="layout">
+        <div class="column">
+          <section class="panel" aria-labelledby="road-title">
+            <div class="panel-head">
+              <div><div class="eyebrow">Traffic record</div><h2 id="road-title">Selected road</h2></div>
+              <div class="road-picker"><label for="road-select">Road</label><select id="road-select" disabled><option>Loading...</option></select></div>
+            </div>
+            <div class="road-summary">
+              <div class="road-stat"><span class="eyebrow">Vehicles</span><strong id="road-vehicles">--</strong></div>
+              <div class="road-stat"><span class="eyebrow">Speed</span><strong id="road-speed">--</strong></div>
+              <div class="road-stat"><span class="eyebrow">Density</span><strong id="road-density">--</strong></div>
+              <div class="road-stat"><span class="eyebrow">Observed condition</span><strong id="road-congestion">--</strong></div>
+            </div>
+            <div class="prediction"><span id="prediction-badge" class="badge">AI: --</span><span id="prediction-detail">Loading AI prediction...</span></div>
+            <div id="history-chart" class="history" aria-label="Recent recorded vehicle counts"></div>
+            <div id="history-labels" class="history-labels"><span>Historical records</span><span>--</span></div>
+            <div class="history-table-wrap"><table><thead><tr><th>Recorded at</th><th>Vehicles</th><th>Speed</th><th>Density</th><th>Congestion</th></tr></thead><tbody id="history-rows"><tr><td colspan="5" class="empty">Loading history...</td></tr></tbody></table></div>
+            <div class="prediction"><span class="eyebrow">Observed peak windows</span><span id="peak-hours">Loading peak hours...</span></div>
+            <div class="prediction"><span class="eyebrow">Estimated delay / 2 km</span><span id="delay-estimate">Loading delay...</span></div>
+            <p id="source-note" class="source-note">Loading traffic source...</p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head"><div><div class="eyebrow">Network</div><h2>Road-wise latest readings</h2></div><span id="reading-time" class="quiet">--</span></div>
+            <div class="table-wrap"><table><thead><tr><th>Road</th><th>Vehicles</th><th>Speed</th><th>Density</th><th>Condition</th></tr></thead><tbody id="traffic-rows"><tr><td colspan="5" class="empty">Loading traffic data...</td></tr></tbody></table></div>
+          </section>
+
+          <section class="panel"><div class="panel-head"><div><div class="eyebrow">Historical trend</div><h2>Selected-road traffic by hour</h2></div><label class="road-picker">Range <select id="trend-range"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option></select></label></div><div id="trend-chart" class="trend-bars"></div><div id="trend-table" class="trend-stats"><span>Select a road to load trends</span></div></section>
+
+          <section class="panel"><div class="panel-head"><div><div class="eyebrow">Congestion heatmap</div><h2>Observed congestion by road and hour</h2></div><label class="road-picker">Range <select id="heatmap-range"><option value="day">Day</option><option value="week">Week</option></select></label></div><div class="heatmap-scroll"><div id="heatmap-grid" class="heatmap-grid"><span class="empty">Loading observed heatmap...</span></div></div><div id="heatmap-labels" class="history-labels"></div></section>
+
+          <section class="panel">
+            <div class="panel-head"><div><div class="eyebrow">Model evaluation</div><h2>Prediction model</h2></div><span id="model-version" class="badge">Loading</span></div>
+            <div id="model-metrics" class="quiet">Loading analytics...</div>
+            <div class="table-wrap"><table><thead><tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead><tbody id="model-class-rows"><tr><td colspan="5" class="empty">Loading per-class evaluation...</td></tr></tbody></table></div>
+            <div class="table-wrap" style="margin-top:12px"><table><thead><tr id="confusion-head"><th>Actual / predicted</th></tr></thead><tbody id="confusion-rows"></tbody></table></div>
+            <div id="feature-importance" class="item-detail">Loading feature importance...</div>
+          </section>
+        </div>
+
+        <div class="column">
+          <section class="panel"><div class="panel-head"><div><div class="eyebrow">Attention</div><h2>Traffic alerts</h2></div><span id="alert-count" class="badge">--</span></div><div id="alerts-list" class="items"><div class="empty">Loading alerts...</div></div></section>
+          <section class="panel"><div class="panel-head"><div><div class="eyebrow">Model evaluation</div><h2>Observed/model mismatches</h2></div><span class="badge">Not incidents</span></div><div id="anomalies-list" class="items"><div class="empty">Loading anomaly analysis...</div></div><div class="inline-actions"><button id="sync-anomalies" class="small-button" type="button">Save qualifying mismatches as alerts</button><span id="anomaly-sync-status" class="quiet"></span></div><p class="source-note">Mismatches are potential incident proxies only; they do not confirm accidents.</p></section>
+          <section class="panel"><div class="panel-head"><div><div class="eyebrow">Decision support</div><h2>Road recommendations</h2></div></div><div id="recommendations-list" class="items"><div class="empty">Loading analytics...</div></div></section>
+          <section class="panel"><div class="panel-head"><div><div class="eyebrow">Route service</div><h2>Lowest-delay road segments</h2></div></div><div id="route-ranking" class="items"><div class="empty">Loading route analysis...</div></div><p class="source-note">Road-sequence ranking uses actual road lengths and ML congestion estimates. Coordinate routes show OSRM geometry; no traffic-to-map matching is configured.</p></section>
+          <section class="panel"><div class="panel-head"><div><div class="eyebrow">OSRM routing</div><h2>Coordinate route geometry</h2></div></div><form id="route-form" class="form-row"><label class="form-field">Origin (lat,lng)<input id="route-origin" required inputmode="decimal" placeholder="13.0827,80.2707"></label><label class="form-field">Destination (lat,lng)<input id="route-destination" required inputmode="decimal" placeholder="13.0569,80.2425"></label><div class="inline-actions"><button type="submit">Find routes</button></div></form><p id="route-status" class="source-note">Route requests use OSRM. If routing is unavailable, the backend reports that instead of drawing a fabricated route.</p><div id="route-map" class="leaflet-map" aria-label="OSRM route geometry map"></div><div id="route-alternates" class="items"></div></section>
+          <section class="panel"><div class="panel-head"><div><div class="eyebrow">Historical report</div><h2>Download traffic records</h2></div><div class="inline-actions"><select id="report-range"><option value="day">Day</option><option value="week" selected>Week</option><option value="month">Month</option></select><button id="download-report" class="small-button" type="button">Download CSV</button></div></div><span id="report-status" class="quiet">CSV export from the imported traffic dataset.</span></section>
+        </div>
+      </div>
+      <div class="footer"><span>Data source: imported traffic CSV snapshot; refresh re-reads backend data.</span><a id="api-docs-link" href="#" style="color:var(--cyan)">API documentation</a></div>
+    </main>
+  </div>
+
+  <script>
+    AuthManager.guardPage();
+
+    const elements = Object.fromEntries([
+      'status', 'total-vehicles', 'average-speed', 'average-density', 'road-count',
+      'road-select', 'road-title', 'road-vehicles', 'road-speed', 'road-density',
+      'road-congestion', 'prediction-badge', 'prediction-detail', 'history-chart',
+      'history-labels', 'history-rows', 'peak-hours', 'delay-estimate', 'source-note',
+      'traffic-rows', 'reading-time', 'model-version', 'trend-range', 'trend-chart', 'trend-table',
+      'heatmap-range', 'heatmap-grid', 'heatmap-labels',
+      'model-metrics', 'model-class-rows', 'confusion-head', 'confusion-rows', 'feature-importance',
+      'alert-count', 'alerts-list', 'anomalies-list', 'recommendations-list', 'route-ranking',
+      'sync-anomalies', 'anomaly-sync-status', 'route-form', 'route-origin', 'route-destination',
+      'route-status', 'route-map', 'route-alternates', 'report-range', 'download-report', 'report-status',
+    ].map((id) => [id, document.getElementById(id)]));
+    Object.assign(elements, {
+      totalVehicles: elements['total-vehicles'], averageSpeed: elements['average-speed'],
+      averageDensity: elements['average-density'], roadCount: elements['road-count'],
+      roadSelect: elements['road-select'], roadTitle: elements['road-title'],
+      roadVehicles: elements['road-vehicles'], roadSpeed: elements['road-speed'],
+      roadDensity: elements['road-density'], roadCongestion: elements['road-congestion'],
+      predictionBadge: elements['prediction-badge'], predictionDetail: elements['prediction-detail'],
+      historyChart: elements['history-chart'], historyLabels: elements['history-labels'],
+      historyRows: elements['history-rows'], peakHours: elements['peak-hours'], delayEstimate: elements['delay-estimate'],
+      sourceNote: elements['source-note'], trafficRows: elements['traffic-rows'],
+      readingTime: elements['reading-time'], modelVersion: elements['model-version'],
+      trendRange: elements['trend-range'], trendChart: elements['trend-chart'], trendTable: elements['trend-table'],
+      heatmapRange: elements['heatmap-range'], heatmapGrid: elements['heatmap-grid'], heatmapLabels: elements['heatmap-labels'],
+      modelMetrics: elements['model-metrics'], alertCount: elements['alert-count'],
+      modelClassRows: elements['model-class-rows'], confusionHead: elements['confusion-head'],
+      confusionRows: elements['confusion-rows'], featureImportance: elements['feature-importance'],
+      alertsList: elements['alerts-list'], recommendationsList: elements['recommendations-list'],
+      anomaliesList: elements['anomalies-list'], routeRanking: elements['route-ranking'],
+      syncAnomalies: elements['sync-anomalies'], anomalySyncStatus: elements['anomaly-sync-status'],
+      routeForm: elements['route-form'], routeOrigin: elements['route-origin'], routeDestination: elements['route-destination'],
+      routeStatus: elements['route-status'], routeMap: elements['route-map'], routeAlternates: elements['route-alternates'],
+      reportRange: elements['report-range'], downloadReport: elements['download-report'], reportStatus: elements['report-status'],
+    });
+
+    let roadRows = [];
+    let selectedRoad = '';
+    let routeMap = null;
+    let routeLayer = null;
+    let routeRequestSequence = 0;
+    const number = (value, digits = 0) => Number(value).toLocaleString(undefined, { maximumFractionDigits: digits });
+    const safe = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+
+    function parseRouteCoordinates(rawValue, label) {
+      if (typeof rawValue !== 'string') {
+        throw new Error(`${label} must be provided.`);
+      }
+      const trimmed = rawValue.trim();
+      if (!trimmed) {
+        throw new Error(`${label} is required.`);
+      }
+      const parts = trimmed.split(',').map((item) => item.trim());
+      if (parts.length !== 2 || !parts[0] || !parts[1]) {
+        throw new Error(`${label} must use the format latitude,longitude (example: 13.0827,80.2707).`);
+      }
+      const latitude = Number(parts[0]);
+      const longitude = Number(parts[1]);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        throw new Error(`${label} must contain valid numeric coordinates.`);
+      }
+      if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        throw new Error(`${label} is outside valid latitude/longitude bounds.`);
+      }
+      return { latitude, longitude };
+    }
+
+    function setStatus(message, isError = false) {
+      elements.status.className = `status${isError ? ' error' : ''}`;
+      elements.status.innerHTML = `<span>${safe(message)}</span>`;
+    }
+
+    function setError(message) {
+      setStatus(`Unable to fetch traffic data. ${message}`, true);
+      elements.trafficRows.innerHTML = `<tr><td colspan="5" class="empty error-text">${safe(message)}</td></tr>`;
+      elements.alertsList.innerHTML = `<div class="empty error-text">${safe(message)}</div>`;
+      elements.anomaliesList.innerHTML = `<div class="empty error-text">${safe(message)}</div>`;
+      elements.historyRows.innerHTML = `<tr><td colspan="5" class="empty error-text">${safe(message)}</td></tr>`;
+      elements.trendTable.innerHTML = `<span class="error-text">${safe(message)}</span>`;
+      elements.heatmapGrid.innerHTML = `<span class="error-text">${safe(message)}</span>`;
+      elements.recommendationsList.innerHTML = `<div class="empty error-text">${safe(message)}</div>`;
+      elements.routeRanking.innerHTML = `<div class="empty error-text">${safe(message)}</div>`;
+    }
+
+    function renderRows(rows) {
+      elements.trafficRows.innerHTML = rows.map((row) => `
+        <tr data-road-id="${safe(row.road_id)}" tabindex="0" role="button" title="View this road's traffic record">
+          <td>${safe(row.road_name)} <span class="quiet mono">${safe(row.road_id)}</span></td>
+          <td class="mono">${number(row.vehicle_count)}</td><td class="mono">${number(row.avg_speed_kmph, 1)} km/h</td>
+          <td class="mono">${number(row.density, 2)}</td><td>${safe(row.congestion_level)}</td>
+        </tr>`).join('');
+      elements.trafficRows.querySelectorAll('tr[data-road-id]').forEach((row) => {
+        const choose = () => selectRoad(row.dataset.roadId);
+        row.addEventListener('click', choose);
+        row.addEventListener('keydown', (event) => { if (event.key === 'Enter') choose(); });
+      });
+    }
+
+    function renderAlerts(alerts) {
+      elements.alertCount.textContent = `${alerts.length} alerts`;
+      elements.alertsList.innerHTML = alerts.length ? alerts.map((alert) => `
+        <article class="item"><div class="item-title"><span>${safe(alert.title)}</span><span class="badge">${safe(alert.level)}</span></div>
+          <p class="item-detail">${safe(alert.type)} · ${safe(alert.severity)} · ${safe(alert.road_name)} (${safe(alert.road_id)}) · ${alert.vehicle_count == null ? 'event' : `${number(alert.vehicle_count)} vehicles`}</p>
+          <p class="item-detail">${safe(alert.message)} · ${safe(alert.created_at)}</p>
+          ${alert.read ? '<span class="quiet">Read</span>' : `<button class="small-button mark-alert-read" data-alert-id="${safe(alert.alert_id)}" type="button">Mark read</button>`}</article>`).join('') : '<div class="empty">No stored alerts or high/severe conditions in the imported traffic records.</div>';
+      elements.alertsList.querySelectorAll('.mark-alert-read').forEach((button) => button.addEventListener('click', async () => {
+        button.disabled = true;
+        try { await dashboardAPI.markAlertRead(button.dataset.alertId); renderAlerts(await dashboardAPI.getMyAlerts()); }
+        catch (error) { button.disabled = false; setStatus(error.message, true); }
+      }));
+    }
+
+    function renderRecommendations(items) {
+      elements.recommendationsList.innerHTML = items.map((item) => `
+        <article class="item"><div class="item-title"><span>${safe(item.road_name)} (${safe(item.road_id)})</span><span class="badge">${safe(item.priority)}</span></div>
+          <p class="item-detail">${safe(item.recommendation)}</p><p class="item-detail">${safe(item.reason)}</p></article>`).join('') || '<div class="empty">No road recommendations returned.</div>';
+    }
+
+    function renderModelEvaluation(metrics) {
+      const classes = metrics.classes || [];
+      const perClass = metrics.per_class || {};
+      elements.modelClassRows.innerHTML = classes.map((label) => {
+        const item = perClass[label] || {};
+        return `<tr><td>${safe(label)}</td><td>${number(Number(item.precision || 0) * 100, 2)}%</td><td>${number(Number(item.recall || 0) * 100, 2)}%</td><td>${number(Number(item.f1_score || 0) * 100, 2)}%</td><td>${number(item.support || 0)}</td></tr>`;
+      }).join('') || '<tr><td colspan="5" class="empty">No per-class metrics.</td></tr>';
+      const labels = metrics.confusion_matrix_labels || classes;
+      elements.confusionHead.innerHTML = `<th>Actual / predicted</th>${labels.map((label) => `<th>${safe(label)}</th>`).join('')}`;
+      elements.confusionRows.innerHTML = labels.map((label, rowIndex) => `<tr><th>${safe(label)}</th>${labels.map((_, colIndex) => `<td>${number(metrics.confusion_matrix?.[rowIndex]?.[colIndex] || 0)}</td>`).join('')}</tr>`).join('');
+      elements.featureImportance.innerHTML = `Most important model inputs: ${(metrics.feature_importance || []).slice(0, 5).map((item) => `${safe(item.feature)} (${number(item.importance * 100, 1)}%)`).join(' · ')}`;
+    }
+
+    function renderAnomalies(result) {
+      const anomalies = result.anomalies || [];
+      elements.anomaliesList.innerHTML = anomalies.map((item) => `
+        <article class="item"><div class="item-title"><span>Road ${safe(item.road_id)} · ${safe(item.severity)} mismatch</span><span class="badge">score ${number(item.anomaly_score * 100, 1)} · conf ${number(item.confidence * 100, 1)}%</span></div>
+          <p class="item-detail">Observed ${safe(item.observed_congestion)}; model predicted ${safe(item.predicted_congestion)}.</p>
+          <p class="item-detail">${safe(item.timestamp)} · ${safe(item.reason)}</p></article>`).join('') || `<div class="empty">No mismatches in ${number(result.evaluated_rows)} evaluated records.</div>`;
+    }
+
+    function renderHistory(history) {
+      const ordered = [...history].reverse();
+      const maxVehicles = Math.max(...ordered.map((point) => Number(point.vehicle_count)), 1);
+      elements.historyChart.innerHTML = ordered.map((point) => `<div class="bar" title="${safe(point.timestamp)} · ${number(point.vehicle_count)} vehicles" style="height:${Math.max(4, point.vehicle_count / maxVehicles * 100)}%"></div>`).join('');
+      elements.historyRows.innerHTML = history.map((point) => `
+        <tr><td>${safe(new Date(point.timestamp).toLocaleString())}</td><td>${number(point.vehicle_count)}</td><td>${number(point.average_speed, 1)} km/h</td><td>${number(point.density, 2)}</td><td>${safe(point.congestion_level)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">No records in this range.</td></tr>';
+      elements.historyLabels.firstElementChild.textContent = history.length ? new Date(history[history.length - 1].timestamp).toLocaleString() : 'No history';
+      elements.historyLabels.lastElementChild.textContent = history.length ? new Date(history[0].timestamp).toLocaleString() : '--';
+    }
+
+    function renderTrends(result) {
+      const points = result.points || [];
+      const max = Math.max(...points.map((point) => Number(point.avg_vehicle_count || 0)), 1);
+      elements.trendChart.style.gridTemplateColumns = `repeat(${Math.max(points.length, 1)}, minmax(8px, 1fr))`;
+      elements.trendChart.innerHTML = points.map((point) => `<div class="trend-bar" title="${safe(point.period)} · ${number(point.avg_vehicle_count, 1)} vehicles · ${number(point.avg_speed, 1)} km/h" style="height:${Math.max(3, point.avg_vehicle_count / max * 100)}%"></div>`).join('') || '<span class="empty">No observed readings for this range.</span>';
+      elements.trendTable.innerHTML = points.map((point) => `<span>${safe(point.period)}: ${number(point.avg_vehicle_count, 1)} veh · ${number(point.avg_speed, 1)} km/h · density ${number(point.avg_density, 2)}</span>`).join('') || '<span class="empty">No observations</span>';
+    }
+
+    function initializeRouteMap() {
+      if (!window.L) {
+        elements.routeStatus.textContent = 'Map library unavailable; route geometry details remain below.';
+        return;
+      }
+      routeMap = L.map(elements.routeMap).setView([13.0827, 80.2707], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(routeMap);
+      routeLayer = L.layerGroup().addTo(routeMap);
+      if (routeLayer && routeMap) {
+        routeMap.invalidateSize();
+      }
+    }
+
+    async function requestCoordinateRoutes(event) {
+      event.preventDefault();
+      const requestId = ++routeRequestSequence;
+      const originValue = elements.routeOrigin.value;
+      const destinationValue = elements.routeDestination.value;
+
+      try {
+        const origin = parseRouteCoordinates(originValue, 'Origin');
+        const destination = parseRouteCoordinates(destinationValue, 'Destination');
+        const query = `${origin.latitude},${origin.longitude}`;
+        const target = `${destination.latitude},${destination.longitude}`;
+
+        elements.routeStatus.textContent = 'Requesting real route geometry from OSRM...';
+        elements.routeAlternates.innerHTML = '<div class="empty">Loading routes...</div>';
+        elements.routeOrigin.value = `${origin.latitude},${origin.longitude}`;
+        elements.routeDestination.value = `${destination.latitude},${destination.longitude}`;
+
+        const routes = await routeAPI.getAlternateRoutes(query, target);
+        if (requestId !== routeRequestSequence) return;
+        if (!routes.length) throw new Error('OSRM returned no routes for those coordinates.');
+        const routesWithTimes = await Promise.all(routes.map(async (route) => {
+          try { return { ...route, travel: await routeAPI.getTravelTime(route.route_id) }; }
+          catch { return { ...route, travel: null }; }
+        }));
+        if (requestId !== routeRequestSequence) return;
+
+        elements.routeAlternates.innerHTML = routesWithTimes.map((route) => `
+          <article class="item"><div class="item-title"><span>Route ${number(route.rank)}${route.is_recommended ? ' · recommended' : ''}</span><span class="badge">${number(route.distance_km, 2)} km</span></div>
+            <p class="item-detail">OSRM travel time ${route.travel ? `${number(route.travel.estimated_minutes, 1)} min` : 'unavailable'} · traffic match unavailable</p>
+            <p class="item-detail">${number(route.path.length)} OSRM geometry points displayed on map.</p></article>`).join('');
+        if (routeMap && routeLayer) {
+          routeLayer.clearLayers();
+          const colors = ['#76d5d0', '#f5c66a', '#ff8678', '#91a8f7'];
+          const lines = routesWithTimes.map((route, index) => L.polyline(route.path, { color: colors[index % colors.length], weight: route.is_recommended ? 6 : 4, opacity: route.is_recommended ? 0.95 : 0.65 }).addTo(routeLayer));
+          const originMarker = L.marker([origin.latitude, origin.longitude]).addTo(routeLayer);
+          const destinationMarker = L.marker([destination.latitude, destination.longitude]).addTo(routeLayer);
+          originMarker.bindPopup('Origin');
+          destinationMarker.bindPopup('Destination');
+          if (lines.length) {
+            routeMap.fitBounds(L.featureGroup(lines).getBounds(), { padding: [20, 20] });
+          }
+        }
+        elements.routeStatus.textContent = `${routesWithTimes.length} OSRM route(s). Geometry is real; traffic impact is not matched to road IDs.`;
+      } catch (error) {
+        if (requestId !== routeRequestSequence) return;
+        const message = error.message || 'Route service is unavailable.';
+        elements.routeStatus.textContent = message;
+        elements.routeAlternates.innerHTML = `<div class="empty error-text">${safe(message)}</div>`;
+        if (routeLayer) routeLayer.clearLayers();
+      }
+    }
+
+    async function downloadTrafficReport() {
+      elements.reportStatus.textContent = 'Generating CSV from backend history...';
+      elements.downloadReport.disabled = true;
+      try {
+        const report = await dashboardAPI.downloadReport(elements.reportRange.value, 'csv');
+        const url = URL.createObjectURL(report.blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = report.filename;
+        link.click();
+        URL.revokeObjectURL(url);
+        elements.reportStatus.textContent = `Downloaded ${report.filename}`;
+      } catch (error) {
+        elements.reportStatus.textContent = error.message;
+        elements.reportStatus.className = 'error-text';
+      } finally {
+        elements.downloadReport.disabled = false;
+      }
+    }
+
+    function renderHeatmap(result) {
+      const roads = result.roads || [];
+      const hours = result.time_buckets || [];
+      elements.heatmapGrid.style.gridTemplateColumns = `minmax(100px, auto) repeat(${hours.length}, minmax(14px, 1fr))`;
+      const header = `<span class="eyebrow">Road / hour</span>${hours.map((hour) => `<span class="eyebrow" title="${hour}">${hour.slice(0, 2)}</span>`).join('')}`;
+      const rows = roads.map((road, rowIndex) => `<span class="quiet">${safe(road)}</span>${hours.map((hour, hourIndex) => {
+        const score = result.values[rowIndex]?.[hourIndex];
+        const count = result.sample_counts[rowIndex]?.[hourIndex] || 0;
+        const color = score == null ? '#24383e' : score >= 0.75 ? '#dd625e' : score >= 0.45 ? '#d39450' : '#548f79';
+        return `<span class="heat-cell" title="${safe(road)} ${hour}: ${score == null ? 'no sample' : `score ${score}, ${count} observations`}" style="background:${color};opacity:${score == null ? 0.35 : 1}"></span>`;
+      }).join('')}`).join('');
+      elements.heatmapGrid.innerHTML = roads.length ? header + rows : '<span class="empty">No heatmap records.</span>';
+      elements.heatmapLabels.textContent = `Observed congestion scores · ${safe(result.data_source)} · ${safe(result.updated_at)}`;
+    }
+
+    async function renderRouteRanking() {
+      const candidates = roadRows.map((road) => ({ route_id: road.road_id, distance_km: Number(road.length_km) || 1, roads: [road.road_id] }));
+      const ranked = await routeAPI.rankRoutes(candidates);
+      elements.routeRanking.innerHTML = ranked.map((route, index) => `
+        <article class="item"><div class="item-title"><span>${number(route.rank || index + 1)}. Road ${safe(route.route_id)} ${route.is_recommended ? '· Recommended' : ''}</span><span class="badge">${safe(route.predicted_congestion)}</span></div>
+          <p class="item-detail">${number(route.distance_km, 2)} km · ${number(route.estimated_travel_time_minutes, 2)} min estimated · ${number(route.predicted_delay_minutes, 2)} min predicted delay · score ${number(route.score, 3)}</p>
+          <p class="item-detail">${(route.road_predictions || []).map((road) => `${safe(road.road_id)} ${safe(road.predicted_congestion)} (${number(road.confidence * 100, 1)}% confidence)`).join(' · ')}</p></article>`).join('') || '<div class="empty">No road candidates returned.</div>';
+    }
+
+    async function selectRoad(roadId) {
+      selectedRoad = String(roadId);
+      elements.roadSelect.value = selectedRoad;
+      const selected = roadRows.find((road) => String(road.road_id) === selectedRoad);
+      if (!selected) return;
+      elements.roadTitle.textContent = `${selected.road_name} (${selected.road_id})`;
+      elements.roadVehicles.textContent = number(selected.vehicle_count);
+      elements.roadSpeed.textContent = `${number(selected.avg_speed_kmph, 1)} km/h`;
+      elements.roadDensity.textContent = number(selected.density, 2);
+      elements.roadCongestion.textContent = selected.congestion_level;
+      elements.predictionBadge.textContent = 'AI: Loading';
+      elements.predictionDetail.textContent = 'Loading AI prediction...';
+      elements.historyChart.replaceChildren();
+      elements.historyLabels.lastElementChild.textContent = 'Loading history...';
+      elements.historyRows.innerHTML = '<tr><td colspan="5" class="empty">Loading history...</td></tr>';
+      elements.peakHours.textContent = 'Loading observed peak hours...';
+      elements.delayEstimate.textContent = 'Loading model-based estimate...';
+
+      try {
+        const [predictionResult, historyResult, peakResult, delayResult, conditionResult, trendsResult] = await Promise.allSettled([
+          predictionAPI.predictCongestion({ road_id: selectedRoad }),
+          trafficAPI.getHistory({ road_id: selectedRoad, limit: 12 }),
+          predictionAPI.getPeakHours(selectedRoad),
+          predictionAPI.predictDelay({ road_id: selectedRoad, distance_km: 2 }),
+          trafficAPI.getRoadCondition(selectedRoad),
+          dashboardAPI.getTrends(selectedRoad, elements.trendRange.value),
+        ]);
+
+        if (predictionResult.status === 'fulfilled') {
+          const prediction = predictionResult.value;
+          const observationMatches = Number(prediction.vehicle_count) === Number(selected.vehicle_count)
+            && Number(prediction.average_speed) === Number(selected.avg_speed_kmph)
+            && Number(prediction.density) === Number(selected.density);
+          elements.predictionBadge.textContent = `AI: ${prediction.predicted_level}`;
+          elements.predictionDetail.textContent = `${number(prediction.confidence * 100, 1)}% confidence · model ${prediction.model_version} · inputs ${observationMatches ? 'match traffic record' : 'do not match selected traffic record'}`;
+          elements.predictionDetail.className = observationMatches ? '' : 'error-text';
+        } else {
+          elements.predictionBadge.textContent = 'AI unavailable';
+          elements.predictionDetail.textContent = predictionResult.reason?.message || 'Prediction endpoint failed.';
+          elements.predictionDetail.className = 'error-text';
+        }
+
+        if (historyResult.status === 'fulfilled') {
+          renderHistory(historyResult.value);
+        } else {
+          elements.historyLabels.lastElementChild.textContent = 'Unable to load history';
+          elements.historyRows.innerHTML = `<tr><td colspan="5" class="empty error-text">${safe(historyResult.reason?.message || 'History endpoint failed.')}</td></tr>`;
+        }
+
+        if (peakResult.status === 'fulfilled') {
+          const peak = peakResult.value;
+          elements.peakHours.textContent = `${peak.peak_windows.join(', ')} · busiest observed hours (${peak.data_source})`;
+        } else {
+          elements.peakHours.textContent = peakResult.reason?.message || 'Peak-hours service unavailable';
+        }
+
+        if (delayResult.status === 'fulfilled') {
+          const delay = delayResult.value;
+          elements.delayEstimate.textContent = `${number(delay.estimated_delay_minutes, 2)} min predicted delay · ${number(delay.estimated_delay_minutes + 2 / 50 * 60, 2)} min estimated total`;
+        } else {
+          elements.delayEstimate.textContent = delayResult.reason?.message || 'Delay estimate unavailable';
+        }
+
+        if (conditionResult.status === 'fulfilled') {
+          const condition = conditionResult.value;
+          elements.sourceNote.textContent = `${condition.status}: ${condition.notes} Source ${condition.condition_source}. Last observed ${new Date(condition.updated_at).toLocaleString()}.`;
+        } else {
+          elements.sourceNote.textContent = conditionResult.reason?.message || 'Road condition service unavailable';
+        }
+
+        if (trendsResult.status === 'fulfilled') {
+          renderTrends(trendsResult.value);
+        } else {
+          elements.trendTable.textContent = trendsResult.reason?.message || 'Trend data unavailable';
+        }
+      } catch (error) {
+        elements.predictionBadge.textContent = 'AI unavailable';
+        elements.predictionDetail.textContent = error.message;
+        elements.predictionDetail.className = 'error-text';
+        elements.historyLabels.lastElementChild.textContent = 'Unable to load history';
+      }
+    }
+
+    async function loadDashboard() {
+      setStatus('Loading traffic data, analytics, alerts, and recommendations...');
+      document.getElementById('refresh-button').disabled = true;
+      try {
+        const profile = await authAPI.getProfile();
+        const [rowsResult, densityResult, analyticsResult, alertsResult, anomaliesResult, recommendationsResult, metricsResult, heatmapResult] = await Promise.allSettled([
+          trafficAPI.getLiveTraffic(), trafficAPI.getDensitySummary(), dashboardAPI.getAnalytics(),
+          dashboardAPI.getMyAlerts(), dashboardAPI.getAnomalies(), dashboardAPI.getRecommendations(), dashboardAPI.getModelMetrics(),
+          dashboardAPI.getHeatmap(elements.heatmapRange.value),
+        ]);
+
+        const rows = rowsResult.status === 'fulfilled' ? rowsResult.value : [];
+        const density = densityResult.status === 'fulfilled' ? densityResult.value : null;
+        const analytics = analyticsResult.status === 'fulfilled' ? analyticsResult.value : null;
+        const alerts = alertsResult.status === 'fulfilled' ? alertsResult.value : [];
+        const anomalies = anomaliesResult.status === 'fulfilled' ? anomaliesResult.value : { anomalies: [], evaluated_rows: 0, interpretation: 'Anomaly endpoint unavailable.' };
+        const recommendations = recommendationsResult.status === 'fulfilled' ? recommendationsResult.value : [];
+        const metrics = metricsResult.status === 'fulfilled' ? metricsResult.value : null;
+        const heatmap = heatmapResult.status === 'fulfilled' ? heatmapResult.value : { roads: [], time_buckets: [], values: [], sample_counts: [], updated_at: 'unavailable', data_source: 'unknown' };
+
+        if (rowsResult.status === 'rejected') {
+          const message = rowsResult.reason?.message || 'Traffic feed unavailable.';
+          setStatus(`Traffic feed unavailable: ${message}`, true);
+        }
+
+        if (!rows.length) {
+          if (rowsResult.status === 'rejected') {
+            elements.trafficRows.innerHTML = `<tr><td colspan="5" class="empty error-text">${safe(rowsResult.reason?.message || 'Traffic feed unavailable.')}</td></tr>`;
+          } else {
+            throw new Error('No traffic records were returned by the backend.');
+          }
+        } else {
+          roadRows = rows;
+          const totalSpeed = rows.reduce((sum, row) => sum + Number(row.avg_speed_kmph), 0) / rows.length;
+          elements.totalVehicles.textContent = number(density?.total_vehicle_count ?? 0);
+          elements.averageSpeed.textContent = `${number(totalSpeed, 1)} km/h`;
+          elements.averageDensity.textContent = number(density?.average_density ?? 0, 2);
+          elements.roadCount.textContent = number(density?.total_roads_monitored ?? rows.length);
+          elements.roadSelect.innerHTML = rows.map((row) => `<option value="${safe(row.road_id)}">${safe(row.road_name)} (${safe(row.road_id)})</option>`).join('');
+          elements.roadSelect.disabled = false;
+          renderRows(rows);
+          const latest = rows.reduce((value, row) => row.updated_at > value ? row.updated_at : value, '');
+          elements.readingTime.textContent = latest ? `Latest imported reading: ${new Date(latest).toLocaleString()}` : 'No timestamp';
+          elements.sourceNote.textContent = `Source: imported synthetic/demo traffic records. The newest record is ${new Date(latest).toLocaleString()}; this is a file-backed historical snapshot, not a live sensor feed.`;
+          await Promise.allSettled([selectRoad(selectedRoad || rows[0].road_id), renderRouteRanking()]);
+        }
+
+        renderAlerts(alerts);
+        if (anomaliesResult.status === 'rejected') {
+          elements.anomaliesList.innerHTML = `<div class="empty error-text">${safe(anomaliesResult.reason?.message || 'Anomaly service unavailable.')}</div>`;
+        } else {
+          renderAnomalies(anomalies);
+        }
+        if (heatmapResult.status === 'rejected') {
+          elements.heatmapGrid.innerHTML = `<span class="error-text">${safe(heatmapResult.reason?.message || 'Heatmap unavailable.')}</span>`;
+        } else {
+          renderHeatmap(heatmap);
+        }
+        if (recommendationsResult.status === 'rejected') {
+          elements.recommendationsList.innerHTML = `<div class="empty error-text">${safe(recommendationsResult.reason?.message || 'Recommendations service unavailable.')}</div>`;
+        } else {
+          renderRecommendations(recommendations);
+        }
+        document.getElementById('user-name').textContent = `${profile.name} · ${profile.role}`;
+        elements.syncAnomalies.closest('.inline-actions').hidden = !['ADMIN', 'OPERATOR', 'TRAFFIC_OPERATOR'].includes(String(profile.role).toUpperCase());
+
+        if (metricsResult.status === 'fulfilled' && metrics) {
+          elements.modelVersion.textContent = metrics.model_version;
+          elements.modelMetrics.innerHTML = `${safe(metrics.evaluation_note)}<br>Holdout accuracy ${number(metrics.accuracy * 100, 2)}% · precision ${number(metrics.macro_precision * 100, 2)}% · recall ${number(metrics.macro_recall * 100, 2)}% · macro F1 ${number(metrics.macro_f1 * 100, 2)}% · weighted F1 ${number(metrics.weighted_f1 * 100, 2)}%.<br>Training ${number(metrics.training_rows)} rows; holdout ${number(metrics.test_rows)} rows (${safe(metrics.test_start)} to ${safe(metrics.test_end)}).<br>${safe(metrics.label_caveat)}`;
+          renderModelEvaluation(metrics);
+        } else if (metricsResult.status === 'rejected') {
+          elements.modelVersion.textContent = 'Unavailable';
+          elements.modelMetrics.innerHTML = `<span class="error-text">${safe(metricsResult.reason?.message || 'Model metrics unavailable.')}</span>`;
+        }
+
+        if (analyticsResult.status === 'fulfilled' && analytics) {
+          const summary = analytics;
+          elements.modelMetrics.innerHTML = `${elements.modelMetrics.innerHTML}<br>Network summary: ${number(summary.total_vehicle_count)} vehicles across ${number(summary.total_roads)} roads.`;
+        }
+
+        if (rows.length) {
+          setStatus(`Backend data loaded successfully · ${rows.length} roads · ${number(density?.total_vehicle_count ?? 0)} vehicles in latest road records.`);
+        }
+      } catch (error) {
+        if (error.status === 401) {
+          window.location.href = 'Login.html';
+          return;
+        }
+        setError(error.message || 'Please check that the TrafficVision backend is running.');
+      } finally {
+        document.getElementById('refresh-button').disabled = false;
+      }
+    }
+
+    elements.roadSelect.addEventListener('change', () => selectRoad(elements.roadSelect.value));
+    elements.trendRange.addEventListener('change', () => selectedRoad && dashboardAPI.getTrends(selectedRoad, elements.trendRange.value).then(renderTrends).catch((error) => { elements.trendTable.textContent = error.message; }));
+    elements.heatmapRange.addEventListener('change', () => dashboardAPI.getHeatmap(elements.heatmapRange.value).then(renderHeatmap).catch((error) => { elements.heatmapGrid.textContent = error.message; }));
+    document.getElementById('refresh-button').addEventListener('click', loadDashboard);
+    document.getElementById('logout-button').addEventListener('click', async () => {
+      await authAPI.logout();
+      window.location.href = 'Login.html';
+    });
+    elements.routeForm.addEventListener('submit', requestCoordinateRoutes);
+    elements.downloadReport.addEventListener('click', downloadTrafficReport);
+    elements.syncAnomalies.addEventListener('click', async () => {
+      elements.syncAnomalies.disabled = true;
+      elements.anomalySyncStatus.textContent = 'Saving anomaly proxies...';
+      try {
+        const result = await dashboardAPI.syncAnomalyAlerts();
+        elements.anomalySyncStatus.textContent = `${result.alerts_created} saved · ${result.alerts_skipped} skipped`;
+        renderAlerts(await dashboardAPI.getMyAlerts());
+      } catch (error) {
+        elements.anomalySyncStatus.textContent = error.message;
+      } finally { elements.syncAnomalies.disabled = false; }
+    });
+    initializeRouteMap();
+    document.getElementById('api-docs-link').href = `${API_CONFIG.baseURL.replace(/\/api\/v1\/?$/, '')}/docs`;
+    loadDashboard();
+  </script>
+</body>
+</html>

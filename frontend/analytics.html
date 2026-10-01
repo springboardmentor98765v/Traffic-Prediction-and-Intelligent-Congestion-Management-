@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analytics & AI Insights - TrafficVision AI</title>
+  <script>window.location.replace('dashboard.html');</script>
+  <meta http-equiv="refresh" content="0; url=dashboard.html"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="api.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            background: "#0b1326",
+            "surface-container": "#171f33",
+            "surface-container-high": "#222a3d",
+            "on-surface": "#dae2fd",
+            "on-surface-variant": "#c6c5d4",
+            primary: "#bdc2ff",
+            secondary: "#8dcdff",
+            "primary-container": "#1a237e",
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .glass-panel {
+      background: rgba(23, 31, 51, 0.65);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen pb-24 md:pb-8">
+<script>(function(){ AuthManager.guardPage(); })();</script>
+
+<header class="fixed top-0 left-0 w-full z-50 bg-[#131b2e]/90 backdrop-blur-xl border-b border-white/10 h-16 flex items-center justify-between px-4 md:px-8">
+  <a href="operator dashboard.html" class="flex items-center gap-2 font-bold text-lg">
+    <span class="material-symbols-outlined text-secondary">analytics</span>
+    TrafficVision <span class="text-secondary">AI</span>
+  </a>
+  <nav class="hidden md:flex items-center gap-2 bg-surface-container/70 p-1.5 rounded-2xl border border-white/5">
+    <a href="operator dashboard.html" class="px-3 py-1.5 rounded-xl text-sm text-on-surface-variant hover:bg-white/5">Dashboard</a>
+    <a href="live maps.html" class="px-3 py-1.5 rounded-xl text-sm text-on-surface-variant hover:bg-white/5">Live Traffic</a>
+    <a href="route-analysis.html" class="px-3 py-1.5 rounded-xl text-sm text-on-surface-variant hover:bg-white/5">Route Analysis</a>
+    <a href="Alerts.html" class="px-3 py-1.5 rounded-xl text-sm text-on-surface-variant hover:bg-white/5">Alerts</a>
+    <a href="analytics.html" class="px-3 py-1.5 rounded-xl text-sm font-semibold text-secondary bg-secondary/15 border border-secondary/30">Analytics</a>
+  </nav>
+  <div class="flex items-center gap-3">
+    <!-- Notification Bell -->
+    <div class="relative">
+      <button id="notif-bell" type="button" class="w-9 h-9 rounded-xl bg-surface-container-high border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-secondary relative">
+        <span class="material-symbols-outlined text-[20px]">notifications</span>
+        <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">0</span>
+      </button>
+      <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto z-50 rounded-xl border border-white/10 shadow-2xl p-2 space-y-1" style="background:rgba(19,27,46,0.95);backdrop-filter:blur(16px);">
+        <div class="text-xs text-on-surface-variant p-2">Loading...</div>
+      </div>
+    </div>
+    <button onclick="logout()" class="w-9 h-9 rounded-xl bg-surface-container-high border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-rose-400">
+      <span class="material-symbols-outlined text-[19px]">logout</span>
+    </button>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto pt-24 px-4 md:px-8 space-y-6">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold">Analytics & AI Insights</h1>
+      <p class="text-on-surface-variant text-sm mt-1">Trends • Heatmaps • Recommendations — Milestone 3</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <select id="road-selector" onchange="loadTrends(); loadRecommendations();" class="bg-surface-container-high border border-white/15 text-sm rounded-xl px-3 py-2 text-secondary">
+        <option value="R006">Airport Road (R006)</option>
+        <option value="R007">Harbor Tunnel (R007)</option>
+        <option value="R001">Main Expressway (R001)</option>
+        <option value="R005">Industrial Highway (R005)</option>
+        <option value="R002">Central Avenue (R002)</option>
+        <option value="R003">West Ring Road (R003)</option>
+        <option value="R004">North Boulevard (R004)</option>
+      </select>
+      <select id="range-selector" onchange="loadAll()" class="bg-surface-container-high border border-white/15 text-sm rounded-xl px-3 py-2">
+        <option value="day">Day</option>
+        <option value="week">Week</option>
+      </select>
+      <button onclick="downloadReport()" class="bg-secondary text-[#00344f] font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-[16px]">download</span> CSV Report
+      </button>
+    </div>
+  </div>
+
+  <!-- Trend chart -->
+  <div class="glass-panel rounded-2xl p-5">
+    <h2 class="font-semibold mb-3 flex items-center gap-2">
+      <span class="material-symbols-outlined text-secondary">stacked_line_chart</span>
+      Traffic Trend Analysis
+    </h2>
+    <div class="h-64 relative"><canvas id="trendChart"></canvas></div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Heatmap -->
+    <div class="glass-panel rounded-2xl p-5">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <span class="material-symbols-outlined text-secondary">grid_on</span>
+        Congestion Heatmap
+      </h2>
+      <div id="heatmap-container" class="overflow-x-auto">
+        <div class="text-on-surface-variant text-sm py-8 text-center">Loading heatmap...</div>
+      </div>
+    </div>
+
+    <!-- AI Recommendations -->
+    <div class="glass-panel rounded-2xl p-5">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <span class="material-symbols-outlined text-emerald-400">smart_toy</span>
+        AI Recommendations
+      </h2>
+      <div id="recs-container" class="space-y-3 max-h-80 overflow-y-auto">
+        <div class="text-on-surface-variant text-sm py-8 text-center">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Anomalies panel (optional but useful) -->
+  <div class="glass-panel rounded-2xl p-5">
+    <h2 class="font-semibold mb-3 flex items-center gap-2">
+      <span class="material-symbols-outlined text-rose-400">psychology</span>
+      Detected Anomalies
+    </h2>
+    <div id="anomalies-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="text-on-surface-variant text-sm">Loading...</div>
+    </div>
+  </div>
+</main>
+
+<script>
+let trendChartInstance = null;
+
+async function loadTrends() {
+  const roadId = document.getElementById("road-selector").value;
+  const range = document.getElementById("range-selector").value;
+  try {
+    const data = await analyticsAPI.getTrends(roadId, range);
+    const ctx = document.getElementById("trendChart");
+    if (trendChartInstance) trendChartInstance.destroy();
+    const dens = data.points.map((p) => p.avg_density ?? (p.avg_congestion || 0) * 30);
+    trendChartInstance = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: data.points.map((p) => p.period),
+        datasets: [{
+          label: "Avg Density (veh/km)",
+          data: dens,
+          borderColor: "#8dcdff",
+          backgroundColor: "rgba(141,205,255,0.15)",
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2.5,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#c6c5d4", font: { size: 10 } }, grid: { color: "rgba(255,255,255,0.05)" } },
+          y: { ticks: { color: "#c6c5d4", font: { size: 10 } }, grid: { color: "rgba(255,255,255,0.06)" } },
+        },
+      },
+    });
+  } catch (e) {
+    console.error("Trends failed:", e);
+  }
+}
+
+async function loadHeatmap() {
+  const range = document.getElementById("range-selector").value;
+  const container = document.getElementById("heatmap-container");
+  try {
+    const data = await analyticsAPI.getHeatmap(range);
+    const maxVal = Math.max(...data.values.flat(), 1);
+    let html = '<table class="text-xs w-full border-collapse"><thead><tr><th class="p-1 text-left text-on-surface-variant">Road</th>';
+    data.time_buckets.forEach((b) => { html += `<th class="p-1 text-on-surface-variant font-mono">${b}</th>`; });
+    html += "</tr></thead><tbody>";
+    data.roads.forEach((road, i) => {
+      const name = (data.road_names && data.road_names[i]) || road;
+      html += `<tr><td class="p-1 font-semibold whitespace-nowrap">${name}</td>`;
+      data.values[i].forEach((v) => {
+        const t = Math.min(1, v / maxVal);
+        const bg = t > 0.75 ? "rgba(225,29,72,0.85)" : t > 0.5 ? "rgba(239,68,68,0.7)" : t > 0.3 ? "rgba(250,204,21,0.55)" : "rgba(74,222,128,0.4)";
+        html += `<td class="p-1 text-center rounded" style="background:${bg}" title="${v} veh/km">${Number(v).toFixed(0)}</td>`;
+      });
+      html += "</tr>";
+    });
+    html += "</tbody></table>";
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = `<div class="text-rose-400 text-sm">Failed: ${e.message}</div>`;
+  }
+}
+
+async function loadRecommendations() {
+  const roadId = document.getElementById("road-selector").value;
+  const container = document.getElementById("recs-container");
+  try {
+    const recs = await aiAPI.getRecommendations(roadId);
+    if (!recs.length) {
+      container.innerHTML = '<div class="text-on-surface-variant text-sm">No recommendations right now.</div>';
+      return;
+    }
+    container.innerHTML = recs.map((r) => {
+      const pri = r.priority === "high" ? "border-rose-500/40 bg-rose-950/20" :
+                  r.priority === "medium" ? "border-amber-500/30 bg-amber-950/10" :
+                  "border-white/10 bg-surface-container-high/40";
+      return `
+        <div class="p-3 rounded-xl border ${pri}">
+          <div class="text-sm font-medium text-on-surface">${r.recommendation_text}</div>
+          <div class="text-[11px] text-on-surface-variant mt-1.5 flex justify-between gap-2">
+            <span>Based on: ${r.based_on || "—"}</span>
+            ${r.estimated_impact ? `<span class="text-emerald-400 shrink-0">${r.estimated_impact}</span>` : ""}
+          </div>
+        </div>`;
+    }).join("");
+  } catch (e) {
+    container.innerHTML = `<div class="text-rose-400 text-sm">${e.message}</div>`;
+  }
+}
+
+async function loadAnomalies() {
+  const container = document.getElementById("anomalies-container");
+  try {
+    const items = await aiAPI.getAnomalies(12);
+    if (!items.length) {
+      container.innerHTML = '<div class="text-on-surface-variant text-sm col-span-full">No anomalies flagged.</div>';
+      return;
+    }
+    container.innerHTML = items.map((a) => `
+      <div class="bg-surface-container-high/50 border border-rose-500/20 rounded-xl p-3">
+        <div class="flex justify-between items-start mb-1 gap-2">
+          <span class="font-semibold text-sm">${a.road_name || a.road_id}</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase shrink-0">${a.flagged_as || "anomaly"}</span>
+        </div>
+        <div class="text-xs text-on-surface-variant">
+          Expected: <strong>${a.expected_level}</strong> → Observed: <strong class="text-rose-300">${a.observed_level}</strong>
+          ${a.deviation_pct != null ? ` (${a.deviation_pct > 0 ? "+" : ""}${a.deviation_pct}%)` : ""}
+        </div>
+        <div class="text-[10px] text-secondary mt-1">Confidence: ${((a.confidence || 0) * 100).toFixed(0)}%</div>
+      </div>
+    `).join("");
+  } catch (e) {
+    container.innerHTML = `<div class="text-rose-400 text-sm">${e.message}</div>`;
+  }
+}
+
+async function downloadReport() {
+  const range = document.getElementById("range-selector").value;
+  try {
+    await analyticsAPI.downloadReport(range, "csv");
+  } catch (e) {
+    alert("Download failed: " + e.message);
+  }
+}
+
+function loadAll() {
+  loadTrends();
+  loadHeatmap();
+  loadRecommendations();
+  loadAnomalies();
+}
+
+// Notification bell
+(function () {
+  const bell = document.getElementById("notif-bell");
+  const dropdown = document.getElementById("notif-dropdown");
+  const badge = document.getElementById("notif-badge");
+  if (!bell) return;
+  bell.addEventListener("click", (e) => { e.stopPropagation(); dropdown.classList.toggle("hidden"); });
+  document.addEventListener("click", () => dropdown.classList.add("hidden"));
+  notificationManager.start((unread, all) => {
+    if (unread.length) {
+      badge.textContent = unread.length > 9 ? "9+" : unread.length;
+      badge.classList.remove("hidden");
+    } else badge.classList.add("hidden");
+    if (!all.length) {
+      dropdown.innerHTML = '<div class="text-xs text-on-surface-variant p-3">No alerts</div>';
+      return;
+    }
+    dropdown.innerHTML = all.slice(0, 10).map((a) => {
+      const border = a.severity === "severe" ? "border-rose-500" : a.severity === "critical" ? "border-red-400" : "border-secondary";
+      return `<div class="p-2.5 rounded-lg hover:bg-white/5 cursor-pointer border-l-2 ${border}" onclick="event.stopPropagation(); alertsAPI.markRead('${a.alert_id}').then(()=>notificationManager.poll())">
+        <div class="text-xs font-semibold text-on-surface">${(a.message || "").slice(0, 90)}</div>
+        <div class="text-[10px] text-on-surface-variant mt-0.5 uppercase">${a.severity} • ${a.type} ${a.road_id ? "• " + a.road_id : ""}</div>
+      </div>`;
+    }).join("");
+  }, 15000);
+})();
+
+document.addEventListener("DOMContentLoaded", loadAll);
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+venv/
+venv311/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+aiml/models/*.joblib
+!aiml/models/source_ml_v2.joblib

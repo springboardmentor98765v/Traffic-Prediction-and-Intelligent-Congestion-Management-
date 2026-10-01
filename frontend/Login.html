@@ -429,6 +429,8 @@
         let currentTab = 'signin';
         let currentRole = 'operator';   // matches the initially-active role button
         let currentCaptchaCode = '';
+        let currentCaptchaChallengeId = null;
+        let captchaRefreshSequence = 0;
 
         // ── CAPTCHA Generation & Audio ──────────────────────────────────
         function generateCaptchaCode(length = 5) {
@@ -498,11 +500,36 @@
             }
         }
 
-        function refreshCaptcha() {
+        async function refreshCaptcha() {
             captchaRefreshIcon.classList.add('rotate-180');
             setTimeout(() => captchaRefreshIcon.classList.remove('rotate-180'), 300);
-            drawCaptcha();
+            currentCaptchaCode = '';
+            currentCaptchaChallengeId = null;
             inputCaptcha.value = '';
+            const sequence = ++captchaRefreshSequence;
+            const ctx = captchaCanvas.getContext('2d');
+            ctx.clearRect(0, 0, captchaCanvas.width, captchaCanvas.height);
+            ctx.fillStyle = '#dae2fd';
+            ctx.font = '12px monospace';
+            ctx.fillText('Loading CAPTCHA...', 8, 24);
+
+            try {
+                const challenge = await authAPI.getCaptcha();
+                if (sequence !== captchaRefreshSequence) return;
+                currentCaptchaChallengeId = challenge.challenge_id;
+                const image = new Image();
+                image.onload = () => {
+                    if (sequence !== captchaRefreshSequence) return;
+                    ctx.clearRect(0, 0, captchaCanvas.width, captchaCanvas.height);
+                    ctx.drawImage(image, 0, 0, captchaCanvas.width, captchaCanvas.height);
+                };
+                image.src = challenge.image;
+            } catch (error) {
+                if (sequence !== captchaRefreshSequence) return;
+                ctx.clearRect(0, 0, captchaCanvas.width, captchaCanvas.height);
+                ctx.fillStyle = '#ffb4ab';
+                ctx.fillText('Backend unavailable', 8, 24);
+            }
         }
 
         function speakCaptcha() {
@@ -748,7 +775,7 @@
 
         // Initialize layout and initial CAPTCHA
         updateTabVisibility();
-        drawCaptcha();
+        refreshCaptcha();
 
         // ── Post-Signup Redirect Handler ─────────────────────────────────
         // If redirected here after a successful sign-up, auto-select Public
@@ -789,8 +816,8 @@
 
             // ── 1. CAPTCHA Verification Check ──────────────────────────────
             const userCaptcha = inputCaptcha.value.trim().toUpperCase();
-            if (!userCaptcha || userCaptcha !== currentCaptchaCode.toUpperCase()) {
-                errorTextSpan.textContent = 'Invalid security code (CAPTCHA). Please enter the characters shown.';
+            if (!userCaptcha || !currentCaptchaChallengeId) {
+                errorTextSpan.textContent = 'The CAPTCHA is not ready. Check the backend connection and refresh the challenge.';
                 errorMessage.classList.remove('hidden');
                 refreshCaptcha();
                 inputCaptcha.focus();
@@ -831,7 +858,7 @@
                 submitText.textContent = 'Creating account...';
 
                 try {
-                    const res = await authAPI.register(name, email, password, 'user');
+                    const res = await authAPI.register(name, email, password, currentCaptchaChallengeId, userCaptcha, 'user');
                     // Redirect to Login page (Sign In tab, Public role pre-selected) with a success flag
                     sessionStorage.setItem('signup_success', '1');
                     window.location.href = 'Login.html?role=public&tab=signin';
@@ -853,7 +880,7 @@
                 submitText.textContent = 'Verifying credentials...';
 
                 try {
-                    const data = await authAPI.login(email, password);
+                    const data = await authAPI.login(email, password, currentCaptchaChallengeId, userCaptcha);
                     authManager.setSession({
                         access_token: data.access_token,
                         refresh_token: data.refresh_token,
@@ -862,11 +889,8 @@
                     });
                     window.location.href = AuthManager.getDashboardUrl(data.role || currentRole);
                 } catch (err) {
-                    // A session must only be established from an actual backend response.
-                    // The local AI engine currently has no authentication endpoint.
-                    errorTextSpan.textContent = err.status === 404
-                        ? 'Authentication is not available from the connected backend.'
-                        : (err.message || 'Authentication failed. Please verify credentials.');
+                    console.warn('Backend login failed:', err.message);
+                    errorTextSpan.textContent = err.message || 'Authentication failed. Please verify credentials.';
                     errorMessage.classList.remove('hidden');
                     submitBtn.disabled = false;
                     submitText.textContent = 'Initialize Session';

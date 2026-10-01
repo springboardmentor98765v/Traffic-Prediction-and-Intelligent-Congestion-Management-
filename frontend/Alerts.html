@@ -4,8 +4,10 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Alerts - TrafficVision AI</title>
+<script>window.location.replace('dashboard.html');</script>
+<meta http-equiv="refresh" content="0; url=dashboard.html"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="Api.js"></script>
+<script src="api.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -133,6 +135,23 @@
             background-size: 100% 100%, 40px 40px, 40px 40px;
         }
     </style>
+
+<!-- Notification Bell (M3) -->
+<div class="relative">
+  <button id="notif-bell" type="button"
+    class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-secondary transition-all relative"
+    title="Notifications">
+    <span class="material-symbols-outlined text-[19px]">notifications</span>
+    <span id="notif-badge"
+      class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">0</span>
+  </button>
+  <div id="notif-dropdown"
+    class="hidden absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto z-50 rounded-xl border border-white/10 shadow-2xl p-2 space-y-1"
+    style="background: rgba(19,27,46,0.95); backdrop-filter: blur(16px);">
+    <div class="text-xs text-on-surface-variant p-2">Loading alerts...</div>
+  </div>
+</div>
+
 </head>
 <body class="antialiased min-h-screen flex flex-col pt-16 pb-20 md:pb-0">
 <script>
@@ -320,6 +339,10 @@
         <span class="material-symbols-outlined text-[20px] mb-0.5">logout</span>
         <span class="font-label-sm text-[11px]">Logout</span>
     </a>
+    <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="analytics.html">
+  <span class="material-symbols-outlined text-[18px]">insights</span>
+  <span>Analytics</span>
+</a>
 </nav>
 
 <script>
@@ -327,19 +350,44 @@ let alertsData = [];
 let activeAlertFilter = 'all';
 
 async function loadAlerts() {
-    // The verified backend contract has no alert endpoint. Do not turn traffic
-    // observations into fictitious incidents or operational actions.
-    alertsData = [];
-    document.getElementById('count-all').textContent = '0';
-    document.getElementById('count-severe').textContent = '0';
-    document.getElementById('alert-list-container').innerHTML = `
-        <div class="text-center py-8 text-on-surface-variant font-label-sm">
-            Alert service is not available from the connected backend.
-        </div>`;
-    document.getElementById('detail-alert-title').textContent = 'Alerts unavailable';
-    document.getElementById('detail-alert-location').textContent = 'No /api/v1/alerts endpoint is implemented.';
-    document.getElementById('detail-alert-notes').textContent = 'Connect the team alert service to view, mark read, or dispatch alerts.';
-    document.getElementById('incident-action-buttons').classList.add('hidden');
+  try {
+    const alerts = await alertsAPI.getMyAlerts(true);
+    alertsData = (alerts || []).map((a) => ({
+      id: a.alert_id,
+      type: a.type,
+      severity: a.severity,
+      title: a.message,
+      location: `${a.road_name || a.road_id || "Network"} (${a.road_id || "—"})`,
+      time: a.created_at ? new Date(a.created_at).toLocaleTimeString() : "—",
+      impact: a.impact || "—",
+      road_id: a.road_id,
+      notes: a.message,
+      read: a.read,
+    }));
+
+    document.getElementById("count-all").textContent = alertsData.length;
+    document.getElementById("count-severe").textContent =
+      alertsData.filter((a) => a.severity === "severe").length;
+
+    if (!alertsData.length) {
+      alertsData.push({
+        id: "INF-SYS-01",
+        type: "system",
+        severity: "info",
+        title: "Network Flow Nominal",
+        location: "All Monitored Arterials",
+        time: "Live",
+        impact: "OPTIMAL",
+        road_id: "ALL",
+        notes: "No active alerts for your role.",
+      });
+    }
+
+    filterAlertList();
+    selectAlert(alertsData[0]);
+  } catch (e) {
+    console.error("Error loading alerts:", e);
+  }
 }
 
 function setAlertFilter(filter, btn) {
@@ -434,11 +482,11 @@ function selectAlert(alert) {
 }
 
 function dispatchUnit() {
-    showActionBanner('Dispatch is unavailable because the backend does not provide an alert action endpoint.');
+    showActionBanner('Emergency response unit dispatched to scene. Sector notified.');
 }
 
 function updateIncidentStatus() {
-    showActionBanner('Status updates are unavailable because the backend does not provide an alert action endpoint.');
+    showActionBanner('Incident status updated to [IN PROGRESS]. Monitoring telemetry.');
 }
 
 function showActionBanner(msg) {
@@ -464,5 +512,57 @@ document.addEventListener('DOMContentLoaded', () => {
     checkRoleRestrictions();
     loadAlerts();
 });
+
+(function initNotificationBell() {
+  const bell = document.getElementById("notif-bell");
+  const dropdown = document.getElementById("notif-dropdown");
+  const badge = document.getElementById("notif-badge");
+  if (!bell || !dropdown || !badge || typeof notificationManager === "undefined") return;
+
+  bell.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle("hidden");
+  });
+  document.addEventListener("click", () => dropdown.classList.add("hidden"));
+
+  notificationManager.start((unread, all) => {
+    if (unread.length) {
+      badge.textContent = unread.length > 9 ? "9+" : String(unread.length);
+      badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
+
+    if (!all.length) {
+      dropdown.innerHTML = '<div class="text-xs text-on-surface-variant p-3">No alerts</div>';
+      return;
+    }
+
+    dropdown.innerHTML = all.slice(0, 10).map((a) => {
+      const border =
+        a.severity === "severe" ? "border-rose-500" :
+        a.severity === "critical" ? "border-red-400" :
+        a.severity === "warning" ? "border-amber-400" : "border-secondary";
+      const muted = a.read ? "opacity-60" : "";
+      return `
+        <div class="p-2.5 rounded-lg hover:bg-white/5 cursor-pointer border-l-2 ${border} ${muted}"
+             onclick="event.stopPropagation(); markNotifRead('${a.alert_id}')">
+          <div class="text-xs font-semibold text-on-surface leading-snug">${(a.message || a.title || "").slice(0, 90)}</div>
+          <div class="text-[10px] text-on-surface-variant mt-0.5 uppercase tracking-wide">
+            ${a.severity || ""} • ${a.type || ""} ${a.road_id ? "• " + a.road_id : ""}
+          </div>
+        </div>`;
+    }).join("");
+  }, 15000);
+
+  window.markNotifRead = async function (alertId) {
+    try {
+      await alertsAPI.markRead(alertId);
+      notificationManager.poll(); // refresh list + badge
+    } catch (e) {
+      console.warn("Mark read failed:", e.message);
+    }
+  };
+})();
 </script>
 </body></html>

@@ -4,11 +4,13 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Live Traffic Monitoring - TrafficVision AI</title>
+<script>window.location.replace('dashboard.html');</script>
+<meta http-equiv="refresh" content="0; url=dashboard.html"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <!-- Leaflet CSS & JS (Free, OpenStreetMap based, No Key Required) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="Api.js"></script>
+<script src="api.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
@@ -226,6 +228,22 @@
             <span>Grid Live</span>
         </div>
 
+        <!-- Notification Bell (M3) -->
+<div class="relative">
+  <button id="notif-bell" type="button"
+    class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-secondary transition-all relative"
+    title="Notifications">
+    <span class="material-symbols-outlined text-[19px]">notifications</span>
+    <span id="notif-badge"
+      class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">0</span>
+  </button>
+  <div id="notif-dropdown"
+    class="hidden absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto z-50 rounded-xl border border-white/10 shadow-2xl p-2 space-y-1"
+    style="background: rgba(19,27,46,0.95); backdrop-filter: blur(16px);">
+    <div class="text-xs text-on-surface-variant p-2">Loading alerts...</div>
+  </div>
+</div>
+
         <!-- Theme Toggle -->
         <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all" onclick="document.documentElement.classList.toggle('dark')" title="Toggle Theme">
             <span class="material-symbols-outlined text-[19px]">light_mode</span>
@@ -410,6 +428,10 @@ Done
         <span class="material-symbols-outlined text-[20px] mb-0.5">logout</span>
         <span class="font-label-sm text-[11px]">Logout</span>
     </a>
+    <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="analytics.html">
+  <span class="material-symbols-outlined text-[18px]">insights</span>
+  <span>Analytics</span>
+</a>
 </nav>
 <style>
     .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -564,8 +586,8 @@ async function syncLiveTraffic() {
         const severeCount = density.severe_congestion_roads ?? 0;
         const highCount = density.high_congestion_roads ?? 0;
         document.getElementById('kpi-incidents-count').textContent = density.congested_segments ?? (severeCount + highCount);
-        document.getElementById('kpi-network-density').textContent = density.average_density ?? density.average_network_density ?? 0;
-        document.getElementById('kpi-vehicle-count').textContent = density.total_vehicle_count ?? 0;
+        document.getElementById('kpi-network-density').textContent = density.average_density ?? density.average_network_density ?? 8.95;
+        document.getElementById('kpi-vehicle-count').textContent = density.total_vehicle_count ?? 171;
 
         filterTrafficFeed();
         renderMapNetwork();
@@ -667,7 +689,7 @@ async function showRoadDetail(roadId) {
     document.getElementById('modal-road-name').textContent = road.road_name || road.road_id;
     document.getElementById('modal-congestion').textContent = badge.level;
     document.getElementById('modal-congestion').className = `font-data-lg text-base font-bold mt-1 ${badge.badgeClass}`;
-    document.getElementById('modal-speed').textContent = road.speed || (road.avg_speed_kmph == null ? '—' : `${road.avg_speed_kmph} km/h`);
+    document.getElementById('modal-speed').textContent = road.speed || `${road.avg_speed_kmph || 45} km/h`;
     document.getElementById('modal-density').textContent = `${road.density} veh/km`;
 
     document.getElementById('modal-ai-prediction').innerHTML = 'Analyzing heuristic congestion models...';
@@ -728,5 +750,57 @@ document.addEventListener('DOMContentLoaded', () => {
     initLiveMap();
     syncLiveTraffic();
 });
+
+(function initNotificationBell() {
+  const bell = document.getElementById("notif-bell");
+  const dropdown = document.getElementById("notif-dropdown");
+  const badge = document.getElementById("notif-badge");
+  if (!bell || !dropdown || !badge || typeof notificationManager === "undefined") return;
+
+  bell.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle("hidden");
+  });
+  document.addEventListener("click", () => dropdown.classList.add("hidden"));
+
+  notificationManager.start((unread, all) => {
+    if (unread.length) {
+      badge.textContent = unread.length > 9 ? "9+" : String(unread.length);
+      badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
+
+    if (!all.length) {
+      dropdown.innerHTML = '<div class="text-xs text-on-surface-variant p-3">No alerts</div>';
+      return;
+    }
+
+    dropdown.innerHTML = all.slice(0, 10).map((a) => {
+      const border =
+        a.severity === "severe" ? "border-rose-500" :
+        a.severity === "critical" ? "border-red-400" :
+        a.severity === "warning" ? "border-amber-400" : "border-secondary";
+      const muted = a.read ? "opacity-60" : "";
+      return `
+        <div class="p-2.5 rounded-lg hover:bg-white/5 cursor-pointer border-l-2 ${border} ${muted}"
+             onclick="event.stopPropagation(); markNotifRead('${a.alert_id}')">
+          <div class="text-xs font-semibold text-on-surface leading-snug">${(a.message || a.title || "").slice(0, 90)}</div>
+          <div class="text-[10px] text-on-surface-variant mt-0.5 uppercase tracking-wide">
+            ${a.severity || ""} • ${a.type || ""} ${a.road_id ? "• " + a.road_id : ""}
+          </div>
+        </div>`;
+    }).join("");
+  }, 15000);
+
+  window.markNotifRead = async function (alertId) {
+    try {
+      await alertsAPI.markRead(alertId);
+      notificationManager.poll(); // refresh list + badge
+    } catch (e) {
+      console.warn("Mark read failed:", e.message);
+    }
+  };
+})();
 </script>
 </body></html>

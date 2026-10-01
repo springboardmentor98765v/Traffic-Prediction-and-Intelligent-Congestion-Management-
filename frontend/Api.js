@@ -1,5 +1,5 @@
 const API_CONFIG = {
-  baseURL: "http://127.0.0.1:8000/api/v1",
+  baseURL: (typeof window !== "undefined" && window.TRAFFICVISION_API_BASE_URL) || "http://127.0.0.1:8001/api/v1",
   timeoutMs: 12000,
   defaultHeaders: {
     "Content-Type": "application/json",
@@ -7,17 +7,13 @@ const API_CONFIG = {
 };
 
 class AuthManager {
-  constructor( storage = typeof window !== "undefined" ? window.localStorage : null ) {
+  constructor(storage = typeof window !== "undefined" ? window.localStorage : null) {
     this.storage = storage;
   }
 
   getToken() {
     if (!this.storage) return null;
-    return (
-      this.storage.getItem("auth_token") ||
-      this.storage.getItem("token") ||
-      null
-    );
+    return this.storage.getItem("auth_token") || this.storage.getItem("token") || null;
   }
 
   setToken(token) {
@@ -33,9 +29,6 @@ class AuthManager {
     if (!this.storage) return;
     this.storage.removeItem("auth_token");
     this.storage.removeItem("token");
-    this.storage.removeItem("refresh_token");
-    this.storage.removeItem("role");
-    this.storage.removeItem("user_name");
   }
 
   isAuthenticated() {
@@ -68,13 +61,13 @@ class AuthManager {
   // Maps a user role to the dashboard page they should land on after login.
   static getDashboardUrl(role) {
     const map = {
-      ADMIN: "Admin dashboard.html",
-      OPERATOR: "operator dashboard.html",
-      TRAFFIC_OPERATOR: "operator dashboard.html",
-      PUBLIC: "public dashboard.html",
-      USER: "public dashboard.html",
+      ADMIN: "dashboard.html",
+      OPERATOR: "dashboard.html",
+      TRAFFIC_OPERATOR: "dashboard.html",
+      PUBLIC: "dashboard.html",
+      USER: "dashboard.html",
     };
-    return map[String(role || "").toUpperCase()] || "public dashboard.html";
+    return map[String(role || "").toUpperCase()] || "dashboard.html";
   }
 
   // Reads the saved role back out of storage.
@@ -95,8 +88,7 @@ class AuthManager {
   static guardPage(allowedRoles = null) {
     if (typeof window === "undefined") return;
     const hasToken = Boolean(
-      window.localStorage.getItem("auth_token") ||
-        window.localStorage.getItem("token")
+      window.localStorage.getItem("auth_token") || window.localStorage.getItem("token")
     );
     const role = (AuthManager.getRole() || "").toUpperCase();
 
@@ -136,11 +128,8 @@ function buildQueryString(params = {}) {
   return searchParams.toString();
 }
 
-async function apiFetch(endpoint, options = {}) {
-  const baseUrl = endpoint.startsWith("http")
-    ? endpoint
-    : `${API_CONFIG.baseURL}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
-
+async function apiFetch(endpoint, options = {}, retryAfterRefresh = true) {
+  const baseUrl = endpoint.startsWith("http") ? endpoint : `${API_CONFIG.baseURL}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
   const controller = new AbortController();
   const timeoutMs = options.timeout ?? API_CONFIG.timeoutMs;
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -157,10 +146,16 @@ async function apiFetch(endpoint, options = {}) {
       signal: controller.signal,
     });
 
+    const contentType = response.headers.get("content-type") || "";
+    if (response.ok && (contentType.includes("text/csv") || contentType.includes("application/octet-stream"))) {
+      const blob = await response.blob();
+      const disposition = response.headers.get("content-disposition") || "";
+      const filename = disposition.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i)?.[1] || "traffic-report.csv";
+      return { blob, filename: decodeURIComponent(filename.replace(/"/g, "")) };
+    }
+
     const text = await response.text();
-
     let payload = null;
-
     if (text) {
       try {
         payload = JSON.parse(text);
@@ -170,56 +165,55 @@ async function apiFetch(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      const detail =
-        payload && typeof payload === "object"
-          ? payload.detail || payload.message || payload.error
-          : null;
+      const detail = payload && typeof payload === "object" ? (payload.detail || payload.message || payload.error) : payload;
+      const message = typeof detail === "string" ? detail : `Request failed (${response.status})`;
 
-      const message =
-        typeof detail === "string"
-          ? detail
-          : `Request failed (${response.status})`;
+      const isAuthEndpoint = endpoint.includes("/auth/login") || endpoint.includes("/auth/refresh") || endpoint.includes("/auth/logout");
+      if (response.status === 401 && retryAfterRefresh && !isAuthEndpoint && typeof localStorage !== "undefined" && localStorage.getItem("refresh_token")) {
+        try {
+          const refreshed = await apiFetch("/auth/refresh", {
+            method: "POST",
+            body: JSON.stringify({ refresh_token: localStorage.getItem("refresh_token") }),
+          }, false);
+          authManager.setToken(refreshed.access_token);
+          if (refreshed.refresh_token) localStorage.setItem("refresh_token", refreshed.refresh_token);
+          return await apiFetch(endpoint, options, false);
+        } catch {
+          authManager.clear();
+          if (typeof localStorage !== "undefined") localStorage.removeItem("refresh_token");
+        }
+      }
 
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401 && !isAuthEndpoint) {
         authManager.clear();
+        if (typeof localStorage !== "undefined") localStorage.removeItem("refresh_token");
       }
 
       throw createApiError(message, response.status, payload);
     }
 
     return payload;
-
   } catch (error) {
-
-    if (error?.name === "AbortError") {
-      throw createApiError(
-        "Backend request timed out. Make sure the TrafficVision backend is running.",
-        408,
-        null
-      );
+    if (error && error.name === "AbortError") {
+      throw createApiError("Request timed out", 408, null);
     }
 
-    if (error?.status) {
+    if (error && error.status) {
       throw error;
     }
 
-    console.error("[API NETWORK ERROR]", error);
+    if (error instanceof TypeError) {
+      throw createApiError(`Cannot reach the TrafficVision backend at ${API_CONFIG.baseURL}. Start the backend and try again.`, 503, null);
+    }
 
-    throw createApiError(
-      `Cannot connect to backend at ${API_CONFIG.baseURL}. Make sure Uvicorn is running.`,
-      503,
-      null
-    );
-
+    throw createApiError("Backend unavailable", 503, null);
   } finally {
     clearTimeout(timer);
   }
 }
 
 function normalizeCongestionLevel(value) {
-  const raw = String(value || "")
-    .trim()
-    .toLowerCase();
+  const raw = String(value || "").trim().toLowerCase();
   if (!raw) return "Low";
   if (raw.includes("severe")) return "Severe";
   if (raw.includes("high")) return "High";
@@ -243,9 +237,13 @@ function getCongestionLabel(value) {
 }
 
 const authAPI = {
-  async login(email, password) {
-    if (!email || !password) {
-      throw createApiError("Email and password are required", 400, null);
+  async getCaptcha() {
+    return apiFetch("/auth/captcha");
+  },
+
+  async login(email, password, challengeId, captchaResponse) {
+    if (!email || !password || !challengeId || !captchaResponse) {
+      throw createApiError("Email, password, and CAPTCHA are required", 400, null);
     }
 
     const response = await apiFetch("/auth/login", {
@@ -253,11 +251,17 @@ const authAPI = {
       body: JSON.stringify({
         email,
         password,
+        challenge_id: challengeId,
+        captcha_response: captchaResponse,
       }),
     });
 
     if (!response || typeof response !== "object") {
-      throw createApiError("Malformed login response", 502, response);
+      throw createApiError(
+        "Malformed login response",
+        502,
+        response
+      );
     }
 
     // Store access token
@@ -267,22 +271,34 @@ const authAPI = {
 
     // Preserve refresh token if backend provides one
     if (response.refresh_token) {
-      localStorage.setItem("refresh_token", response.refresh_token);
+      localStorage.setItem(
+        "refresh_token",
+        response.refresh_token
+      );
     }
 
     // Preserve role/user information if provided
     if (response.role) {
-      localStorage.setItem("role", String(response.role).toUpperCase());
+      localStorage.setItem(
+        "role",
+        String(response.role).toUpperCase()
+      );
     }
 
     if (response.name) {
-      localStorage.setItem("user_name", response.name);
+      localStorage.setItem(
+        "user_name",
+        response.name
+      );
     }
 
     return response;
   },
 
-  async register(name, email, password, role = "user") {
+  async register(name, email, password, challengeId, captchaResponse, role = "user") {
+    if (!challengeId || !captchaResponse) {
+      throw createApiError("CAPTCHA is required", 400, null);
+    }
     let backendRole = String(role || "user").toLowerCase();
 
     if (backendRole === "public") {
@@ -298,11 +314,17 @@ const authAPI = {
         email,
         password,
         role: backendRole,
+        challenge_id: challengeId,
+        captcha_response: captchaResponse,
       }),
     });
 
     if (!response || typeof response !== "object") {
-      throw createApiError("Malformed registration response", 502, response);
+      throw createApiError(
+        "Malformed registration response",
+        502,
+        response
+      );
     }
 
     return response;
@@ -312,7 +334,11 @@ const authAPI = {
     const response = await apiFetch("/auth/me");
 
     if (!response || typeof response !== "object") {
-      throw createApiError("Malformed profile response", 502, response);
+      throw createApiError(
+        "Malformed profile response",
+        502,
+        response
+      );
     }
 
     return response;
@@ -322,7 +348,11 @@ const authAPI = {
     const refreshToken = localStorage.getItem("refresh_token");
 
     if (!refreshToken) {
-      throw createApiError("Refresh token not available", 401, null);
+      throw createApiError(
+        "Refresh token not available",
+        401,
+        null
+      );
     }
 
     const response = await apiFetch("/auth/refresh", {
@@ -336,14 +366,19 @@ const authAPI = {
       authManager.setToken(response.access_token);
     }
 
-    if (response?.refresh_token) {
-      localStorage.setItem("refresh_token", response.refresh_token);
-    }
+    if (response?.refresh_token) localStorage.setItem("refresh_token", response.refresh_token);
 
     return response;
   },
 
-  logout() {
+  async logout() {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (refreshToken) {
+      try {
+        await apiFetch("/auth/logout", { method: "POST", body: JSON.stringify({ refresh_token: refreshToken }) }, false);
+      } catch {
+      }
+    }
     authManager.clear();
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("role");
@@ -355,7 +390,7 @@ const trafficAPI = {
   async getLiveTraffic() {
     const response = await apiFetch("/traffic/live");
     if (!Array.isArray(response)) {
-      throw createApiError("Malformed traffic response", 502, response);
+      throw createApiError("Malformed response: expected a traffic array", 502, response);
     }
     return response;
   },
@@ -363,7 +398,7 @@ const trafficAPI = {
   async getDensitySummary() {
     const response = await apiFetch("/traffic/density");
     if (!response || typeof response !== "object") {
-      throw createApiError("Malformed density response", 502, response);
+      throw createApiError("Malformed response: expected a density summary", 502, response);
     }
     return response;
   },
@@ -374,15 +409,9 @@ const trafficAPI = {
     }
 
     try {
-      const response = await apiFetch(
-        `/traffic/road/${encodeURIComponent(String(roadId))}`
-      );
+      const response = await apiFetch(`/traffic/road/${encodeURIComponent(String(roadId))}`);
       if (!response || typeof response !== "object") {
-        throw createApiError(
-          "Malformed response: expected an object",
-          502,
-          response
-        );
+        throw createApiError("Malformed response: expected an object", 502, response);
       }
       return response;
     } catch (error) {
@@ -392,10 +421,69 @@ const trafficAPI = {
       throw error;
     }
   },
+
+  async getHistory({ road_id, start, end, limit = 100 } = {}) {
+    return apiFetch(`/traffic/history?${buildQueryString({ road_id, start, end, limit })}`);
+  },
+
+  async getAggregate({ road_id, granularity = "hour" } = {}) {
+    return apiFetch(`/traffic/aggregate?${buildQueryString({ road_id, granularity })}`);
+  },
+
+  async getRoadCondition(roadId) {
+    if (!roadId) throw createApiError("road_id is required", 400, null);
+    return apiFetch(`/traffic/road-condition/${encodeURIComponent(String(roadId))}`);
+  },
+};
+
+const dashboardAPI = {
+  async getAnalytics() {
+    return apiFetch("/analytics");
+  },
+  async getAlerts() {
+    return apiFetch("/alerts");
+  },
+  async getRecommendations() {
+    return apiFetch("/recommendations");
+  },
+  async getAnomalies(limit = 20) {
+    return apiFetch(`/ai/anomalies?${buildQueryString({ limit })}`);
+  },
+  async getMyAlerts(limit = 50) {
+    return apiFetch(`/alerts/my?${buildQueryString({ limit })}`);
+  },
+  async getActiveAlerts({ road_id, limit = 50 } = {}) {
+    return apiFetch(`/alerts/active?${buildQueryString({ road_id, limit })}`);
+  },
+  async markAlertRead(alertId) {
+    return apiFetch(`/alerts/${encodeURIComponent(String(alertId))}/read`, { method: "POST" });
+  },
+  async createAlert(alert) {
+    return apiFetch("/alerts", { method: "POST", body: JSON.stringify(alert) });
+  },
+  async syncAnomalyAlerts(minimum_score = 0.3) {
+    return apiFetch(`/alerts/sync-ai-anomalies?${buildQueryString({ minimum_score })}`, { method: "POST" });
+  },
+  async getTrends(roadId, range = "day") {
+    return apiFetch(`/analytics/trends?${buildQueryString({ road_id: roadId, range })}`);
+  },
+  async getHeatmap(range = "day") {
+    return apiFetch(`/analytics/heatmap?${buildQueryString({ range })}`);
+  },
+  async downloadReport(range = "week", format = "csv") {
+    return apiFetch(`/analytics/reports?${buildQueryString({ range, format })}`);
+  },
+  async getHistoricalReport(roadId) {
+    if (!roadId) throw createApiError("road_id is required", 400, null);
+    return apiFetch(`/reports/historical/${encodeURIComponent(String(roadId))}`);
+  },
+  async getModelMetrics() {
+    return apiFetch("/model/metrics");
+  },
 };
 
 const predictionAPI = {
-  async predictCongestion({ road_id, vehicle_count, average_speed, timestamp, } = {}) {
+  async predictCongestion({ road_id, vehicle_count, average_speed, timestamp } = {}) {
     if (!road_id) {
       throw createApiError("road_id is required", 400, null);
     }
@@ -409,11 +497,7 @@ const predictionAPI = {
 
     const response = await apiFetch(`/predict/congestion?${query}`);
     if (!response || typeof response !== "object") {
-      throw createApiError(
-        "Malformed response: expected an object",
-        502,
-        response
-      );
+      throw createApiError("Malformed response: expected an object", 502, response);
     }
     return response;
   },
@@ -426,16 +510,12 @@ const predictionAPI = {
     const query = buildQueryString({ road_id: roadId });
     const response = await apiFetch(`/predict/peak-hours?${query}`);
     if (!response || typeof response !== "object") {
-      throw createApiError(
-        "Malformed response: expected an object",
-        502,
-        response
-      );
+      throw createApiError("Malformed response: expected an object", 502, response);
     }
     return response;
   },
 
-  async predictDelay({ road_id, distance_km, vehicle_count, average_speed, timestamp, } = {}) {
+  async predictDelay({ road_id, distance_km, vehicle_count, average_speed, timestamp } = {}) {
     if (!road_id) {
       throw createApiError("road_id is required", 400, null);
     }
@@ -450,17 +530,25 @@ const predictionAPI = {
 
     const response = await apiFetch(`/predict/delay?${query}`);
     if (!response || typeof response !== "object") {
-      throw createApiError(
-        "Malformed response: expected an object",
-        502,
-        response
-      );
+      throw createApiError("Malformed response: expected an object", 502, response);
     }
     return response;
   },
 };
 
 const routeAPI = {
+  async optimizeRoute(origin, destination) {
+    return apiFetch(`/route/optimize?${buildQueryString({ origin, destination })}`);
+  },
+  async getAlternateRoutes(origin, destination) {
+    return apiFetch(`/route/alternate?${buildQueryString({ origin, destination })}`);
+  },
+  async getTravelTime(routeId) {
+    return apiFetch(`/route/travel-time?${buildQueryString({ route_id: routeId })}`);
+  },
+  async getRoadConditions(roadId) {
+    return apiFetch(`/route/conditions?${buildQueryString({ road_id: roadId })}`);
+  },
   async rankRoutes(routes) {
     if (!Array.isArray(routes) || routes.length === 0) {
       return [];
@@ -481,107 +569,12 @@ const routeAPI = {
     });
 
     if (!Array.isArray(response)) {
-      throw createApiError(
-        "Malformed response: expected an array",
-        502,
-        response
-      );
+      throw createApiError("Malformed response: expected an array", 502, response);
     }
 
     return response;
   },
 };
-
-/* Compatibility facade for the existing HTML screens.  Every value below is
- * obtained from a supported API response; no traffic or prediction fallback is
- * manufactured in the browser. */
-const predictAPI = {
-  getCongestion(roadId) {
-    return predictionAPI.predictCongestion({ road_id: roadId });
-  },
-
-  async getPeakHourPrediction(roadId) {
-    const result = await predictionAPI.getPeakHours(roadId);
-    return { ...result, peak_hours: result.peak_windows || [] };
-  },
-
-  async getAllDelayEstimates() {
-    const roads = await trafficAPI.getLiveTraffic();
-    return Promise.all(roads.map(async (road) => {
-      const result = await predictionAPI.predictDelay({
-        road_id: road.road_id,
-        distance_km: 1,
-        vehicle_count: road.vehicle_count,
-        average_speed: road.avg_speed_kmph,
-        timestamp: road.updated_at,
-      });
-      return { ...result, road_name: road.road_name, delay_minutes: result.estimated_delay_minutes };
-    }));
-  },
-
-  async getAllRoadForecasts() {
-    const roads = await trafficAPI.getLiveTraffic();
-    return Promise.all(roads.map(async (road) => {
-      const forecast = await predictionAPI.predictCongestion({
-        road_id: road.road_id,
-        vehicle_count: road.vehicle_count,
-        average_speed: road.avg_speed_kmph,
-        timestamp: road.updated_at,
-      });
-      return {
-        ...forecast,
-        road_name: road.road_name,
-        current_density: road.density,
-        predicted_density: forecast.density,
-        predicted_speed: "—",
-        trend: "Not supplied by API",
-      };
-    }));
-  },
-
-  async getTemporalForecast(roadId) {
-    const road = await trafficAPI.getRoadTraffic(roadId);
-    const forecast = await predictionAPI.predictCongestion({ road_id: roadId });
-    return {
-      ...forecast,
-      road_name: road.road_name,
-      current_density: road.density,
-      predicted_density: forecast.density,
-      predicted_speed: "—",
-      trend: "Not supplied by API",
-    };
-  },
-
-  async downloadPredictionReport(format = "csv") {
-    const forecasts = await this.getAllRoadForecasts();
-    if (!forecasts.length) throw createApiError("No prediction data is available for export", 404, null);
-    const fields = ["road_id", "road_name", "predicted_level", "confidence", "model_version", "observed_at", "current_density", "predicted_density"];
-    const type = format === "json" ? "application/json" : "text/csv";
-    const content = format === "json"
-      ? JSON.stringify(forecasts, null, 2)
-      : [fields.join(","), ...forecasts.map((row) => fields.map((field) => JSON.stringify(row[field] ?? "")).join(","))].join("\n");
-    const filename = `trafficvision-predictions-${new Date().toISOString().slice(0, 10)}.${format === "json" ? "json" : "csv"}`;
-    const url = URL.createObjectURL(new Blob([content], { type }));
-    const link = document.createElement("a");
-    link.href = url; link.download = filename; link.click();
-    URL.revokeObjectURL(url);
-    return { filename, count: forecasts.length };
-  },
-};
-
-// There is no operator-management route in the verified backend.  This keeps
-// the legacy admin screen from throwing ReferenceError while ensuring a write
-// is never represented as successful.
-const operatorAPI = {
-  getOperators() { return []; },
-  async addOperator() { throw createApiError("Operator management is not available from the connected backend", 501, null); },
-  async removeOperator() { throw createApiError("Operator management is not available from the connected backend", 501, null); },
-};
-
-function logout() {
-  authAPI.logout();
-  if (typeof window !== "undefined") window.location.href = "Login.html";
-}
 
 if (typeof window !== "undefined") {
   window.API_CONFIG = API_CONFIG;
@@ -591,10 +584,8 @@ if (typeof window !== "undefined") {
   window.trafficAPI = trafficAPI;
   window.predictionAPI = predictionAPI;
   window.routeAPI = routeAPI;
-  window.predictAPI = predictAPI;
-  window.operatorAPI = operatorAPI;
+  window.dashboardAPI = dashboardAPI;
   window.authAPI = authAPI;
-  window.logout = logout;
   window.getCongestionBadgeClass = getCongestionBadgeClass;
   window.getCongestionLabel = getCongestionLabel;
 }
@@ -608,8 +599,7 @@ if (typeof module !== "undefined" && module.exports) {
     trafficAPI,
     predictionAPI,
     routeAPI,
-    predictAPI,
-    operatorAPI,
+    dashboardAPI,
     getCongestionBadgeClass,
     getCongestionLabel,
   };
