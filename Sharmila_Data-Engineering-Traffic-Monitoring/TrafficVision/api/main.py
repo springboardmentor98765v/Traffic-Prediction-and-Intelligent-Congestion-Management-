@@ -2,7 +2,37 @@ from fastapi import FastAPI
 import psycopg2
 import redis
 import json
+from analytics.trend_analysis import (
+    load_data as load_trend_data,
+    generate_daily_trends,
+    generate_weekly_trends,
+    create_daily_output,
+    create_weekly_output
+)
 
+from analytics.heatmap_analysis import (
+    load_data as load_heatmap_data,
+    generate_heatmap,
+    create_heatmap_output
+)
+
+import pandas as pd
+from io import StringIO
+from fastapi.responses import StreamingResponse
+
+from analytics.trend_analysis import (
+    load_data as load_trend_data,
+    generate_daily_trends,
+    generate_weekly_trends,
+    create_daily_output,
+    create_weekly_output
+)
+
+from analytics.heatmap_analysis import (
+    load_data as load_heatmap_data,
+    generate_heatmap,
+    create_heatmap_output
+)
 
 app = FastAPI(title="TrafficVision API")
 
@@ -362,3 +392,153 @@ def get_road_condition(road_id: int):
         }
         for row in rows
     ]
+    
+
+# ANALYTICS - TRAFFIC TRENDS
+
+@app.get("/analytics/trends", tags=["Analytics"])
+def analytics_trends(
+    road_id: int = 1,
+    range: str = "day"
+):
+    if range not in ["day", "week"]:
+        return {"error": "range must be day or week"}
+
+    df = load_trend_data()
+
+    if range == "day":
+        trends = generate_daily_trends(df)
+        return create_daily_output(trends, road_id)
+
+    trends = generate_weekly_trends(df)
+    return create_weekly_output(trends, road_id)
+
+
+# ANALYTICS - TRAFFIC HEATMAP
+
+
+@app.get("/analytics/heatmap", tags=["Analytics"])
+def analytics_heatmap():
+    df = load_heatmap_data()
+
+    matrix = generate_heatmap(df)
+
+    return create_heatmap_output(matrix)
+
+# =====================================
+# MILESTONE 3 - ANALYTICS APIs
+# =====================================
+
+DATA_FILE = "traffic_history_clean.csv"
+CONGESTION_THRESHOLD = 0.70
+
+
+# 1. Congestion Alerts
+
+@app.get("/analytics/alerts", tags=["Analytics"])
+def analytics_alerts(road_id: int = None):
+
+    df = pd.read_csv(DATA_FILE)
+
+    alerts = df[df["density"] >= CONGESTION_THRESHOLD].copy()
+
+    if road_id is not None:
+        alerts = alerts[alerts["road_id"] == road_id]
+
+    alerts["alert_type"] = "congestion"
+    alerts["message"] = alerts["road_id"].apply(
+        lambda road: f"High congestion detected on Road {int(road)}"
+    )
+
+    return alerts.to_dict(orient="records")
+
+
+# 2. Congestion Alert Summary
+
+@app.get("/analytics/alerts/summary", tags=["Analytics"])
+def analytics_alert_summary():
+
+    df = pd.read_csv(DATA_FILE)
+
+    alerts = df[df["density"] >= CONGESTION_THRESHOLD]
+
+    road_counts = (
+        alerts.groupby("road_id")
+        .size()
+        .to_dict()
+    )
+
+    return {
+        "threshold": CONGESTION_THRESHOLD,
+        "total_records": len(df),
+        "threshold_breaches": len(alerts),
+        "road_wise_breaches": road_counts
+    }
+
+
+# 3. Daily and Weekly Trends
+
+@app.get("/analytics/trends", tags=["Analytics"])
+def analytics_trends(road_id: int = 1, range: str = "day"):
+
+    if range not in ["day", "week"]:
+        return {"error": "range must be day or week"}
+
+    df = load_trend_data()
+
+    if road_id not in df["road_id"].unique():
+        return {"error": "Invalid road_id"}
+
+    if range == "day":
+        trends = generate_daily_trends(df)
+        return create_daily_output(trends, road_id)
+
+    trends = generate_weekly_trends(df)
+    return create_weekly_output(trends, road_id)
+
+
+# 4. Traffic Heatmap
+
+@app.get("/analytics/heatmap", tags=["Analytics"])
+def analytics_heatmap():
+
+    df = load_heatmap_data()
+    matrix = generate_heatmap(df)
+
+    return create_heatmap_output(matrix)
+
+
+# 5. Historical CSV Reports
+
+@app.get("/analytics/reports", tags=["Analytics"])
+def analytics_reports(range: str = "day", format: str = "csv"):
+
+    if range not in ["day", "week"]:
+        return {"error": "range must be day or week"}
+
+    if format != "csv":
+        return {"error": "Only csv format is supported"}
+
+    df = pd.read_csv(DATA_FILE)
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+
+    if range == "week":
+        df["week"] = (
+            df["timestamp"]
+            .dt.to_period("W")
+            .apply(lambda x: x.start_time.date())
+        )
+
+    output = StringIO()
+    df.to_csv(output, index=False)
+    output.seek(0)
+
+    filename = f"historical_traffic_{range}.csv"
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
