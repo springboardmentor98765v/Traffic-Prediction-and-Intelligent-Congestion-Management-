@@ -425,9 +425,7 @@ def analytics_heatmap():
 
     return create_heatmap_output(matrix)
 
-# =====================================
-# MILESTONE 3 - ANALYTICS APIs
-# =====================================
+#  ANALYTICS APIs
 
 DATA_FILE = "traffic_history_clean.csv"
 CONGESTION_THRESHOLD = 0.70
