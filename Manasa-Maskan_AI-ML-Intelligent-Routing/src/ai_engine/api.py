@@ -2,6 +2,9 @@ from fastapi import FastAPI, Query
 from pydantic import BaseModel, Field
 
 from .predictor import predict_traffic, get_traffic_condition
+from .anomaly_detector import detect_anomalies
+from .recommendation_engine import generate_recommendations
+
 from ..route_analysis import (
     analyze_routes,
     get_best_route,
@@ -18,10 +21,10 @@ app = FastAPI(
     title="TrafficVision AI Traffic Prediction API",
     description=(
         "API for traffic prediction, congestion forecasting, "
-        "peak-hour analysis, delay estimation and intelligent "
-        "route optimization"
+        "peak-hour analysis, delay estimation, intelligent "
+        "route optimization and AI anomaly detection"
     ),
-    version="2.0",
+    version="3.0",
 )
 
 
@@ -44,7 +47,7 @@ class TrafficInput(BaseModel):
 def home():
     return {
         "message": "TrafficVision AI Traffic Prediction API is running",
-        "version": "2.0",
+        "version": "3.0",
         "status": "healthy",
     }
 
@@ -201,6 +204,67 @@ def delay_prediction(
         "delay_category": delay_category,
         "estimated_delay_minutes": estimated_delay_minutes,
     }
+
+
+# ---------------------------------------------------------
+# M3 - AI Anomaly Detection
+# ---------------------------------------------------------
+
+@app.get("/api/v1/ai/anomalies")
+def ai_anomalies(
+    max_results: int = Query(
+        default=20,
+        ge=1,
+        le=100,
+    ),
+):
+    """
+    Detect unusual traffic patterns using the
+    M2 trained model and historical traffic data.
+
+    Anomalies are treated as possible incidents,
+    not confirmed accidents.
+    """
+
+    result = detect_anomalies(
+        threshold_std=2.0,
+        max_results=max_results,
+    )
+
+    anomalies = []
+
+    for anomaly in result["anomalies"]:
+        anomalies.append(
+            {
+                "road_id": anomaly["road_id"],
+                "time": anomaly["time"],
+                "expected_level": anomaly["expected_level"],
+                "observed_level": anomaly["observed_level"],
+                "flagged_as": anomaly["flagged_as"],
+            }
+        )
+
+    return anomalies
+
+
+# ---------------------------------------------------------
+# M3 - AI Recommendations
+# ---------------------------------------------------------
+
+@app.get("/api/v1/ai/recommendations")
+def ai_recommendations(
+    road_id: int = Query(gt=0),
+):
+    """
+    Generate AI-based traffic recommendations
+    for the specified road.
+    """
+
+    recommendations = generate_recommendations(
+        road_id
+    )
+
+    return recommendations
 
 
 # ---------------------------------------------------------
