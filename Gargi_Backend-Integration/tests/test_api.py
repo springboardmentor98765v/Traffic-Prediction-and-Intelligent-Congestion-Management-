@@ -536,3 +536,269 @@ def test_openapi_contains_m2_endpoints():
 
     for path in expected_paths:
         assert path in paths
+
+def test_m3_create_alert():
+    response = client.post(
+        "/api/v1/alerts",
+        json={
+            "type": "congestion",
+            "severity": "high",
+            "road_id": 1,
+            "message": "M3 automated test alert",
+        },
+    )
+
+    assert response.status_code == 201
+
+    data = response.json()
+
+    assert "alert_id" in data
+    assert isinstance(data["alert_id"], int)
+
+
+def test_m3_my_alerts_role_scoped():
+    token = get_token("operator")
+
+    create_response = client.post(
+        "/api/v1/alerts",
+        json={
+            "type": "congestion",
+            "severity": "high",
+            "road_id": 1,
+            "message": "M3 role scoped test alert",
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    alert_id = create_response.json()["alert_id"]
+
+    response = client.get(
+        "/api/v1/alerts/my",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert isinstance(data, list)
+    assert any(alert["alert_id"] == alert_id for alert in data)
+
+
+def test_m3_mark_alert_read():
+    token = get_token("operator")
+
+    create_response = client.post(
+        "/api/v1/alerts",
+        json={
+            "type": "congestion",
+            "severity": "high",
+            "road_id": 1,
+            "message": "M3 mark read test alert",
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    alert_id = create_response.json()["alert_id"]
+
+    response = client.post(
+        f"/api/v1/alerts/{alert_id}/read",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["alert_id"] == alert_id
+    assert data["read"] is True
+
+
+def test_m3_operator_active_alerts():
+    token = get_token("operator")
+
+    response = client.get(
+        "/api/v1/alerts/active",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert isinstance(data, list)
+
+    if data:
+        assert "alert_id" in data[0]
+        assert "type" in data[0]
+        assert "severity" in data[0]
+        assert "road_id" in data[0]
+        assert "message" in data[0]
+        assert "read" in data[0]
+        assert "created_at" in data[0]
+
+
+def test_m3_public_cannot_get_active_alerts():
+    token = get_token("public")
+
+    response = client.get(
+        "/api/v1/alerts/active",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 403
+
+
+def test_m3_trends_day():
+    response = client.get(
+        "/api/v1/analytics/trends",
+        params={
+            "road_id": 1,
+            "range": "day",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["road_id"] == 1
+    assert data["range"] == "day"
+    assert isinstance(data["data"], list)
+
+    if data["data"]:
+        assert "timestamp" in data["data"][0]
+        assert "vehicle_count" in data["data"][0]
+        assert "density" in data["data"][0]
+        assert "congestion_level" in data["data"][0]
+
+
+def test_m3_trends_week():
+    response = client.get(
+        "/api/v1/analytics/trends",
+        params={
+            "road_id": 1,
+            "range": "week",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["road_id"] == 1
+    assert data["range"] == "week"
+    assert isinstance(data["data"], list)
+
+
+def test_m3_trends_invalid_range():
+    response = client.get(
+        "/api/v1/analytics/trends",
+        params={
+            "road_id": 1,
+            "range": "month",
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_m3_heatmap():
+    response = client.get(
+        "/api/v1/analytics/heatmap",
+        params={
+            "range": "day",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["range"] == "day"
+    assert isinstance(data["data"], list)
+
+    if data["data"]:
+        assert "road_id" in data["data"][0]
+        assert "timestamp" in data["data"][0]
+        assert "density" in data["data"][0]
+        assert "vehicle_count" in data["data"][0]
+        assert "congestion_level" in data["data"][0]
+
+
+def test_m3_reports_json():
+    response = client.get(
+        "/api/v1/analytics/reports",
+        params={
+            "range": "day",
+            "format": "json",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["range"] == "day"
+    assert isinstance(data["data"], list)
+
+
+def test_m3_reports_csv():
+    response = client.get(
+        "/api/v1/analytics/reports",
+        params={
+            "range": "day",
+            "format": "csv",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/csv")
+    assert "road_id" in response.text
+    assert "timestamp" in response.text
+    assert "vehicle_count" in response.text
+    assert "density" in response.text
+    assert "congestion_level" in response.text
+
+
+def test_m3_reports_invalid_format():
+    response = client.get(
+        "/api/v1/analytics/reports",
+        params={
+            "range": "day",
+            "format": "xml",
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_openapi_contains_m3_endpoints():
+    response = client.get("/openapi.json")
+
+    assert response.status_code == 200
+
+    paths = response.json()["paths"]
+
+    expected_paths = [
+        "/api/v1/alerts",
+        "/api/v1/alerts/my",
+        "/api/v1/alerts/{alert_id}/read",
+        "/api/v1/alerts/active",
+        "/api/v1/analytics/trends",
+        "/api/v1/analytics/heatmap",
+        "/api/v1/analytics/reports",
+    ]
+
+    for path in expected_paths:
+        assert path in paths
