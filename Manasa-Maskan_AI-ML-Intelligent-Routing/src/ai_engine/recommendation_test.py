@@ -1,36 +1,53 @@
 from src.ai_engine.recommendation_engine import generate_recommendations
 
 
-print("=" * 60)
-print("DAY 5 - RECOMMENDATION LOGIC TEST")
-print("=" * 60)
+def test_generate_recommendations():
+    """Test that AI recommendations are generated correctly."""
 
-road_id = 1
+    road_id = 1
 
-recommendations = generate_recommendations(road_id)
+    recommendations = generate_recommendations(road_id)
 
-print(f"\nRoad ID: {road_id}")
-print(f"Total recommendations: {len(recommendations)}")
+    # Check that recommendations are returned as a list
+    assert isinstance(recommendations, list)
 
-print("\nRecommendations:")
-print("-" * 60)
+    # Check that at least one recommendation is generated
+    assert len(recommendations) > 0
 
-for index, recommendation in enumerate(
-    recommendations,
-    start=1
-):
-    print(f"\nRecommendation {index}")
+    # Check the structure of every recommendation
+    for recommendation in recommendations:
+        assert isinstance(recommendation, dict)
 
-    print(
-        "Text:",
-        recommendation.get("recommendation_text")
-    )
+        # Required fields
+        assert "recommendation_text" in recommendation
+        assert "based_on" in recommendation
 
-    print(
-        "Based on:",
-        recommendation.get("based_on")
-    )
+        # Required fields should contain text
+        assert isinstance(
+            recommendation["recommendation_text"],
+            str,
+        )
 
-print("\n" + "=" * 60)
-print("Recommendation logic test completed.")
-print("=" * 60)
+        assert isinstance(
+            recommendation["based_on"],
+            str,
+        )
+
+        # Values should not be empty
+        assert recommendation["recommendation_text"].strip() != ""
+        assert recommendation["based_on"].strip() != ""
+
+
+def test_recommendations_for_valid_road():
+    """Test recommendations for another valid road."""
+
+    road_id = 3
+
+    recommendations = generate_recommendations(road_id)
+
+    assert isinstance(recommendations, list)
+    assert len(recommendations) > 0
+
+    for recommendation in recommendations:
+        assert "recommendation_text" in recommendation
+        assert "based_on" in recommendation
