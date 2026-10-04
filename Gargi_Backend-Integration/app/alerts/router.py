@@ -7,6 +7,7 @@ from app.alerts.schemas import (
     AlertReadResponse,
     AlertResponse,
 )
+from app.alerts.congestion_integration import sync_congestion_alerts
 from app.alerts.service import (
     create_alert,
     get_active_alerts,
@@ -117,3 +118,14 @@ def get_active_alerts_endpoint(
         for alert in alerts
     ]
 
+
+
+
+@router.post(
+    "/sync/congestion",
+)
+def sync_congestion_endpoint(
+    current_user: User = Depends(require_role("admin", "operator")),
+    db: Session = Depends(get_db),
+):
+    return sync_congestion_alerts(db=db)
