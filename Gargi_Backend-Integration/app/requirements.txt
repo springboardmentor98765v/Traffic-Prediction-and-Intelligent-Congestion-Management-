@@ -16,3 +16,4 @@ pandas
 joblib
 black
 flake8
+psycopg[binary]

@@ -8,6 +8,8 @@ from app.database.connection import Base, engine
 from app.prediction.router import router as prediction_router
 from app.route.router import router as route_router
 from app.traffic.router import router as traffic_router
+from app.alerts.router import router as alert_router
+from app.analytics.router import router as analytics_router
 
 
 Base.metadata.create_all(bind=engine)
@@ -72,6 +74,8 @@ app.include_router(
     route_router,
     prefix="/api/v1",
 )
+app.include_router(alert_router, prefix="/api/v1")
+app.include_router(analytics_router, prefix="/api/v1")
 
 
 @app.get("/")

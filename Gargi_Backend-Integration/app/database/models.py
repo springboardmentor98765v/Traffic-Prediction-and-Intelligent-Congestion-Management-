@@ -125,3 +125,90 @@ class RoadCondition(Base):
         DateTime,
         default=lambda: datetime.now(timezone.utc),
     )
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    type = Column(
+        String(50),
+        nullable=False,
+    )
+
+    severity = Column(
+        String(20),
+        nullable=False,
+    )
+
+    road_id = Column(
+        Integer,
+        ForeignKey("roads.id"),
+        nullable=False,
+        index=True,
+    )
+
+    message = Column(
+        String(500),
+        nullable=False,
+    )
+
+    read = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+    status = Column(
+        String(20),
+        nullable=False,
+        default="active",
+    )
+
+    created_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
+    )
+
+    road = relationship("Road")
+
+    recipients = relationship(
+        "AlertRecipient",
+        back_populates="alert",
+        cascade="all, delete-orphan",
+    )
+
+
+class AlertRecipient(Base):
+    __tablename__ = "alert_recipients"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+
+    alert_id = Column(
+        Integer,
+        ForeignKey("alerts.id"),
+        nullable=False,
+        index=True,
+    )
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+
+    read = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    alert = relationship("Alert")
+    user = relationship("User")
