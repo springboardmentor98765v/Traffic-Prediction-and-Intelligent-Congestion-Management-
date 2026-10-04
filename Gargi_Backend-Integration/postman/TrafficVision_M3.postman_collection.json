@@ -1,0 +1,299 @@
+﻿{
+  "info": {
+    "name": "TrafficVision M3 API Collection",
+    "_postman_id": "trafficvision-m3-team3",
+    "description": "Milestone 3 API testing collection for Alerts, Analytics and integration.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8002"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "alert_id",
+      "value": "1"
+    },
+    {
+      "key": "road_id",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Alerts",
+      "item": [
+        {
+          "name": "Create Alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"congestion\",\n  \"severity\": \"high\",\n  \"road_id\": {{road_id}},\n  \"message\": \"Postman M3 test congestion alert\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/alerts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "alerts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Alerts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/alerts/my",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "alerts",
+                "my"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Alert As Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/alerts/{{alert_id}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "alerts",
+                "{{alert_id}}",
+                "read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Active Alerts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/alerts/active",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "alerts",
+                "active"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sync Congestion Alerts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/alerts/sync/congestion",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "alerts",
+                "sync",
+                "congestion"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Trends",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/trends?road_id={{road_id}}&range=day",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "analytics",
+                "trends"
+              ],
+              "query": [
+                {
+                  "key": "road_id",
+                  "value": "{{road_id}}"
+                },
+                {
+                  "key": "range",
+                  "value": "day"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Heatmap",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/heatmap?range=day",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "analytics",
+                "heatmap"
+              ],
+              "query": [
+                {
+                  "key": "range",
+                  "value": "day"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports JSON",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/reports?range=day&format=json",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "analytics",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "range",
+                  "value": "day"
+                },
+                {
+                  "key": "format",
+                  "value": "json"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reports CSV",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/reports?range=day&format=csv",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "analytics",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "range",
+                  "value": "day"
+                },
+                {
+                  "key": "format",
+                  "value": "csv"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -61,7 +61,7 @@ export const NotificationBell: React.FC = () => {
         }
 
         const response = await fetch(
-          'http://localhost:8000/api/v1/alerts/my',
+          'http://localhost:8002/api/v1/alerts/my',
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -121,6 +121,12 @@ export const NotificationBell: React.FC = () => {
     };
 
     loadNotifications();
+
+    const intervalId = setInterval(loadNotifications, 10000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
   const unreadCount = notifications.filter(
     (notification) => notification.unread
@@ -144,7 +150,7 @@ export const NotificationBell: React.FC = () => {
       }
 
       await fetch(
-        `http://localhost:8000/api/v1/alerts/${id}/read`,
+        `http://localhost:8002/api/v1/alerts/${id}/read`,
         {
           method: 'POST',
           headers: {
