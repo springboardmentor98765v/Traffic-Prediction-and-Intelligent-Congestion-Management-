@@ -1,3 +1,7 @@
+import json
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
 from fastapi import FastAPI, Query
 from pydantic import BaseModel, Field
 
@@ -207,6 +211,76 @@ def delay_prediction(
 
 
 # ---------------------------------------------------------
+# M3 - Alert Service Integration
+# ---------------------------------------------------------
+
+def send_possible_incident_alert(anomaly):
+    """
+    Send a possible-incident anomaly to the
+    central Alert Service.
+
+    Central Backend:
+    POST http://localhost:8000/api/v1/alerts
+    """
+
+    alert_url = "http://localhost:8002/api/v1/alerts"
+
+    payload = {
+        "type": "possible_incident",
+        "severity": "high",
+        "road_id": anomaly["road_id"],
+        "message": (
+            f"Possible traffic incident detected on "
+            f"Road {anomaly['road_id']} at {anomaly['time']}"
+        ),
+    }
+
+    request = Request(
+        alert_url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=5) as response:
+            response_body = response.read().decode("utf-8")
+
+            alert_response = json.loads(response_body)
+
+            print(
+                "Alert Service response:",
+                alert_response,
+            )
+
+            return alert_response
+
+    except HTTPError as error:
+        print(
+            "Alert Service HTTP error:",
+            error.code,
+            error.reason,
+        )
+        return None
+
+    except URLError as error:
+        print(
+            "Alert Service connection error:",
+            error.reason,
+        )
+        return None
+
+    except Exception as error:
+        print(
+            "Alert Service error:",
+            error,
+        )
+        return None
+
+
+# ---------------------------------------------------------
 # M3 - AI Anomaly Detection
 # ---------------------------------------------------------
 
@@ -224,6 +298,9 @@ def ai_anomalies(
 
     Anomalies are treated as possible incidents,
     not confirmed accidents.
+
+    When an anomaly is flagged as possible_incident,
+    the central Alert Service is called automatically.
     """
 
     result = detect_anomalies(
@@ -234,6 +311,18 @@ def ai_anomalies(
     anomalies = []
 
     for anomaly in result["anomalies"]:
+
+        # -------------------------------------------------
+        # Trigger central Alert Service
+        # -------------------------------------------------
+
+        if anomaly["flagged_as"] == "possible_incident":
+            send_possible_incident_alert(anomaly)
+
+        # -------------------------------------------------
+        # Return AI anomaly response
+        # -------------------------------------------------
+
         anomalies.append(
             {
                 "road_id": anomaly["road_id"],
