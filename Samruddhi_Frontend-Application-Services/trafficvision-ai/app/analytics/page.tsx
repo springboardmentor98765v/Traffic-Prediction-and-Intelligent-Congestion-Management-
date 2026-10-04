@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  useEffect,
   useLayoutEffect,
   useMemo,
   useState,
@@ -165,6 +166,12 @@ type MetricType =
   | 'Level';
 
 export default function AnalyticsPage() {
+  const [role, setRole] = useState('Public');
+
+  useEffect(() => {
+    setRole(localStorage.getItem('userRole') || 'Public');
+  }, []);
+
   const pathname = usePathname();
 
   const [road, setRoad] = useState('');
@@ -854,7 +861,7 @@ export default function AnalyticsPage() {
         "
       >
         <div className="h-full w-64">
-          <Sidebar />
+          <Sidebar role={role} />
         </div>
       </aside>
 

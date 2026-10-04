@@ -44,27 +44,90 @@ export const NotificationBell: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const [notifications, setNotifications] =
-    useState<Notification[]>(mockNotifications);
+    useState<Notification[]>([]);
 
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState(false);
 
-  // Simulate loading state
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 3000);
+    const loadNotifications = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
 
-    return () => clearTimeout(timer);
+        if (!token) {
+          setError(true);
+          return;
+        }
+
+        const response = await fetch(
+          'http://localhost:8000/api/v1/alerts/my',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to load notifications');
+        }
+
+        const data = await response.json();
+
+        const mappedNotifications: Notification[] = data.map(
+          (alert: {
+            alert_id: number;
+            type: string;
+            message: string;
+            created_at: string;
+            read: boolean;
+          }) => {
+            let type: Notification['type'];
+
+            if (alert.type === 'congestion') {
+              type = 'Congestion';
+            } else if (
+              alert.type === 'accident' ||
+              alert.type === 'possible_incident'
+            ) {
+              type = 'Accident';
+            } else if (
+              alert.type === 'road_closure' ||
+              alert.type === 'closure'
+            ) {
+              type = 'Road Closure';
+            } else {
+              type = 'Delay';
+            }
+
+            return {
+              id: alert.alert_id,
+              type,
+              message: alert.message,
+              time: new Date(alert.created_at).toLocaleString(),
+              unread: !alert.read,
+            };
+          }
+        );
+
+        setNotifications(mappedNotifications);
+        setError(false);
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadNotifications();
   }, []);
-
   const unreadCount = notifications.filter(
     (notification) => notification.unread
   ).length;
 
   // Mark notification as read
-  const markAsRead = (id: number) => {
+  const markAsRead = async (id: number) => {
     setNotifications((currentNotifications) =>
       currentNotifications.map((notification) =>
         notification.id === id
@@ -72,6 +135,25 @@ export const NotificationBell: React.FC = () => {
           : notification
       )
     );
+
+    try {
+      const token = localStorage.getItem('access_token');
+
+      if (!token) {
+        return;
+      }
+
+      await fetch(
+        `http://localhost:8000/api/v1/alerts/${id}/read`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    } catch {
+    }
   };
 
   const getIcon = (type: Notification['type']) => {

@@ -40,7 +40,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -72,12 +72,36 @@ export default function LoginPage() {
       return;
     }
 
-    // Default Sign In Logic
-    localStorage.setItem('userRole', selectedRole);
-    localStorage.setItem('username', username.split('@')[0] || username || 'USER');
-    router.push('/dashboard');
-  };
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: username,
+          password,
+        }),
+      });
 
+      const data = await response.json();
+
+      if (!response.ok || !data.access_token) {
+        setErrorMsg(data.detail || 'Invalid username/email or password.');
+        return;
+      }
+
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('userRole', selectedRole);
+      localStorage.setItem(
+        'username',
+        username.split('@')[0] || username || 'USER'
+      );
+      router.push('/dashboard');
+    } catch {
+      setErrorMsg('Unable to connect to the backend.');
+    }
+  };
   return (
     <div className="min-h-screen bg-[#0f1015] flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-[#181a24] border border-white/10 rounded-2xl p-8 shadow-2xl space-y-6">
