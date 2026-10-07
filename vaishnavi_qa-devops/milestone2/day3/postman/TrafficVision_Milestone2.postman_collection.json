@@ -1,0 +1,208 @@
+{
+  "info": {
+    "name": "TrafficVision AI - Milestone 2",
+    "description": "Built against the SRS Section 7 interface contracts (frozen Day 2), not the current implementation. As of 2026-09-12, DEF-M2-002 (auth has no /api/v1/auth prefix), DEF-M2-003/004 (traffic/route double-prefixed), and DEF-M2-005 (predict/congestion is POST with a different body, not GET) mean several requests below will fail against the current backend. Update {{base_url}} paths once each defect is fixed; do not change the expected contract without team sign-off per Section 12.3.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api/v1" },
+    { "key": "access_token", "value": "" },
+    { "key": "road_id", "value": "R001" },
+    { "key": "origin", "value": "12.9716,77.5946" },
+    { "key": "destination", "value": "12.9352,77.6245" },
+    { "key": "route_id", "value": "ROUTE_ALPHA" }
+  ],
+  "item": [
+    {
+      "name": "Auth (Milestone 1 baseline)",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"QA Tester\",\n  \"email\": \"qa.tester@example.com\",\n  \"password\": \"StrongPass123!\",\n  \"role\": \"user\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('access_token', data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"qa.tester@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": "{{base_url}}/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Traffic Monitoring (Milestone 1 baseline)",
+      "item": [
+        { "name": "Live", "request": { "method": "GET", "url": "{{base_url}}/traffic/live" } },
+        {
+          "name": "Road",
+          "request": { "method": "GET", "url": "{{base_url}}/traffic/road/{{road_id}}" }
+        },
+        { "name": "Density", "request": { "method": "GET", "url": "{{base_url}}/traffic/density" } }
+      ]
+    },
+    {
+      "name": "Historical Data Service (FR-01, Intern 2)",
+      "item": [
+        {
+          "name": "History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/traffic/history?road_id={{road_id}}&start=2026-08-01T00:00:00&end=2026-08-07T00:00:00",
+              "host": ["{{base_url}}"],
+              "path": ["traffic", "history"],
+              "query": [
+                { "key": "road_id", "value": "{{road_id}}" },
+                { "key": "start", "value": "2026-08-01T00:00:00" },
+                { "key": "end", "value": "2026-08-07T00:00:00" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Aggregate",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/traffic/aggregate?road_id={{road_id}}&granularity=hour",
+              "host": ["{{base_url}}"],
+              "path": ["traffic", "aggregate"],
+              "query": [
+                { "key": "road_id", "value": "{{road_id}}" },
+                { "key": "granularity", "value": "hour" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Road Condition",
+          "request": { "method": "GET", "url": "{{base_url}}/traffic/road-condition/{{road_id}}" }
+        }
+      ]
+    },
+    {
+      "name": "Traffic Prediction Service (FR-02/03/04, Intern 3)",
+      "item": [
+        {
+          "name": "Congestion",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/predict/congestion?road_id={{road_id}}&time=2026-09-12T18:00:00",
+              "host": ["{{base_url}}"],
+              "path": ["predict", "congestion"],
+              "query": [
+                { "key": "road_id", "value": "{{road_id}}" },
+                { "key": "time", "value": "2026-09-12T18:00:00" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Peak Hours",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/predict/peak-hours?road_id={{road_id}}"
+          }
+        },
+        {
+          "name": "Delay",
+          "request": { "method": "GET", "url": "{{base_url}}/predict/delay?road_id={{road_id}}" }
+        }
+      ]
+    },
+    {
+      "name": "Route Analysis Service (FR-05/06/07, Intern 1+3)",
+      "item": [
+        {
+          "name": "Optimize",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/route/optimize?origin={{origin}}&destination={{destination}}",
+              "host": ["{{base_url}}"],
+              "path": ["route", "optimize"],
+              "query": [
+                { "key": "origin", "value": "{{origin}}" },
+                { "key": "destination", "value": "{{destination}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Alternate",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/route/alternate?origin={{origin}}&destination={{destination}}",
+              "host": ["{{base_url}}"],
+              "path": ["route", "alternate"],
+              "query": [
+                { "key": "origin", "value": "{{origin}}" },
+                { "key": "destination", "value": "{{destination}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Travel Time",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/route/travel-time?route_id={{route_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["route", "travel-time"],
+              "query": [{ "key": "route_id", "value": "{{route_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "Conditions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/route/conditions?road_id={{road_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["route", "conditions"],
+              "query": [{ "key": "road_id", "value": "{{road_id}}" }]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
