@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+pydantic
+pydantic[email]
+PyJWT
+psycopg2-binary
+redis
+sqlalchemy>=2.0.0  
+python-dotenv
+httpx
+joblib
+pandas
+scikit-learn
+passlib[bcrypt]==1.7.4
+bcrypt==3.2.2
