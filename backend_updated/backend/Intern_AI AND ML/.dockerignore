@@ -1,0 +1,18 @@
+# DEF-M4-004: keep secrets, local databases and dev tooling out of the image.
+.git
+.env
+.env.*
+*.env
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+*.db
+*.sqlite3
+tests
+Front-end
+docker-compose*.yml
+*.md
+*.pdf
+*.zip

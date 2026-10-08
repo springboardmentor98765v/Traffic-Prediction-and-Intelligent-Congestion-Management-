@@ -1,0 +1,17 @@
+# Analytics image context (built with the backend Dockerfile). Keep secrets and
+# dev artifacts out; data/ and sql/ stay because the setup scripts read them.
+.git
+.env
+.env.*
+*.env
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+*.db
+tests
+docs
+*.md
+*.pdf
+*.zip

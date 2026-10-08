@@ -1,0 +1,17 @@
+# AI Engine image context: the Dockerfile only copies ai-engine/, so skip the rest.
+.git
+.env
+.env.*
+*.env
+.venv
+venv
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.DS_Store
+.claude
+traffic-monitoring
+trafficvision-ml-model
+*.zip
+ai-engine/notebooks
+ai-engine/tests

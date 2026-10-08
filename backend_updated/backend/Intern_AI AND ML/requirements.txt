@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+pydantic
+pydantic[email]
+PyJWT
+psycopg2-binary
+redis
+sqlalchemy>=2.0.0  
+python-dotenv
+httpx
+joblib
+pandas
+# Must match the version ai-engine/models/model-v1.joblib was pickled with (DEF-M2-008).
+scikit-learn==1.9.0
+passlib[bcrypt]==1.7.4
+bcrypt==3.2.2

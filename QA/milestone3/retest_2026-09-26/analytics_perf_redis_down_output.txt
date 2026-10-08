@@ -1,0 +1,67 @@
+{
+  "latency": {
+    "trends R001 (4 wk)": {
+      "cold_median_ms": 163.4,
+      "cold_max_ms": 360.4,
+      "warm_median_ms": 92.2,
+      "pass_under_2s": true
+    },
+    "heatmap hour (4 wk)": {
+      "cold_median_ms": 93.9,
+      "cold_max_ms": 120.7,
+      "warm_median_ms": 35.3,
+      "pass_under_2s": true
+    },
+    "heatmap day (4 wk)": {
+      "cold_median_ms": 88.4,
+      "cold_max_ms": 91.2,
+      "warm_median_ms": 35.3,
+      "pass_under_2s": true
+    },
+    "report all rows": {
+      "cold_median_ms": 128.5,
+      "cold_max_ms": 177.4,
+      "warm_median_ms": 116.5,
+      "pass_under_2s": true
+    }
+  },
+  "redis_down": {
+    "trends R001 (4 wk)": {
+      "status": "no response in 5s",
+      "ms": 5010.0,
+      "pass": false
+    },
+    "heatmap hour (4 wk)": {
+      "status": "no response in 5s",
+      "ms": 5011.2,
+      "pass": false
+    },
+    "heatmap day (4 wk)": {
+      "status": "no response in 5s",
+      "ms": 5015.0,
+      "pass": false
+    },
+    "report all rows": {
+      "status": 200,
+      "ms": 176.8,
+      "pass": true
+    }
+  },
+  "plans": {
+    "report R001 4 wk": {
+      "exec_ms": 0.706,
+      "nodes": [
+        "Limit",
+        "Index Scan (idx_traffic_history_latest)"
+      ]
+    },
+    "trend R001 daily": {
+      "exec_ms": 1.092,
+      "nodes": [
+        "Aggregate",
+        "Index Only Scan (idx_traffic_history_latest)"
+      ]
+    }
+  },
+  "client_connection_resets_retried": 0
+}

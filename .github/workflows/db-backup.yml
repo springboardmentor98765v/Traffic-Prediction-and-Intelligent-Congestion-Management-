@@ -1,0 +1,93 @@
+name: Production DB backup
+
+# Milestone 4 (SRS 7.3 / FR-02): automated daily backup of the production database
+# (Render Postgres) plus a restore test on every run, so a backup only counts once restored.
+# Dumps are kept as workflow artifacts for 14 days (free). They also cover Render's free
+# Postgres 30-day expiry: restore the latest dump into a new DB and repoint DATABASE_URL.
+#
+# Needs the DATABASE_URL secret in the 'production' environment (same URL the services use).
+# Restore by hand: docs/final/DEPLOYMENT_GUIDE.md -> "Backups and restore".
+
+on:
+  schedule:
+    - cron: '30 20 * * *' # 02:00 IST every day
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # pg_dump must be at least the server's major version; 18 dumps 14-18.
+      PG_IMAGE: postgres:18-alpine
+
+    # Scratch database the dump is restored into.
+    services:
+      restore:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_PASSWORD: restore
+          POSTGRES_DB: restore_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d restore_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check DATABASE_URL is configured
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::DATABASE_URL secret is not set in the 'production' environment."
+            exit 1
+          fi
+
+      - name: Dump production database
+        run: |
+          mkdir -p backup
+          STAMP=$(date -u +%Y%m%dT%H%MZ)
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          docker run --rm -v "$PWD/backup:/backup" "$PG_IMAGE" \
+            pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges \
+            --file "/backup/trafficvision-$STAMP.dump"
+          ls -lh backup
+
+      - name: Restore into a scratch database
+        run: |
+          docker run --rm --network host -v "$PWD/backup:/backup" -e PGPASSWORD=restore "$PG_IMAGE" \
+            pg_restore --no-owner --no-privileges --exit-on-error \
+            -h 127.0.0.1 -U postgres -d restore_test "/backup/trafficvision-$STAMP.dump"
+
+      # Row counts must match between production and the restored copy.
+      - name: Verify restore (row counts)
+        run: |
+          TABLES="users alerts roads traffic_readings traffic_history road_conditions hourly_traffic_metrics daily_traffic_metrics"
+          prod() { docker run --rm "$PG_IMAGE" psql "$DATABASE_URL" -tAc "$1"; }
+          copy() { docker run --rm --network host -e PGPASSWORD=restore "$PG_IMAGE" psql -h 127.0.0.1 -U postgres -d restore_test -tAc "$1"; }
+          {
+            echo "### Backup $STAMP"
+            echo "| Table | Production | Restored | Match |"
+            echo "| --- | --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          status=0
+          for t in $TABLES; do
+            exists=$(prod "SELECT to_regclass('public.$t') IS NOT NULL")
+            [ "$exists" = "t" ] || { echo "| $t | (missing) | - | - |" >> "$GITHUB_STEP_SUMMARY"; continue; }
+            p=$(prod "SELECT count(*) FROM $t")
+            c=$(copy "SELECT count(*) FROM $t")
+            if [ "$p" = "$c" ]; then mark="✅"; else mark="❌"; status=1; fi
+            echo "$t: production=$p restored=$c"
+            echo "| $t | $p | $c | $mark |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          exit $status
+
+      - name: Keep the dump
+        uses: actions/upload-artifact@v4
+        with:
+          name: trafficvision-db-${{ env.STAMP }}
+          path: backup/*.dump
+          retention-days: 14
+          if-no-files-found: error

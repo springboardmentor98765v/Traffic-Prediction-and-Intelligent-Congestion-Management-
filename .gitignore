@@ -1,0 +1,50 @@
+# Environments / secrets — never commit real credentials
+.env
+.env.dev
+.env.local
+*.env
+!.env.dev.example
+!.env.example
+!**/.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+
+# Databases (local dev artifacts, not source)
+*.db
+*.sqlite3
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Milestone 4 production settings (only the template is committed)
+.env.prod
+!.env.prod.example
+
+# Archives: backend_milestone_3.zip is 139 MB, over GitHub's 100 MB file limit (DEF-M4-003)
+*.zip
+
+# Local coverage / production DB backups (the backup workflow stores them as artifacts)
+.coverage
+backups/
+*.dump
+
+# Local editor/plugin hook cache
+.impeccable/
+
+# macOS zip metadata and local Claude settings
+__MACOSX/
+**/.claude/settings.local.json

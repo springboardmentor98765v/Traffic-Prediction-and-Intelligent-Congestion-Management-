@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TrafficVision AI - Authentication</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="api.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#e8deff",
+                        "on-primary": "#1b247f",
+                        "on-secondary-fixed": "#001e30",
+                        "surface-tint": "#bdc2ff",
+                        "surface-container-low": "#131b2e",
+                        "secondary-fixed-dim": "#8dcdff",
+                        "outline-variant": "#454652",
+                        "primary-fixed": "#e0e0ff",
+                        "on-surface": "#dae2fd",
+                        "on-secondary": "#00344f",
+                        "outline": "#908f9d",
+                        "secondary-fixed": "#cae6ff",
+                        "inverse-on-surface": "#283044",
+                        "secondary": "#8dcdff",
+                        "on-secondary-fixed-variant": "#004b70",
+                        "surface-container-lowest": "#060e20",
+                        "primary-fixed-dim": "#bdc2ff",
+                        "secondary-container": "#00affe",
+                        "on-surface-variant": "#c6c5d4",
+                        "primary-container": "#1a237e",
+                        "tertiary-fixed-dim": "#cdbdff",
+                        "surface-container-high": "#222a3d",
+                        "primary": "#bdc2ff",
+                        "on-error-container": "#ffdad6",
+                        "background": "#0b1326",
+                        "tertiary": "#cdbdff",
+                        "on-primary-fixed-variant": "#343d96",
+                        "on-tertiary-fixed": "#20005f",
+                        "tertiary-container": "#360094",
+                        "surface-dim": "#0b1326",
+                        "error": "#ffb4ab",
+                        "on-secondary-container": "#003f5f",
+                        "inverse-surface": "#dae2fd",
+                        "on-primary-container": "#8690ee",
+                        "surface-variant": "#2d3449",
+                        "on-primary-fixed": "#000767",
+                        "surface-container": "#171f33",
+                        "surface-bright": "#31394d",
+                        "surface": "#0b1326",
+                        "on-tertiary-fixed-variant": "#4f00d0",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#370096",
+                        "inverse-primary": "#4c56af",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-container": "#a084ff",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#2d3449"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-gap": "12px",
+                        "base": "8px",
+                        "container-padding-desktop": "32px",
+                        "gutter": "16px",
+                        "container-padding-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["JetBrains Mono"],
+                        "data-lg": ["JetBrains Mono"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "data-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(19, 27, 46, 0.6);
+            /* surface-container-low with opacity */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glow-input:focus {
+            outline: none;
+            border-color: #8dcdff;
+            /* secondary */
+            box-shadow: 0 0 10px rgba(141, 205, 255, 0.3);
+        }
+
+        /* Custom Sleek Cyber Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0b1326;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2d3449;
+            border-radius: 4px;
+            border: 2px solid #0b1326;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8dcdff;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background text-on-background min-h-screen flex items-center justify-center p-4 sm:p-6 py-8 relative overflow-y-auto font-body-md text-body-md">
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 z-0 opacity-30 mix-blend-screen pointer-events-none"
+        style="background: radial-gradient(circle at 20% 30%, rgba(26, 35, 126, 0.4) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(0, 175, 254, 0.2) 0%, transparent 50%);">
+    </div>
+    <div
+        class="fixed inset-0 z-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wNSkiLz48L3N2Zz4=')] opacity-50 pointer-events-none">
+    </div>
+    <div
+        class="relative z-10 w-full max-w-md glass-panel rounded-xl shadow-24px-blur p-6 sm:p-8 flex flex-col gap-5 sm:gap-6 my-auto">
+        <!-- Header -->
+        <div class="text-center flex flex-col items-center gap-2 mb-4">
+            <div
+                class="w-12 h-12 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center mb-2 shadow-24px-blur">
+                <span class="material-symbols-outlined text-[32px]" data-icon="analytics">analytics</span>
+            </div>
+            <h1 class="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">TrafficVision AI</h1>
+            <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Secure Access
+                Gateway</p>
+        </div>
+        <!-- Form Container -->
+        <div class="bg-surface-container rounded-lg p-1 mb-2" id="tab-container">
+            <div class="grid grid-cols-2 gap-2" id="tabs-dual">
+                <button
+                    class="tab-btn active bg-secondary-container text-on-secondary-container font-label-sm text-label-sm py-2 rounded-md transition-all font-semibold"
+                    data-tab="signin" type="button">Sign In</button>
+                <button
+                    class="tab-btn text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm py-2 rounded-md transition-all"
+                    data-tab="signup" type="button">Sign Up</button>
+            </div>
+            <div class="hidden" id="tabs-single">
+                <button
+                    class="tab-btn-single w-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm py-2 rounded-md transition-all font-semibold"
+                    type="button">Sign In</button>
+            </div>
+        </div>
+
+        <form class="flex flex-col gap-stack-gap" id="auth-form">
+            <!-- Error Placeholder (Hidden by default) -->
+            <div class="hidden bg-error-container/20 border border-error text-error rounded-lg p-3 font-label-sm text-label-sm flex items-center gap-2"
+                id="error-message">
+                <span class="material-symbols-outlined text-[16px]">error</span>
+                <span>Authentication failed. Please verify credentials.</span>
+            </div>
+
+            <!-- Success Placeholder (Hidden by default) -->
+            <div class="hidden bg-emerald-500/20 border border-emerald-500 text-emerald-300 rounded-lg p-3 font-label-sm text-label-sm flex items-center gap-2"
+                id="success-message">
+                <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                <span>Request submitted successfully. Clearance pending.</span>
+            </div>
+
+            <!-- Role Selection -->
+            <div class="flex flex-col gap-1">
+                <label class="font-label-sm text-label-sm text-on-surface-variant">System Role</label>
+                <div class="grid grid-cols-3 gap-2 bg-surface-container rounded-lg p-1">
+                    <button
+                        class="role-btn active bg-secondary-container text-on-secondary-container font-label-sm text-label-sm py-2 rounded-md transition-colors"
+                        data-role="operator" type="button">Operator</button>
+                    <button
+                        class="role-btn text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm py-2 rounded-md transition-colors"
+                        data-role="admin" type="button">Admin</button>
+                    <button
+                        class="role-btn text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm py-2 rounded-md transition-colors"
+                        data-role="public" type="button">Public</button>
+                </div>
+            </div>
+
+            <!-- Fields -->
+            <div class="flex flex-col gap-stack-gap mt-2">
+                <!-- Username/Email Field -->
+                <div class="relative group" id="field-username">
+                    <span
+                        class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-[20px] group-focus-within:text-secondary transition-colors">person</span>
+                    <input
+                        class="w-full bg-surface-container-high border border-outline-variant text-on-surface rounded-lg py-3 pl-10 pr-4 glow-input font-body-md text-body-md transition-all placeholder:text-outline"
+                        id="input-username" placeholder="Username or Email" required="" type="text" />
+                </div>
+
+                <!-- Email Field (Hidden in Sign In) -->
+                <div class="relative group hidden" id="field-email">
+                    <span
+                        class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-[20px] group-focus-within:text-secondary transition-colors">mail</span>
+                    <input
+                        class="w-full bg-surface-container-high border border-outline-variant text-on-surface rounded-lg py-3 pl-10 pr-4 glow-input font-body-md text-body-md transition-all placeholder:text-outline"
+                        id="input-email" placeholder="Email Address" type="email" />
+                </div>
+
+                <!-- Password Field -->
+                <div class="relative group" id="field-password">
+                    <span
+                        class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-[20px] group-focus-within:text-secondary transition-colors">lock</span>
+                    <input
+                        class="w-full bg-surface-container-high border border-outline-variant text-on-surface rounded-lg py-3 pl-10 pr-10 glow-input font-body-md text-body-md transition-all placeholder:text-outline"
+                        id="input-password" placeholder="Password" required="" type="password"
+                        autocomplete="new-password" />
+                    <button
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors toggle-password"
+                        type="button" aria-label="Toggle password visibility">
+                        <span class="material-symbols-outlined text-[20px]">visibility_off</span>
+                    </button>
+                </div>
+
+                <!-- Password Strength Meter & Live Suggestions (Visible in Sign Up) -->
+                <div class="hidden flex flex-col gap-2 p-3 bg-surface-container/90 rounded-lg border border-outline-variant/60"
+                    id="password-strength-container">
+                    <div class="flex items-center justify-between font-label-sm text-[12px]">
+                        <span class="text-on-surface-variant flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[15px] text-secondary">security</span>
+                            Password Strength:
+                        </span>
+                        <span class="font-semibold text-outline transition-colors" id="strength-label">Not
+                            Entered</span>
+                    </div>
+                    <!-- Multi-segment Progress Bar -->
+                    <div class="grid grid-cols-4 gap-1.5 h-1.5 w-full">
+                        <div class="strength-bar-seg h-full rounded-full bg-outline-variant transition-all duration-300"
+                            id="bar-1"></div>
+                        <div class="strength-bar-seg h-full rounded-full bg-outline-variant transition-all duration-300"
+                            id="bar-2"></div>
+                        <div class="strength-bar-seg h-full rounded-full bg-outline-variant transition-all duration-300"
+                            id="bar-3"></div>
+                        <div class="strength-bar-seg h-full rounded-full bg-outline-variant transition-all duration-300"
+                            id="bar-4"></div>
+                    </div>
+                    <!-- Requirements Live Checklist -->
+                    <div class="mt-1 pt-2 border-t border-white/5 flex flex-col gap-1.5 font-label-sm text-[11px]">
+                        <div class="flex items-center gap-2 text-outline transition-colors" id="req-length">
+                            <span class="material-symbols-outlined text-[14px]">radio_button_unchecked</span>
+                            <span>At least 8 characters long</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-outline transition-colors" id="req-upper">
+                            <span class="material-symbols-outlined text-[14px]">radio_button_unchecked</span>
+                            <span>At least 1 uppercase letter (A-Z)</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-outline transition-colors" id="req-lower">
+                            <span class="material-symbols-outlined text-[14px]">radio_button_unchecked</span>
+                            <span>At least 1 lowercase letter (a-z)</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-outline transition-colors" id="req-number">
+                            <span class="material-symbols-outlined text-[14px]">radio_button_unchecked</span>
+                            <span>At least 1 number (0-9)</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-outline transition-colors" id="req-special">
+                            <span class="material-symbols-outlined text-[14px]">radio_button_unchecked</span>
+                            <span>At least 1 special character (!@#$%^&*...)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confirm Password Field (Hidden in Sign In) -->
+                <div class="relative group hidden" id="field-confirm-password">
+                    <span
+                        class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-[20px] group-focus-within:text-secondary transition-colors">lock</span>
+                    <input
+                        class="w-full bg-surface-container-high border border-outline-variant text-on-surface rounded-lg py-3 pl-10 pr-10 glow-input font-body-md text-body-md transition-all placeholder:text-outline"
+                        id="input-confirm-password" placeholder="Confirm Password" type="password"
+                        autocomplete="new-password" />
+                    <button
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors toggle-password"
+                        type="button" aria-label="Toggle confirm password visibility">
+                        <span class="material-symbols-outlined text-[20px]">visibility_off</span>
+                    </button>
+                </div>
+
+                <!-- Password Match Status (Hidden by default) -->
+                <div class="hidden font-label-sm text-[12px] flex items-center gap-1.5 px-1" id="password-match-status">
+                    <span class="material-symbols-outlined text-[15px]" id="match-icon">check_circle</span>
+                    <span id="match-text">Passwords match</span>
+                </div>
+
+                <!-- CAPTCHA Verification Widget -->
+                <div class="flex flex-col gap-2 p-3 bg-surface-container rounded-lg border border-outline-variant/60 mt-1"
+                    id="captcha-widget">
+                    <div class="flex items-center justify-between">
+                        <label class="font-label-sm text-[12px] text-on-surface-variant flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[15px] text-secondary">verified_user</span>
+                            Security Verification (CAPTCHA)
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <button type="button" id="captcha-audio-btn" title="Read Security Code"
+                                class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors">
+                                <span class="material-symbols-outlined text-[18px]">volume_up</span>
+                            </button>
+                            <button type="button" id="captcha-refresh-btn" title="Generate New Code"
+                                class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors">
+                                <span class="material-symbols-outlined text-[18px] transition-transform duration-300"
+                                    id="captcha-refresh-icon">refresh</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <!-- Distorted Canvas for CAPTCHA rendering -->
+                        <div
+                            class="bg-surface-container-lowest border border-outline-variant/80 rounded-md overflow-hidden flex items-center justify-center select-none shadow-inner">
+                            <canvas id="captcha-canvas" width="140" height="42" class="cursor-pointer"
+                                title="Click to refresh CAPTCHA"></canvas>
+                        </div>
+                        <!-- Input for CAPTCHA -->
+                        <div class="relative flex-1">
+                            <input
+                                class="w-full bg-surface-container-high border border-outline-variant text-on-surface rounded-lg py-2 px-3 glow-input font-label-sm text-label-sm tracking-wider uppercase placeholder:normal-case placeholder:tracking-normal placeholder:text-outline"
+                                id="input-captcha" placeholder="Type characters" required="" type="text" maxlength="6"
+                                autocomplete="off" />
+                        </div>
+                    </div>
+                    <p class="font-label-sm text-[11px] text-on-surface-variant/80">Enter the security characters shown
+                        above to verify you are human.</p>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-between mt-2 font-label-sm text-label-sm" id="auth-actions">
+                <label class="flex items-center gap-2 cursor-pointer group">
+                    <input
+                        class="rounded border-outline-variant bg-surface-container-high text-secondary focus:ring-secondary focus:ring-offset-background"
+                        type="checkbox" />
+                    <span class="text-on-surface-variant group-hover:text-on-surface transition-colors">Remember
+                        credentials</span>
+                </label>
+                <a class="text-secondary hover:text-primary transition-colors" href="#">Reset key?</a>
+            </div>
+
+            <button
+                class="mt-4 w-full bg-secondary text-on-secondary font-headline-lg-mobile text-[16px] py-3 rounded-lg hover:bg-secondary-fixed-dim transition-all shadow-[0_0_15px_rgba(141,205,255,0.2)] hover:shadow-[0_0_20px_rgba(141,205,255,0.4)] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                id="submit-btn" type="submit">
+                <span id="submit-text">Initialize Session</span>
+                <span class="material-symbols-outlined text-[20px]" id="submit-icon">arrow_forward</span>
+            </button>
+        </form>
+
+        <!-- Toggle -->
+        <div class="text-center font-label-sm text-label-sm text-on-surface-variant pt-4 border-t border-white/10 mt-2"
+            id="footer-text">
+            Don't have an account? <a
+                class="text-secondary hover:text-primary transition-colors ml-1 cursor-pointer font-semibold"
+                id="toggle-to-signup">Sign Up</a>
+        </div>
+    </div>
+
+    <script>
+        // ── DOM References ──────────────────────────────────────────────
+        const tabsDual = document.getElementById('tabs-dual');
+        const tabsSingle = document.getElementById('tabs-single');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const fieldEmail = document.getElementById('field-email');
+        const inputEmail = document.getElementById('input-email');
+        const fieldConfirmPassword = document.getElementById('field-confirm-password');
+        const inputPassword = document.getElementById('input-password');
+        const inputConfirmPassword = document.getElementById('input-confirm-password');
+        const inputUsername = document.getElementById('input-username');
+        const authActions = document.getElementById('auth-actions');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitText = document.getElementById('submit-text');
+        const submitIcon = document.getElementById('submit-icon');
+        const footerText = document.getElementById('footer-text');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+
+        // Password strength & suggestions references
+        const pwStrengthContainer = document.getElementById('password-strength-container');
+        const strengthLabel = document.getElementById('strength-label');
+        const bar1 = document.getElementById('bar-1');
+        const bar2 = document.getElementById('bar-2');
+        const bar3 = document.getElementById('bar-3');
+        const bar4 = document.getElementById('bar-4');
+        const reqLength = document.getElementById('req-length');
+        const reqUpper = document.getElementById('req-upper');
+        const reqLower = document.getElementById('req-lower');
+        const reqNumber = document.getElementById('req-number');
+        const reqSpecial = document.getElementById('req-special');
+        const pwMatchStatus = document.getElementById('password-match-status');
+        const matchIcon = document.getElementById('match-icon');
+        const matchText = document.getElementById('match-text');
+
+        // CAPTCHA references
+        const captchaCanvas = document.getElementById('captcha-canvas');
+        const captchaRefreshBtn = document.getElementById('captcha-refresh-btn');
+        const captchaRefreshIcon = document.getElementById('captcha-refresh-icon');
+        const captchaAudioBtn = document.getElementById('captcha-audio-btn');
+        const inputCaptcha = document.getElementById('input-captcha');
+
+        let currentTab = 'signin';
+        let currentRole = 'operator';   // matches the initially-active role button
+        let currentCaptchaCode = '';
+
+        // ── CAPTCHA Generation & Audio ──────────────────────────────────
+        function generateCaptchaCode(length = 5) {
+            // Avoid confusing characters like O, 0, I, 1, l
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < length; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function drawCaptcha() {
+            currentCaptchaCode = generateCaptchaCode(5);
+            const ctx = captchaCanvas.getContext('2d');
+            const width = captchaCanvas.width;
+            const height = captchaCanvas.height;
+
+            // Background with dark cyber gradient
+            const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+            bgGrad.addColorStop(0, '#0d1527');
+            bgGrad.addColorStop(1, '#17223b');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, width, height);
+
+            // Add random noise lines
+            for (let i = 0; i < 6; i++) {
+                ctx.strokeStyle = `rgba(${Math.floor(Math.random() * 150 + 100)}, ${Math.floor(Math.random() * 150 + 100)}, 255, ${Math.random() * 0.3 + 0.15})`;
+                ctx.lineWidth = Math.random() * 2 + 1;
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * width, Math.random() * height);
+                ctx.bezierCurveTo(
+                    Math.random() * width, Math.random() * height,
+                    Math.random() * width, Math.random() * height,
+                    Math.random() * width, Math.random() * height
+                );
+                ctx.stroke();
+            }
+
+            // Add random noise dots
+            for (let i = 0; i < 35; i++) {
+                ctx.fillStyle = `rgba(141, 205, 255, ${Math.random() * 0.4 + 0.1})`;
+                ctx.beginPath();
+                ctx.arc(Math.random() * width, Math.random() * height, Math.random() * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw individual distorted characters
+            const charSpacing = width / (currentCaptchaCode.length + 1);
+            const colors = ['#8dcdff', '#cdbdff', '#4ade80', '#facc15', '#e0e0ff', '#38bdf8'];
+
+            for (let i = 0; i < currentCaptchaCode.length; i++) {
+                const char = currentCaptchaCode[i];
+                ctx.save();
+                const x = charSpacing * (i + 1) + (Math.random() * 4 - 2);
+                const y = height / 2 + (Math.random() * 6 - 3) + 6;
+                const angle = (Math.random() * 30 - 15) * Math.PI / 180;
+
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.font = `bold ${Math.floor(Math.random() * 5 + 20)}px "JetBrains Mono", monospace`;
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.shadowColor = 'rgba(0, 175, 254, 0.6)';
+                ctx.shadowBlur = 4;
+                ctx.fillText(char, -8, 0);
+                ctx.restore();
+            }
+        }
+
+        function refreshCaptcha() {
+            captchaRefreshIcon.classList.add('rotate-180');
+            setTimeout(() => captchaRefreshIcon.classList.remove('rotate-180'), 300);
+            drawCaptcha();
+            inputCaptcha.value = '';
+        }
+
+        function speakCaptcha() {
+            if ('speechSynthesis' in window && currentCaptchaCode) {
+                window.speechSynthesis.cancel();
+                // Speak each character separately with spacing
+                const spokenText = currentCaptchaCode.split('').join(' . ');
+                const utterance = new SpeechSynthesisUtterance(spokenText);
+                utterance.rate = 0.8;
+                utterance.pitch = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        captchaRefreshBtn.addEventListener('click', refreshCaptcha);
+        captchaCanvas.addEventListener('click', refreshCaptcha);
+        captchaAudioBtn.addEventListener('click', speakCaptcha);
+
+        // ── Password Strength Evaluation ─────────────────────────────────
+        function evaluatePassword(pw) {
+            const rules = {
+                length: pw.length >= 8,
+                upper: /[A-Z]/.test(pw),
+                lower: /[a-z]/.test(pw),
+                number: /[0-9]/.test(pw),
+                special: /[^A-Za-z0-9]/.test(pw)
+            };
+
+            const passedCount = Object.values(rules).filter(Boolean).length;
+            return { rules, passedCount, isStrong: passedCount === 5 };
+        }
+
+        function updateRuleUI(elem, passed) {
+            const icon = elem.querySelector('.material-symbols-outlined');
+            if (passed) {
+                elem.className = 'flex items-center gap-2 text-emerald-400 transition-colors font-medium';
+                icon.textContent = 'check_circle';
+            } else {
+                elem.className = 'flex items-center gap-2 text-outline transition-colors';
+                icon.textContent = 'radio_button_unchecked';
+            }
+        }
+
+        function updateStrengthUI(pw) {
+            if (!pw) {
+                strengthLabel.textContent = 'Not Entered';
+                strengthLabel.className = 'font-semibold text-outline transition-colors';
+                [bar1, bar2, bar3, bar4].forEach(b => {
+                    b.className = 'strength-bar-seg h-full rounded-full bg-outline-variant transition-all duration-300';
+                });
+                updateRuleUI(reqLength, false);
+                updateRuleUI(reqUpper, false);
+                updateRuleUI(reqLower, false);
+                updateRuleUI(reqNumber, false);
+                updateRuleUI(reqSpecial, false);
+                return;
+            }
+
+            const { rules, passedCount } = evaluatePassword(pw);
+
+            updateRuleUI(reqLength, rules.length);
+            updateRuleUI(reqUpper, rules.upper);
+            updateRuleUI(reqLower, rules.lower);
+            updateRuleUI(reqNumber, rules.number);
+            updateRuleUI(reqSpecial, rules.special);
+
+            // Reset bars
+            [bar1, bar2, bar3, bar4].forEach(b => {
+                b.className = 'strength-bar-seg h-full rounded-full bg-outline-variant transition-all duration-300';
+            });
+
+            if (passedCount <= 1) {
+                strengthLabel.textContent = 'Weak';
+                strengthLabel.className = 'font-semibold text-error transition-colors';
+                bar1.className = 'strength-bar-seg h-full rounded-full bg-error transition-all duration-300 shadow-[0_0_8px_rgba(255,180,171,0.5)]';
+            } else if (passedCount === 2 || passedCount === 3) {
+                strengthLabel.textContent = 'Moderate';
+                strengthLabel.className = 'font-semibold text-yellow-400 transition-colors';
+                bar1.className = 'strength-bar-seg h-full rounded-full bg-yellow-400 transition-all duration-300';
+                bar2.className = 'strength-bar-seg h-full rounded-full bg-yellow-400 transition-all duration-300';
+            } else if (passedCount === 4) {
+                strengthLabel.textContent = 'Good';
+                strengthLabel.className = 'font-semibold text-secondary transition-colors';
+                bar1.className = 'strength-bar-seg h-full rounded-full bg-secondary transition-all duration-300';
+                bar2.className = 'strength-bar-seg h-full rounded-full bg-secondary transition-all duration-300';
+                bar3.className = 'strength-bar-seg h-full rounded-full bg-secondary transition-all duration-300';
+            } else if (passedCount === 5) {
+                strengthLabel.textContent = 'Strong (Shield-Grade)';
+                strengthLabel.className = 'font-semibold text-emerald-400 transition-colors';
+                bar1.className = 'strength-bar-seg h-full rounded-full bg-emerald-400 transition-all duration-300 shadow-[0_0_8px_rgba(74,222,128,0.5)]';
+                bar2.className = 'strength-bar-seg h-full rounded-full bg-emerald-400 transition-all duration-300 shadow-[0_0_8px_rgba(74,222,128,0.5)]';
+                bar3.className = 'strength-bar-seg h-full rounded-full bg-emerald-400 transition-all duration-300 shadow-[0_0_8px_rgba(74,222,128,0.5)]';
+                bar4.className = 'strength-bar-seg h-full rounded-full bg-emerald-400 transition-all duration-300 shadow-[0_0_8px_rgba(74,222,128,0.5)]';
+            }
+        }
+
+        function checkPasswordMatch() {
+            if (currentTab !== 'signup') {
+                pwMatchStatus.classList.add('hidden');
+                return;
+            }
+
+            const pw = inputPassword.value;
+            const confirm = inputConfirmPassword.value;
+
+            if (!confirm) {
+                pwMatchStatus.classList.add('hidden');
+                return;
+            }
+
+            pwMatchStatus.classList.remove('hidden');
+            if (pw === confirm) {
+                pwMatchStatus.className = 'font-label-sm text-[12px] flex items-center gap-1.5 px-1 text-emerald-400';
+                matchIcon.textContent = 'check_circle';
+                matchText.textContent = 'Passwords match';
+            } else {
+                pwMatchStatus.className = 'font-label-sm text-[12px] flex items-center gap-1.5 px-1 text-error';
+                matchIcon.textContent = 'cancel';
+                matchText.textContent = 'Passwords do not match';
+            }
+        }
+
+        inputPassword.addEventListener('input', () => {
+            if (currentTab === 'signup') {
+                updateStrengthUI(inputPassword.value);
+                checkPasswordMatch();
+            }
+        });
+
+        inputConfirmPassword.addEventListener('input', checkPasswordMatch);
+
+        // ── Helpers ─────────────────────────────────────────────────────
+        function signUpAllowed(role) {
+            return role === 'public';
+        }
+
+        function updateTabVisibility() {
+            if (signUpAllowed(currentRole)) {
+                tabsDual.classList.remove('hidden');
+                tabsSingle.classList.add('hidden');
+                setFooterSignin();
+            } else {
+                tabsDual.classList.add('hidden');
+                tabsSingle.classList.remove('hidden');
+                if (currentTab === 'signup') switchTab('signin');
+                footerText.innerHTML = '';
+            }
+        }
+
+        // ── Tab switching ────────────────────────────────────────────────
+        function switchTab(tab) {
+            currentTab = tab;
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+
+            tabBtns.forEach(btn => {
+                if (btn.getAttribute('data-tab') === tab) {
+                    btn.classList.remove('text-on-surface-variant');
+                    btn.classList.add('bg-secondary-container', 'text-on-secondary-container', 'active', 'font-semibold');
+                } else {
+                    btn.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'active', 'font-semibold');
+                    btn.classList.add('text-on-surface-variant');
+                }
+            });
+
+            if (tab === 'signin') {
+                fieldEmail.classList.add('hidden');
+                inputEmail.removeAttribute('required');
+                fieldConfirmPassword.classList.add('hidden');
+                inputConfirmPassword.removeAttribute('required');
+                pwStrengthContainer.classList.add('hidden');
+                pwMatchStatus.classList.add('hidden');
+                inputUsername.placeholder = 'Email Address';
+                authActions.classList.remove('hidden');
+                submitText.textContent = 'Initialize Session';
+                submitIcon.textContent = 'arrow_forward';
+                if (signUpAllowed(currentRole)) setFooterSignin();
+            } else {
+                fieldEmail.classList.remove('hidden');
+                inputEmail.setAttribute('required', '');
+                fieldConfirmPassword.classList.remove('hidden');
+                inputConfirmPassword.setAttribute('required', '');
+                pwStrengthContainer.classList.remove('hidden');
+                inputUsername.placeholder = 'Username';
+                authActions.classList.add('hidden');
+                submitText.textContent = 'Sign Up';
+                submitIcon.textContent = 'how_to_reg';
+                setFooterSignup();
+                updateStrengthUI(inputPassword.value);
+                checkPasswordMatch();
+            }
+            refreshCaptcha();
+        }
+
+        function setFooterSignin() {
+            footerText.innerHTML = `Don't have an account? <a class="text-secondary hover:text-primary transition-colors ml-1 cursor-pointer font-semibold" id="toggle-to-signup">Sign Up</a>`;
+            const t = document.getElementById('toggle-to-signup');
+            if (t) t.addEventListener('click', () => switchTab('signup'));
+        }
+
+        function setFooterSignup() {
+            footerText.innerHTML = `Already have an account? <a class="text-secondary hover:text-primary transition-colors ml-1 cursor-pointer font-semibold" id="toggle-to-signin">Sign In</a>`;
+            const t = document.getElementById('toggle-to-signin');
+            if (t) t.addEventListener('click', () => switchTab('signin'));
+        }
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+        });
+
+        const initToggle = document.getElementById('toggle-to-signup');
+        if (initToggle) initToggle.addEventListener('click', () => switchTab('signup'));
+
+        // ── Role selection ───────────────────────────────────────────────
+        document.querySelectorAll('.role-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.role-btn').forEach(b => {
+                    b.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'active');
+                    b.classList.add('text-on-surface-variant');
+                });
+                btn.classList.remove('text-on-surface-variant');
+                btn.classList.add('bg-secondary-container', 'text-on-secondary-container', 'active');
+
+                currentRole = btn.getAttribute('data-role');
+                updateTabVisibility();
+            });
+        });
+
+        // ── Password visibility toggle ───────────────────────────────────
+        document.querySelectorAll('.toggle-password').forEach(button => {
+            button.addEventListener('click', () => {
+                const input = button.previousElementSibling;
+                const icon = button.querySelector('span');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.textContent = 'visibility';
+                } else {
+                    input.type = 'password';
+                    icon.textContent = 'visibility_off';
+                }
+            });
+        });
+
+        // Initialize layout and initial CAPTCHA
+        updateTabVisibility();
+        drawCaptcha();
+
+        // ── Post-Signup Redirect Handler ─────────────────────────────────
+        // If redirected here after a successful sign-up, auto-select Public
+        // role, switch to Sign In tab, and display the success banner.
+        (function handlePostSignupRedirect() {
+            const params = new URLSearchParams(window.location.search);
+            const redirectRole = params.get('role');
+            const redirectTab  = params.get('tab');
+            const signupOk     = sessionStorage.getItem('signup_success');
+
+            if (redirectRole === 'public' && redirectTab === 'signin' && signupOk === '1') {
+                sessionStorage.removeItem('signup_success');
+
+                // Click the Public role button to switch state
+                const publicBtn = document.querySelector('.role-btn[data-role="public"]');
+                if (publicBtn) publicBtn.click();
+
+                // Ensure Sign In tab is active
+                switchTab('signin');
+
+                // Show success banner
+                const successSpan = successMessage.querySelector('span:not(.material-symbols-outlined)');
+                if (successSpan) successSpan.textContent = 'Account created successfully! Please sign in with your credentials.';
+                successMessage.classList.remove('hidden');
+
+                // Clean up URL without reloading
+                history.replaceState(null, '', 'Login.html');
+            }
+        })();
+
+        // ── Form submission ──────────────────────────────────────────────
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+
+            const errorTextSpan = errorMessage.querySelector('span:not(.material-symbols-outlined)');
+
+            // ── 1. CAPTCHA Verification Check ──────────────────────────────
+            const userCaptcha = inputCaptcha.value.trim().toUpperCase();
+            if (!userCaptcha || userCaptcha !== currentCaptchaCode.toUpperCase()) {
+                errorTextSpan.textContent = 'Invalid security code (CAPTCHA). Please enter the characters shown.';
+                errorMessage.classList.remove('hidden');
+                refreshCaptcha();
+                inputCaptcha.focus();
+                return;
+            }
+
+            // ── 2. SIGN UP (Public only) ───────────────────────────────────
+            if (currentTab === 'signup') {
+                const name = inputUsername.value.trim();
+                const email = inputEmail.value.trim();
+                const password = inputPassword.value;
+                const confirmPassword = inputConfirmPassword.value;
+
+                // Password strength criteria check
+                const { rules, isStrong } = evaluatePassword(password);
+                if (!isStrong) {
+                    let missingMsg = 'Password does not meet strength requirements: ';
+                    const missing = [];
+                    if (!rules.length) missing.push('min 8 characters');
+                    if (!rules.upper) missing.push('1 uppercase letter');
+                    if (!rules.lower) missing.push('1 lowercase letter');
+                    if (!rules.number) missing.push('1 number');
+                    if (!rules.special) missing.push('1 special symbol');
+                    missingMsg += missing.join(', ') + '.';
+
+                    errorTextSpan.textContent = missingMsg;
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    errorTextSpan.textContent = 'Passwords do not match. Please verify.';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitText.textContent = 'Creating account...';
+
+                try {
+                    const res = await authAPI.register(name, email, password, 'user');
+                    // Redirect to Login page (Sign In tab, Public role pre-selected) with a success flag
+                    sessionStorage.setItem('signup_success', '1');
+                    window.location.href = 'Login.html?role=public&tab=signin';
+                } catch (err) {
+                    errorTextSpan.textContent = err.message || 'Registration failed. Please verify credentials.';
+                    errorMessage.classList.remove('hidden');
+                    refreshCaptcha();
+                } finally {
+                    submitBtn.disabled = false;
+                    submitText.textContent = 'Sign Up';
+                }
+
+                // ── 3. SIGN IN ─────────────────────────────────────────────────
+            } else {
+                const email = inputUsername.value.trim();
+                const password = inputPassword.value;
+
+                submitBtn.disabled = true;
+                submitText.textContent = 'Verifying credentials...';
+
+                try {
+                    const data = await authAPI.login(email, password);
+                    AuthManager.setSession({
+                        access_token: data.access_token,
+                        refresh_token: data.refresh_token,
+                        role: data.role || currentRole.toUpperCase(),
+                        name: data.username || data.name || email.split('@')[0]
+                    });
+                    window.location.href = AuthManager.getDashboardUrl(data.role || currentRole);
+                } catch (err) {
+                    console.warn('Backend login notice:', err.message);
+                    if (err.message.includes('Failed to fetch') || err.message.includes('Cannot reach') || err.message.includes('NetworkError')) {
+                        // Backend server is offline, initialize preview session
+                        AuthManager.setSession({
+                            access_token: 'mock-dev-token',
+                            refresh_token: 'placeholder-refresh-token',
+                            role: currentRole.toUpperCase(),
+                            name: email ? email.split('@')[0] : 'Operator'
+                        });
+                        window.location.href = AuthManager.getDashboardUrl(currentRole);
+                        return;
+                    }
+
+                    errorTextSpan.textContent = err.message || 'Authentication failed. Please verify credentials.';
+                    errorMessage.classList.remove('hidden');
+                    submitBtn.disabled = false;
+                    submitText.textContent = 'Initialize Session';
+                    refreshCaptcha();
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

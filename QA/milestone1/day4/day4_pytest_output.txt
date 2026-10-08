@@ -1,0 +1,44 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0 -- D:\infosys\Traffic-Prediction-and-Intelligent-Congestion-Management-\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\infosys\Traffic-Prediction-and-Intelligent-Congestion-Management-
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collecting ... collected 30 items
+
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_01_register_valid_user_returns_201_and_user_id PASSED [  3%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_02_register_duplicate_email_rejected PASSED [  6%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_03_register_unsupported_domain_rejected PASSED [ 10%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_04_register_malformed_email_rejected PASSED [ 13%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_05_register_empty_password_rejected XFAIL [ 16%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_06_register_empty_name_rejected XFAIL [ 20%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_07_login_valid_returns_access_refresh_and_role PASSED [ 23%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_08_login_wrong_password_401 PASSED [ 26%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_09_login_unknown_email_401 PASSED [ 30%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_10_login_empty_body_422 PASSED [ 33%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_11_login_error_does_not_reveal_which_field_was_wrong PASSED [ 36%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_12_me_with_valid_token PASSED [ 40%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_13_me_without_token_rejected PASSED [ 43%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_14_me_with_garbage_token_401 PASSED [ 46%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_15_me_with_expired_token_401 PASSED [ 50%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_16_me_rejects_refresh_token PASSED [ 53%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_17_me_matches_contract_fields XFAIL [ 56%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_18_refresh_returns_new_access_token PASSED [ 60%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_19_refresh_rejects_access_token PASSED [ 63%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_20_refresh_rejects_garbage PASSED [ 66%]
+QA/milestone1/tests/test_m1_auth.py::test_tc_auth_21_password_is_not_stored_in_plain_text PASSED [ 70%]
+QA/milestone1/tests/test_m1_traffic.py::test_tc_trf_01_live_returns_non_empty_list PASSED [ 73%]
+QA/milestone1/tests/test_m1_traffic.py::test_tc_trf_02_live_items_match_contract PASSED [ 76%]
+QA/milestone1/tests/test_m1_traffic.py::test_tc_trf_03_live_values_are_valid PASSED [ 80%]
+QA/milestone1/tests/test_m1_traffic.py::test_tc_trf_04_live_road_ids_are_unique PASSED [ 83%]
+QA/milestone1/tests/test_m1_traffic.py::test_tc_trf_05_road_detail_matches_contract PASSED [ 86%]
+QA/milestone1/tests/test_m1_traffic.py::test_tc_trf_06_road_detail_agrees_with_live_feed PASSED [ 90%]
+QA/milestone1/tests/test_m1_traffic.py::test_tc_trf_07_unknown_road_returns_404 PASSED [ 93%]
+QA/milestone1/tests/test_m1_traffic.py::test_tc_trf_08_density_kpis PASSED [ 96%]
+QA/milestone1/tests/test_m1_traffic.py::test_tc_trf_09_congestion_rule_thresholds PASSED [100%]
+
+=========================== short test summary info ===========================
+XFAIL QA/milestone1/tests/test_m1_auth.py::test_tc_auth_05_register_empty_password_rejected - DEF-M1-001: /auth/register accepts an empty password and empty name (returns 201)
+XFAIL QA/milestone1/tests/test_m1_auth.py::test_tc_auth_06_register_empty_name_rejected - DEF-M1-001: /auth/register accepts an empty password and empty name (returns 201)
+XFAIL QA/milestone1/tests/test_m1_auth.py::test_tc_auth_17_me_matches_contract_fields - DEF-M1-002: /auth/me returns 'username' but the contract says 'name'
+======================= 27 passed, 3 xfailed in 11.80s ========================

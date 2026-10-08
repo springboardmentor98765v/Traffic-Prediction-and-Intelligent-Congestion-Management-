@@ -1,0 +1,405 @@
+{
+  "summary": {
+    "PASS": 32,
+    "FAIL": 10,
+    "BLOCKED": 2
+  },
+  "results": [
+    {
+      "stage": "1 Stack",
+      "check": "Gateway /health",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 117,
+      "ref": ""
+    },
+    {
+      "stage": "1 Stack",
+      "check": "Analytics service /",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 26,
+      "ref": ""
+    },
+    {
+      "stage": "1 Stack",
+      "check": "AI Insights service :8010 reachable",
+      "expected": "reachable",
+      "actual": "connection refused",
+      "verdict": "BLOCKED",
+      "ms": 2045,
+      "ref": "No AI Insights service in repo / compose"
+    },
+    {
+      "stage": "2 Auth",
+      "check": "Register user account",
+      "expected": "201",
+      "actual": "201",
+      "verdict": "PASS",
+      "ms": 416,
+      "ref": ""
+    },
+    {
+      "stage": "2 Auth",
+      "check": "Login user",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 345,
+      "ref": ""
+    },
+    {
+      "stage": "2 Auth",
+      "check": "/me role for user",
+      "expected": "PUBLIC",
+      "actual": "PUBLIC",
+      "verdict": "PASS",
+      "ms": 13,
+      "ref": ""
+    },
+    {
+      "stage": "2 Auth",
+      "check": "Register operator account",
+      "expected": "201",
+      "actual": "201",
+      "verdict": "PASS",
+      "ms": 402,
+      "ref": ""
+    },
+    {
+      "stage": "2 Auth",
+      "check": "Login operator",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 432,
+      "ref": ""
+    },
+    {
+      "stage": "2 Auth",
+      "check": "/me role for operator",
+      "expected": "operator",
+      "actual": "operator",
+      "verdict": "PASS",
+      "ms": 14,
+      "ref": ""
+    },
+    {
+      "stage": "2 Auth",
+      "check": "Register admin account",
+      "expected": "201",
+      "actual": "201",
+      "verdict": "PASS",
+      "ms": 456,
+      "ref": ""
+    },
+    {
+      "stage": "2 Auth",
+      "check": "Login admin",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 443,
+      "ref": ""
+    },
+    {
+      "stage": "2 Auth",
+      "check": "/me role for admin",
+      "expected": "admin",
+      "actual": "admin",
+      "verdict": "PASS",
+      "ms": 11,
+      "ref": ""
+    },
+    {
+      "stage": "2 Auth",
+      "check": "/me without token rejected",
+      "expected": "401",
+      "actual": "401",
+      "verdict": "PASS",
+      "ms": 7,
+      "ref": ""
+    },
+    {
+      "stage": "3 Monitoring",
+      "check": "Live traffic, 6 roads",
+      "expected": "['R001', 'R002', 'R003', 'R004', 'R005', 'R006']",
+      "actual": "['R001', 'R002', 'R003', 'R004', 'R005', 'R006']",
+      "verdict": "PASS",
+      "ms": 14,
+      "ref": ""
+    },
+    {
+      "stage": "3 Monitoring",
+      "check": "Road R001 detail + history",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 31,
+      "ref": ""
+    },
+    {
+      "stage": "3 Monitoring",
+      "check": "Density summary",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 12,
+      "ref": ""
+    },
+    {
+      "stage": "4 Prediction",
+      "check": "Congestion prediction for all 6 roads",
+      "expected": "200 + valid level",
+      "actual": "all ok",
+      "verdict": "PASS",
+      "ms": 409,
+      "ref": ""
+    },
+    {
+      "stage": "4 Prediction",
+      "check": "Peak hours R001",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 35,
+      "ref": ""
+    },
+    {
+      "stage": "5 Route",
+      "check": "/route/optimize (logged-in user)",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 694,
+      "ref": ""
+    },
+    {
+      "stage": "5 Route",
+      "check": "/route/alternate (logged-in user)",
+      "expected": "200",
+      "actual": "500",
+      "verdict": "FAIL",
+      "ms": 389,
+      "ref": "DEF-M3-004"
+    },
+    {
+      "stage": "5 Route",
+      "check": "/route/travel-time (logged-in user)",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 352,
+      "ref": ""
+    },
+    {
+      "stage": "5 Route",
+      "check": "/route/conditions (logged-in user)",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 9,
+      "ref": ""
+    },
+    {
+      "stage": "5 Route",
+      "check": "/route/optimize without token rejected",
+      "expected": "401",
+      "actual": "401",
+      "verdict": "PASS",
+      "ms": 6,
+      "ref": ""
+    },
+    {
+      "stage": "6 Analytics",
+      "check": "Trends R001 (4 weeks)",
+      "expected": "200, 28 days",
+      "actual": "200, 28 days",
+      "verdict": "PASS",
+      "ms": 312,
+      "ref": ""
+    },
+    {
+      "stage": "6 Analytics",
+      "check": "Heatmap roads == Monitoring roads",
+      "expected": "['R001', 'R002', 'R003', 'R004', 'R005', 'R006']",
+      "actual": "['R001', 'R002', 'R003', 'R004', 'R005', 'R006']",
+      "verdict": "PASS",
+      "ms": 105,
+      "ref": ""
+    },
+    {
+      "stage": "6 Analytics",
+      "check": "Report CSV R001",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 75,
+      "ref": ""
+    },
+    {
+      "stage": "6 Analytics",
+      "check": "Monitoring `updated_at` carries a timezone",
+      "expected": "offset or Z",
+      "actual": "2026-08-23T23:00:00",
+      "verdict": "FAIL",
+      "ms": null,
+      "ref": "DEF-M3-016"
+    },
+    {
+      "stage": "6 Analytics",
+      "check": "Monitoring latest R001 (2026-08-23T23:00:00 IST) == Analytics report row",
+      "expected": "34",
+      "actual": "34",
+      "verdict": "PASS",
+      "ms": null,
+      "ref": ""
+    },
+    {
+      "stage": "7 AI Insights",
+      "check": "GET :8010/api/v1/ai/recommendations?road_id=R001 (frontend URL)",
+      "expected": "200 {road_id, recommendation_text, based_on}",
+      "actual": "connection refused",
+      "verdict": "BLOCKED",
+      "ms": 2040,
+      "ref": "TC-AI-01; no service"
+    },
+    {
+      "stage": "7 AI Insights",
+      "check": "Anomaly detector: baseline-like R001 reading",
+      "expected": "normal",
+      "actual": "normal",
+      "verdict": "PASS",
+      "ms": null,
+      "ref": ""
+    },
+    {
+      "stage": "8 Alerts E2E",
+      "check": "Watcher replay of 672 real R003 readings \u2192 alerts",
+      "expected": "30 (one per High/Severe episode)",
+      "actual": "30",
+      "verdict": "PASS",
+      "ms": null,
+      "ref": ""
+    },
+    {
+      "stage": "8 Alerts E2E",
+      "check": "Incident reading R004 \u2192 detector class",
+      "expected": "possible_incident",
+      "actual": "possible_incident",
+      "verdict": "PASS",
+      "ms": null,
+      "ref": ""
+    },
+    {
+      "stage": "8 Alerts E2E",
+      "check": "Accident alert stored and visible to operator (frontend call)",
+      "expected": "visible < 2 s",
+      "actual": "686 ms",
+      "verdict": "PASS",
+      "ms": 686,
+      "ref": ""
+    },
+    {
+      "stage": "9 Alert RBAC",
+      "check": "Critical alert visible to user (frontend call, JWT only)",
+      "expected": "False",
+      "actual": "False",
+      "verdict": "PASS",
+      "ms": null,
+      "ref": ""
+    },
+    {
+      "stage": "9 Alert RBAC",
+      "check": "Critical alert visible to operator (frontend call, JWT only)",
+      "expected": "True",
+      "actual": "False",
+      "verdict": "FAIL",
+      "ms": null,
+      "ref": "DEF-M3-012"
+    },
+    {
+      "stage": "9 Alert RBAC",
+      "check": "Critical alert visible to admin (frontend call, JWT only)",
+      "expected": "True",
+      "actual": "False",
+      "verdict": "FAIL",
+      "ms": null,
+      "ref": "DEF-M3-012"
+    },
+    {
+      "stage": "9 Alert RBAC",
+      "check": "Accident alert (High, from detector) hidden from public user",
+      "expected": "False",
+      "actual": "True",
+      "verdict": "FAIL",
+      "ms": null,
+      "ref": "DEF-M3-007"
+    },
+    {
+      "stage": "9 Alert RBAC",
+      "check": "Public user JWT + ?role=admin cannot see Critical",
+      "expected": "False",
+      "actual": "True",
+      "verdict": "FAIL",
+      "ms": null,
+      "ref": "DEF-M3-005"
+    },
+    {
+      "stage": "9 Alert RBAC",
+      "check": "GET /alerts/my without token rejected",
+      "expected": "401",
+      "actual": "200",
+      "verdict": "FAIL",
+      "ms": null,
+      "ref": "DEF-M3-005"
+    },
+    {
+      "stage": "9 Alert RBAC",
+      "check": "POST /alerts/ without token rejected",
+      "expected": "401/403",
+      "actual": "201",
+      "verdict": "FAIL",
+      "ms": null,
+      "ref": "DEF-M3-005"
+    },
+    {
+      "stage": "9 Alert RBAC",
+      "check": "Public user can't mark a Critical alert read",
+      "expected": "403/404",
+      "actual": "200",
+      "verdict": "FAIL",
+      "ms": null,
+      "ref": "DEF-M3-005"
+    },
+    {
+      "stage": "10 Frontend contract",
+      "check": "api.js ANALYTICS_BASE (http://127.0.0.1:8001) serves /analytics/heatmap",
+      "expected": "200",
+      "actual": "200",
+      "verdict": "PASS",
+      "ms": 65,
+      "ref": ""
+    },
+    {
+      "stage": "10 Frontend contract",
+      "check": "Gateway sends CORS header to browser origin",
+      "expected": "Access-Control-Allow-Origin",
+      "actual": "http://127.0.0.1:5500",
+      "verdict": "PASS",
+      "ms": null,
+      "ref": ""
+    },
+    {
+      "stage": "10 Frontend contract",
+      "check": "Analytics sends CORS header to browser origin",
+      "expected": "Access-Control-Allow-Origin",
+      "actual": "missing",
+      "verdict": "FAIL",
+      "ms": null,
+      "ref": "DEF-M3-014"
+    }
+  ]
+}
