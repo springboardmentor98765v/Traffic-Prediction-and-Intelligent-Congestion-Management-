@@ -157,11 +157,11 @@
 </head>
 
 <body
-    class="bg-background text-on-background min-h-screen flex items-center justify-center p-4 sm:p-6 py-8 relative overflow-y-auto font-body-md text-body-md">
+    class="bg-background text-on-background min-h-screen flex items-center justify-center p-3 sm:p-6 py-6 sm:py-8 relative overflow-y-auto font-body-md text-body-md">
     <!-- Top Right Theme Toggle -->
-    <div class="fixed top-4 right-4 z-50">
-        <button id="theme-toggle-btn" class="theme-toggle-btn w-10 h-10 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all cursor-pointer shadow-lg" onclick="ThemeManager.toggle()" title="Toggle Theme">
-            <span class="material-symbols-outlined text-[20px]">light_mode</span>
+    <div class="fixed top-3 sm:top-4 right-3 sm:right-4 z-50">
+        <button id="theme-toggle-btn" class="theme-toggle-btn w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all cursor-pointer shadow-lg" onclick="ThemeManager.toggle()" title="Toggle Theme">
+            <span class="material-symbols-outlined text-[19px] sm:text-[20px]">light_mode</span>
         </button>
     </div>
     <!-- Ambient Background -->
@@ -172,7 +172,7 @@
         class="fixed inset-0 z-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wNSkiLz48L3N2Zz4=')] opacity-50 pointer-events-none">
     </div>
     <div
-        class="relative z-10 w-full max-w-md glass-panel rounded-xl shadow-24px-blur p-6 sm:p-8 flex flex-col gap-5 sm:gap-6 my-auto">
+        class="relative z-10 w-[94%] sm:w-full max-w-md glass-panel rounded-2xl shadow-24px-blur p-4 sm:p-8 flex flex-col gap-4 sm:gap-6 my-auto">
         <!-- Header -->
         <div class="text-center flex flex-col items-center gap-2 mb-4">
             <div
@@ -403,17 +403,17 @@
                     <span class="text-[10px] text-emerald-400 font-mono">● Live Backend (Port 8000)</span>
                 </div>
                 <div class="grid grid-cols-3 gap-1.5">
-                    <button type="button" onclick="quickFill('opjoe@gmail.com', 'Password123!', 'operator')" class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-secondary/20 hover:border-secondary/40 border border-white/5 text-xs text-on-surface transition-all text-center group cursor-pointer" title="Auto-fill Operator Credentials">
+                    <button type="button" onclick="quickFill('operator@gmail.com', 'Operator@123', 'operator')" class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-secondary/20 hover:border-secondary/40 border border-white/5 text-xs text-on-surface transition-all text-center group cursor-pointer" title="Auto-fill Operator Credentials">
                         <div class="font-bold text-secondary text-[11px] group-hover:scale-105 transition-transform">Operator</div>
-                        <div class="text-[9px] text-on-surface-variant truncate">opjoe@gmail</div>
+                        <div class="text-[9px] text-on-surface-variant truncate">operator@gmail</div>
                     </button>
-                    <button type="button" onclick="quickFill('admin@trafficvision.nitpy.ac.in', 'Admin@123', 'admin')" class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-secondary/20 hover:border-secondary/40 border border-white/5 text-xs text-on-surface transition-all text-center group cursor-pointer" title="Auto-fill Admin Credentials">
+                    <button type="button" onclick="quickFill('admin@gmail.com', 'Admin@123', 'admin')" class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-secondary/20 hover:border-secondary/40 border border-white/5 text-xs text-on-surface transition-all text-center group cursor-pointer" title="Auto-fill Admin Credentials">
                         <div class="font-bold text-tertiary text-[11px] group-hover:scale-105 transition-transform">Admin</div>
-                        <div class="text-[9px] text-on-surface-variant truncate">admin@nitpy</div>
+                        <div class="text-[9px] text-on-surface-variant truncate">admin@gmail</div>
                     </button>
-                    <button type="button" onclick="quickFill('citizen@gmail.com', 'Citizen123!', 'public')" class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-secondary/20 hover:border-secondary/40 border border-white/5 text-xs text-on-surface transition-all text-center group cursor-pointer" title="Auto-fill Public Credentials">
+                    <button type="button" onclick="quickFill('user@gmail.com', 'User@123', 'public')" class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-secondary/20 hover:border-secondary/40 border border-white/5 text-xs text-on-surface transition-all text-center group cursor-pointer" title="Auto-fill Public Credentials">
                         <div class="font-bold text-emerald-400 text-[11px] group-hover:scale-105 transition-transform">Public</div>
-                        <div class="text-[9px] text-on-surface-variant truncate">citizen@gmail</div>
+                        <div class="text-[9px] text-on-surface-variant truncate">user@gmail</div>
                     </button>
                 </div>
             </div>
@@ -908,7 +908,7 @@
                 } catch (err) {
                     console.warn('Backend login notice:', err.message);
                     if (err.message.includes('Failed to fetch') || err.message.includes('Cannot reach') || err.message.includes('NetworkError') || err.message.toLowerCase().includes('timeout') || err.name === 'AbortError') {
-                        errorTextSpan.textContent = 'Server unreachable. Please check your connection and try again.';
+                        errorTextSpan.textContent = `Server unreachable at ${API_CONFIG.BASE_URL}. Please ensure backend is running on port 8000.`;
                         errorMessage.classList.remove('hidden');
                         submitBtn.disabled = false;
                         submitText.textContent = 'Initialize Session';

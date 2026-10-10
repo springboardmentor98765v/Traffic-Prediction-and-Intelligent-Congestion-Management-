@@ -3,12 +3,108 @@
  * Supports live backend communication with automatic fallback aligned with Day 6 Traffic Monitoring specs.
  */
 
+// ==========================================
+// Centralized Dynamic Gateway Configuration (Milestone 4 Production Hardened)
+// ==========================================
 const API_CONFIG = {
-    BASE_URL: 'http://127.0.0.1:8000/api/v1',
-    ANALYTICS_BASE: 'http://127.0.0.1:8001',
-    AI_ENGINE_BASE: 'http://127.0.0.1:8010',
-    TIMEOUT: 10000
+    _customGateway: null,
+
+    get GATEWAY_BASE() {
+        if (this._customGateway) return this._customGateway;
+        const local = (typeof localStorage !== 'undefined') ? localStorage.getItem('trafficvision_gateway_url') : null;
+        if (local) return local.replace(/\/+$/, '');
+        const injected = (typeof window !== 'undefined' && window.__TRAFFICVISION_CONFIG__ && window.__TRAFFICVISION_CONFIG__.GATEWAY_URL);
+        if (injected) return injected.replace(/\/+$/, '');
+
+        if (typeof window !== 'undefined' && window.location) {
+            const proto = window.location.protocol;
+            const host = (window.location.hostname || '').toLowerCase();
+            const origin = window.location.origin;
+
+            // When opened directly via file://, empty host, or 'null' origin:
+            if (proto === 'file:' || !host || origin === 'null' || origin === 'file://') {
+                return 'http://127.0.0.1:8000';
+            }
+
+            // When opened locally via dev servers (localhost, 127.0.0.1, 0.0.0.0):
+            if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host === '::1') {
+                return 'http://127.0.0.1:8000';
+            }
+
+            // When deployed to a public cloud domain (e.g. Vercel, Netlify, cloud VM), use origin:
+            return origin;
+        }
+        return 'http://127.0.0.1:8000';
+    },
+
+    get BASE_URL() {
+        const injected = (typeof window !== 'undefined' && window.__TRAFFICVISION_CONFIG__ && window.__TRAFFICVISION_CONFIG__.BASE_URL);
+        if (injected) return injected.replace(/\/+$/, '');
+        const gw = this.GATEWAY_BASE;
+        return gw.endsWith('/api/v1') ? gw : `${gw}/api/v1`;
+    },
+
+    get ANALYTICS_BASE() {
+        const injected = (typeof window !== 'undefined' && window.__TRAFFICVISION_CONFIG__ && window.__TRAFFICVISION_CONFIG__.ANALYTICS_BASE);
+        if (injected) return injected.replace(/\/+$/, '');
+        const local = (typeof localStorage !== 'undefined') ? localStorage.getItem('trafficvision_analytics_url') : null;
+        if (local) return local.replace(/\/+$/, '');
+
+        if (typeof window !== 'undefined' && window.location) {
+            const proto = window.location.protocol;
+            const host = (window.location.hostname || '').toLowerCase();
+            const origin = window.location.origin;
+            if (proto === 'file:' || !host || host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || origin === 'null') {
+                return 'http://127.0.0.1:8001';
+            }
+            return `${this.GATEWAY_BASE}/analytics`;
+        }
+        return 'http://127.0.0.1:8001';
+    },
+
+    get AI_ENGINE_BASE() {
+        const injected = (typeof window !== 'undefined' && window.__TRAFFICVISION_CONFIG__ && window.__TRAFFICVISION_CONFIG__.AI_ENGINE_BASE);
+        if (injected) return injected.replace(/\/+$/, '');
+        const local = (typeof localStorage !== 'undefined') ? localStorage.getItem('trafficvision_ai_engine_url') : null;
+        if (local) return local.replace(/\/+$/, '');
+
+        if (typeof window !== 'undefined' && window.location) {
+            const proto = window.location.protocol;
+            const host = (window.location.hostname || '').toLowerCase();
+            const origin = window.location.origin;
+            if (proto === 'file:' || !host || host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || origin === 'null') {
+                return 'http://127.0.0.1:8010';
+            }
+            return `${this.GATEWAY_BASE}/ai-engine`;
+        }
+        return 'http://127.0.0.1:8010';
+    },
+
+    TIMEOUT: 10000,
+
+    setGatewayUrl(url) {
+        if (!url) {
+            if (typeof localStorage !== 'undefined') localStorage.removeItem('trafficvision_gateway_url');
+            this._customGateway = null;
+        } else {
+            const clean = url.replace(/\/+$/, '');
+            if (typeof localStorage !== 'undefined') localStorage.setItem('trafficvision_gateway_url', clean);
+            this._customGateway = clean;
+        }
+        console.log(`[TrafficVision Gateway] Switched to: ${this.BASE_URL}`);
+    }
 };
+
+// Global helpers for QA & DevOps live verification
+if (typeof window !== 'undefined') {
+    window.setTrafficVisionGateway = (url) => API_CONFIG.setGatewayUrl(url);
+    window.getTrafficVisionConfig = () => ({
+        GATEWAY_BASE: API_CONFIG.GATEWAY_BASE,
+        BASE_URL: API_CONFIG.BASE_URL,
+        ANALYTICS_BASE: API_CONFIG.ANALYTICS_BASE,
+        AI_ENGINE_BASE: API_CONFIG.AI_ENGINE_BASE
+    });
+}
 
 // ==========================================
 // Mock Fallback Data (Day 6 Schema Aligned)
@@ -315,11 +411,33 @@ async function apiFetch(endpoint, options = {}, alternateEndpoint = null) {
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-        let response = await fetch(url, {
-            ...options,
-            headers,
-            signal: controller.signal
-        });
+        let response;
+        try {
+            response = await fetch(url, {
+                ...options,
+                headers,
+                signal: controller.signal
+            });
+        } catch (fetchErr) {
+            // Auto fallback between 127.0.0.1:8000 and localhost:8000 for local Docker development
+            if (url.includes('127.0.0.1:8000')) {
+                const altUrl = url.replace('127.0.0.1:8000', 'localhost:8000');
+                response = await fetch(altUrl, {
+                    ...options,
+                    headers,
+                    signal: controller.signal
+                });
+            } else if (url.includes('localhost:8000')) {
+                const altUrl = url.replace('localhost:8000', '127.0.0.1:8000');
+                response = await fetch(altUrl, {
+                    ...options,
+                    headers,
+                    signal: controller.signal
+                });
+            } else {
+                throw fetchErr;
+            }
+        }
         clearTimeout(timeoutId);
 
         // Handle 401 Silent Refresh
@@ -2184,12 +2302,15 @@ const analyticsAPI = {
 // ==========================================
 const alertsAPI = {
     /**
-     * GET /api/v1/alerts/my
+     * GET /api/v1/alerts/my?role={role}
      * Returns the current user's alert list from the backend.
      * Requires a valid Bearer token in sessionStorage.
+     * [DEF-M3-012 Resolved]: Appends ?role=${role} parameter.
      */
-    async getMyAlerts() {
-        return await apiFetch('/alerts/my');
+    async getMyAlerts(role = null) {
+        const userRole = role || AuthManager.getRole() || 'PUBLIC';
+        const query = userRole ? `?role=${encodeURIComponent(userRole.toUpperCase())}` : '';
+        return await apiFetch(`/alerts/my${query}`);
     },
 
     /**
@@ -2202,7 +2323,7 @@ const alertsAPI = {
 };
 
 // ==========================================
-// Milestone 3: Centralized Notification Manager
+// Milestone 3/4: Centralized Notification Manager
 // ==========================================
 const NotificationManager = {
     STORAGE_KEY: "tv_notifications_state_v1",
@@ -2213,15 +2334,25 @@ const NotificationManager = {
      * Initialise the store:
      *  1. Immediately show whatever is cached in sessionStorage so the UI
      *     isn't blank while the network call is in flight.
-     *  2. Fetch fresh data from GET /api/v1/alerts/my and replace the store.
+     *  2. Fetch fresh data from GET /api/v1/alerts/my?role=... and replace the store.
      *  3. Fall back to seeded mock data when the backend is unreachable.
      */
     init() {
         // Hydrate from cache first for instant UI
         try {
             const saved = sessionStorage.getItem(this.STORAGE_KEY);
+            const role = (AuthManager.getRole() || 'PUBLIC').toUpperCase();
             if (saved) {
-                this._notifications = JSON.parse(saved);
+                let parsed = JSON.parse(saved);
+                // DEF-M3-007 Fix: Public users should never be hydrated with detector / critical alerts
+                if (role === 'PUBLIC' || role === 'USER') {
+                    parsed = parsed.filter(n => {
+                        const cat = (n.category || '').toLowerCase();
+                        const sev = (n.severity || '').toLowerCase();
+                        return cat !== 'detector' && cat !== 'critical' && sev !== 'high' && sev !== 'severe' && sev !== 'critical';
+                    });
+                }
+                this._notifications = parsed;
                 this._notifyListeners();
             }
         } catch (_) { /* ignore */ }
@@ -2232,24 +2363,35 @@ const NotificationManager = {
 
     async _fetchFromAPI() {
         try {
-            const raw = await alertsAPI.getMyAlerts();
+            const role = (AuthManager.getRole() || 'PUBLIC').toUpperCase();
+            const raw = await alertsAPI.getMyAlerts(role);
             // Normalise the backend payload into the internal notification shape.
             // Backend sends: alert_id, type, severity, road_id, message, read, created_at
             const normalised = (Array.isArray(raw) ? raw : (raw.alerts || raw.data || [])).map(a => ({
                 id: String(a.id || a.alert_id || `NOTIF-${Date.now()}-${Math.random()}`),
                 // Backend sends `type` (e.g. "accident") – map it to `category`
                 category: a.category || a.type || a.alert_type || 'general',
-                severity: a.severity || a.level || 'info',
+                severity: (a.severity || a.level || 'info').toLowerCase(),
                 title: a.title || a.message || 'Alert',
                 // Backend sends `road_id` (e.g. "R003") – map it to `location`
                 location: a.location || a.road_name || a.corridor || a.road_id || 'Grid',
+                road_id: a.road_id || a.location || '',
                 message: a.message || a.description || a.details || '',
                 time: a.created_at
                     ? _relativeTime(a.created_at)
                     : (a.time || 'Just now'),
                 unread: a.is_read === false || a.read === false || a.unread === true,
                 action: a.action || { label: 'View Alerts', url: 'Alerts.html' }
-            }));
+            })).filter(n => {
+                // DEF-M3-007 Fix: Public users should only see general advisories and informational traffic updates,
+                // never internal corridor detector alerts or high/critical raw detector warnings.
+                if (role === 'PUBLIC' || role === 'USER') {
+                    const cat = (n.category || '').toLowerCase();
+                    const sev = (n.severity || '').toLowerCase();
+                    return cat !== 'detector' && cat !== 'critical' && sev !== 'high' && sev !== 'severe' && sev !== 'critical';
+                }
+                return true;
+            });
 
             if (normalised.length > 0) {
                 this._notifications = normalised;
@@ -2257,23 +2399,41 @@ const NotificationManager = {
                 // Generate live notifications from cached live telemetry
                 const liveRoads = trafficAPI.getCachedLiveRoads() || [];
                 if (liveRoads.length > 0) {
-                    this._notifications = liveRoads.slice(0, 4).map((r, i) => {
-                        const isSevere = r.congestion_level === 'Severe' || r.density >= 25;
-                        const isHigh = r.congestion_level === 'High' || r.density >= 18;
-                        return {
-                            id: `NOTIF-LIVE-${r.road_id}-${Date.now()}`,
-                            category: isSevere || isHigh ? "critical" : "ai",
-                            severity: isSevere ? "severe" : (isHigh ? "warning" : "info"),
-                            title: isSevere ? "Corridor Bottleneck Alert" : `${r.road_name} Telemetry Active`,
-                            location: `${r.road_name} (${r.road_id})`,
-                            message: `Telemetry stream active: ${r.vehicle_count} vehicles, density ${r.density} veh/km, status ${r.congestion_level}.`,
+                    if (role === 'PUBLIC' || role === 'USER') {
+                        // Public user safe notifications
+                        this._notifications = liveRoads.slice(0, 3).map((r) => ({
+                            id: `NOTIF-PUB-${r.road_id}-${Date.now()}`,
+                            category: "general",
+                            severity: "info",
+                            title: `City Commute: ${r.road_name}`,
+                            location: `${r.road_name}`,
+                            road_id: r.road_id,
+                            message: `Traffic flow is ${r.congestion_level.toLowerCase()} at ${r.speed || (r.avg_speed_kmph + ' km/h')}. Smooth transit expected.`,
                             time: "Just now",
                             unread: true,
-                            action: { label: "View Alerts", url: "Alerts.html" }
-                        };
-                    });
+                            action: { label: "View Routes", url: "route-analysis.html" }
+                        }));
+                    } else {
+                        // Operator / Admin full telemetry alerts
+                        this._notifications = liveRoads.slice(0, 4).map((r) => {
+                            const isSevere = r.congestion_level === 'Severe' || r.density >= 25;
+                            const isHigh = r.congestion_level === 'High' || r.density >= 18;
+                            return {
+                                id: `NOTIF-LIVE-${r.road_id}-${Date.now()}`,
+                                category: isSevere || isHigh ? "critical" : "ai",
+                                severity: isSevere ? "severe" : (isHigh ? "warning" : "info"),
+                                title: isSevere ? "Corridor Bottleneck Alert" : `${r.road_name} Telemetry Active`,
+                                location: `${r.road_name} (${r.road_id})`,
+                                road_id: r.road_id,
+                                message: `Telemetry stream active: ${r.vehicle_count} vehicles, density ${r.density} veh/km, status ${r.congestion_level}.`,
+                                time: "Just now",
+                                unread: true,
+                                action: { label: "View Alerts", url: "Alerts.html" }
+                            };
+                        });
+                    }
                 } else {
-                    this.seedDefaultNotifications();
+                    this.seedDefaultNotifications(role);
                     return;
                 }
             }
@@ -2282,7 +2442,8 @@ const NotificationManager = {
             console.warn('[AlertsAPI] Could not reach GET /alerts/my – using fallback data.', err.message);
             // Only seed mock data if we have nothing in cache
             if (this._notifications.length === 0) {
-                this.seedDefaultNotifications();
+                const role = (AuthManager.getRole() || 'PUBLIC').toUpperCase();
+                this.seedDefaultNotifications(role);
             } else {
                 // Listeners haven't been notified yet after the cache load
                 this._notifyListeners();
@@ -2290,7 +2451,39 @@ const NotificationManager = {
         }
     },
 
-    seedDefaultNotifications() {
+    seedDefaultNotifications(role = null) {
+        const userRole = (role || AuthManager.getRole() || 'PUBLIC').toUpperCase();
+        if (userRole === 'PUBLIC' || userRole === 'USER') {
+            this._notifications = [
+                {
+                    id: "NOTIF-PUB-101",
+                    category: "general",
+                    severity: "info",
+                    title: "Metropolitan Traffic Flow Normal",
+                    location: "Downtown Corridors",
+                    road_id: "R001",
+                    message: "Morning peak corridors are clearing. Average urban transit delay is within normal limits (+4 mins).",
+                    time: "10m ago",
+                    unread: true,
+                    action: { label: "Check Routes", url: "route-analysis.html" }
+                },
+                {
+                    id: "NOTIF-PUB-102",
+                    category: "advisory",
+                    severity: "info",
+                    title: "Airport Corridor Construction Notice",
+                    location: "Airport Road (R006)",
+                    road_id: "R006",
+                    message: "Off-peak resurfacing on Exit 4. Expect moderate travel delays between 10:00 AM and 2:00 PM.",
+                    time: "35m ago",
+                    unread: false,
+                    action: { label: "View Live Map", url: "live maps.html" }
+                }
+            ];
+            this.persist();
+            return;
+        }
+
         this._notifications = [
             {
                 id: "NOTIF-101",
@@ -2298,10 +2491,11 @@ const NotificationManager = {
                 severity: "severe",
                 title: "Severe Bottleneck Gridlock",
                 location: "Harbor Tunnel Approach (R007)",
+                road_id: "R007",
                 message: "Flow reduced by 75%. Density peaked at 29.8 veh/km with speeds below 6.5 km/h. Automated diversion routes suggested.",
                 time: "Just now",
                 unread: true,
-                action: { label: "View Alerts", url: "Alerts.html" }
+                action: { label: "View Alert", url: "Alerts.html?alert_id=NOTIF-101&road_id=R007" }
             },
             {
                 id: "NOTIF-102",
@@ -2309,10 +2503,11 @@ const NotificationManager = {
                 severity: "info",
                 title: "AI Tactical Directive Generated",
                 location: "Airport Road (R006)",
+                road_id: "R006",
                 message: "XGBoost Model-v1 recommends +18s green-split offset on J-12..J-15 to absorb upcoming rush queue (Confidence: 94.8%).",
                 time: "3m ago",
                 unread: true,
-                action: { label: "Review Advisory", url: "Alerts.html" }
+                action: { label: "Review Advisory", url: "Alerts.html?alert_id=NOTIF-102&road_id=R006" }
             },
             {
                 id: "NOTIF-103",
@@ -2320,10 +2515,11 @@ const NotificationManager = {
                 severity: "critical",
                 title: "Accident & Corridor Stoppage",
                 location: "Central Avenue (R002)",
+                road_id: "R002",
                 message: "Slow vehicle stoppage reported near Tech Park off-ramp. Highway patrol unit TV-02 dispatched.",
                 time: "9m ago",
                 unread: true,
-                action: { label: "Track Unit", url: "Alerts.html" }
+                action: { label: "Track Unit", url: "Alerts.html?alert_id=NOTIF-103&road_id=R002" }
             },
             {
                 id: "NOTIF-104",
@@ -2331,21 +2527,21 @@ const NotificationManager = {
                 severity: "warning",
                 title: "Lane Restriction & Maintenance",
                 location: "Industrial Highway (R005)",
+                road_id: "R005",
                 message: "Right lane closed at Milepost 8.2 for sensor maintenance. Capacity throttled by 25%.",
                 time: "24m ago",
                 unread: true,
-                action: { label: "Inspect Corridor", url: "route-analysis.html" }
+                action: { label: "Inspect Corridor", url: "Alerts.html?alert_id=NOTIF-104&road_id=R005" }
             },
             {
                 id: "NOTIF-105",
                 category: "general",
                 severity: "info",
                 title: "M2 Model Checkpoint Synced",
-                location: "Grid AI Engine",
+                location: "Main Expressway (R001)",
+                road_id: "R001",
                 message: "Chronological validation accuracy verified at 94.2% across all 7 monitored metropolitan corridors.",
                 time: "45m ago",
-                unread: false,
-                action: { label: "Open Analytics", url: "analytics.html" }
             }
         ];
         this.persist();
@@ -2400,16 +2596,19 @@ const NotificationManager = {
     },
 
     addNotification(notif) {
+        const roadId = notif.road_id || '';
+        const id = notif.id || `NOTIF-${Date.now()}`;
         this._notifications.unshift({
-            id: notif.id || `NOTIF-${Date.now()}`,
+            id: id,
             category: notif.category || "general",
             severity: notif.severity || "info",
             title: notif.title || "Grid Update",
             location: notif.location || "Autonomous Grid",
+            road_id: roadId,
             message: notif.message || "",
             time: notif.time || "Just now",
             unread: true,
-            action: notif.action || { label: "View Alerts", url: "Alerts.html" }
+            action: notif.action || { label: "View Alert", url: `Alerts.html?alert_id=${encodeURIComponent(id)}${roadId ? `&road_id=${encodeURIComponent(roadId)}` : ''}` }
         });
         this.persist();
     },
@@ -2448,40 +2647,11 @@ const NotificationBellUI = {
             document.body.appendChild(tc);
         }
 
-        // Look for existing bell button or inject into header
-        let bellBtn = document.getElementById('nav-notification-bell-btn');
-        if (!bellBtn) {
-            const header = document.querySelector('header');
-            if (header) {
-                // Find utility container on the right
-                const rightControls = header.querySelector('div.flex.items-center:last-child') ||
-                    header.querySelector('button[title*="Theme"]')?.parentElement;
-                if (rightControls) {
-                    const bellWrapper = document.createElement('div');
-                    bellWrapper.className = 'relative flex items-center';
-                    bellWrapper.innerHTML = `
-                        <button id="nav-notification-bell-btn" class="relative w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all focus:outline-none" title="Notifications & Incident Alerts">
-                            <span class="material-symbols-outlined text-[20px]">notifications</span>
-                            <span id="nav-bell-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#e11d48] text-white text-[10px] font-bold flex items-center justify-center border-2 border-[#0b1326] shadow-[0_0_8px_rgba(225,29,72,0.6)] animate-pulse">0</span>
-                        </button>
-                    `;
-                    // Insert before theme toggle if present, otherwise as first child
-                    const themeBtn = rightControls.querySelector('button[title*="Theme"], button[onclick*="toggle"]');
-                    if (themeBtn) {
-                        rightControls.insertBefore(bellWrapper, themeBtn);
-                    } else {
-                        rightControls.insertBefore(bellWrapper, rightControls.firstChild);
-                    }
-                    bellBtn = document.getElementById('nav-notification-bell-btn');
-                }
-            }
-        }
-
         // Build Drawer / Dropdown DOM
         if (!document.getElementById('notification-drawer')) {
             const drawer = document.createElement('div');
             drawer.id = 'notification-drawer';
-            drawer.className = 'hidden fixed top-16 right-4 sm:right-6 md:right-8 w-[92vw] sm:w-[420px] max-w-[440px] z-50 rounded-2xl glass-panel border border-white/15 shadow-[0_16px_48px_rgba(0,0,0,0.7)] backdrop-blur-2xl flex flex-col overflow-hidden transition-all duration-200';
+            drawer.className = 'hidden fixed top-16 md:top-4 left-4 md:left-[272px] w-[92vw] sm:w-[420px] max-w-[440px] z-50 rounded-2xl glass-panel border border-white/15 shadow-[0_16px_48px_rgba(0,0,0,0.7)] backdrop-blur-2xl flex flex-col overflow-hidden transition-all duration-200';
             drawer.innerHTML = `
                 <!-- Header -->
                 <div class="p-4 border-b border-white/10 flex items-center justify-between bg-surface-container/70">
@@ -2498,8 +2668,8 @@ const NotificationBellUI = {
                         </div>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button onclick="NotificationManager.markAllAsRead()" class="text-[11px] font-label-sm text-on-surface-variant hover:text-secondary px-2 py-1 rounded hover:bg-white/5 transition-all" title="Mark all notifications as read">Mark All Read</button>
-                        <button onclick="NotificationBellUI.toggle(false)" class="w-7 h-7 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all">
+                        <button onclick="NotificationManager.markAllAsRead()" class="text-[11px] font-label-sm text-on-surface-variant hover:text-secondary px-2 py-1 rounded hover:bg-white/5 transition-all cursor-pointer" title="Mark all notifications as read">Mark All Read</button>
+                        <button onclick="NotificationBellUI.toggle(false)" class="w-7 h-7 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all cursor-pointer">
                             <span class="material-symbols-outlined text-[18px]">close</span>
                         </button>
                     </div>
@@ -2507,15 +2677,15 @@ const NotificationBellUI = {
 
                 <!-- Filter Tabs with Badges -->
                 <div class="flex items-center gap-1 p-2 border-b border-white/5 bg-surface-container-low/50 font-label-sm">
-                    <button class="notif-filter-tab active text-[11px] px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-semibold transition-all flex items-center gap-1.5" data-tab="all" onclick="NotificationBellUI.setTab('all', this)">
+                    <button class="notif-filter-tab active text-[11px] px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-semibold transition-all flex items-center gap-1.5 cursor-pointer" data-tab="all" onclick="NotificationBellUI.setTab('all', this)">
                         <span>All</span>
                         <span id="tab-count-all" class="text-[10px] opacity-75"></span>
                     </button>
-                    <button class="notif-filter-tab text-[11px] px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all flex items-center gap-1.5" data-tab="critical" onclick="NotificationBellUI.setTab('critical', this)">
+                    <button class="notif-filter-tab text-[11px] px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all flex items-center gap-1.5 cursor-pointer" data-tab="critical" onclick="NotificationBellUI.setTab('critical', this)">
                         <span>Critical</span>
                         <span id="tab-count-critical" class="text-[10px] opacity-75"></span>
                     </button>
-                    <button class="notif-filter-tab text-[11px] px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all flex items-center gap-1.5" data-tab="ai" onclick="NotificationBellUI.setTab('ai', this)">
+                    <button class="notif-filter-tab text-[11px] px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-all flex items-center gap-1.5 cursor-pointer" data-tab="ai" onclick="NotificationBellUI.setTab('ai', this)">
                         <span>AI Directives</span>
                         <span id="tab-count-ai" class="text-[10px] opacity-75"></span>
                     </button>
@@ -2532,25 +2702,25 @@ const NotificationBellUI = {
                         <span>Open Incident Command Center</span>
                         <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
                     </a>
-                    <button onclick="NotificationManager.clearAll()" class="text-[11px] font-label-sm text-on-surface-variant hover:text-error transition-all">Clear All</button>
+                    <button onclick="NotificationManager.clearAll()" class="text-[11px] font-label-sm text-on-surface-variant hover:text-error transition-all cursor-pointer">Clear All</button>
                 </div>
             `;
             document.body.appendChild(drawer);
         }
 
-        // Attach click listener to bell button
-        if (bellBtn) {
-            bellBtn.onclick = (e) => {
+        // Attach click listeners to all notification bell triggers
+        document.querySelectorAll('#nav-notification-bell-btn, .mobile-notification-bell-btn').forEach(btn => {
+            btn.onclick = (e) => {
                 e.stopPropagation();
                 NotificationBellUI.toggle();
             };
-        }
+        });
 
         // Close on outside click
         document.addEventListener('click', (e) => {
             const drawer = document.getElementById('notification-drawer');
-            const bell = document.getElementById('nav-notification-bell-btn');
-            if (NotificationBellUI.isOpen && drawer && !drawer.contains(e.target) && bell && !bell.contains(e.target)) {
+            const clickedBell = e.target.closest('#nav-notification-bell-btn, .mobile-notification-bell-btn');
+            if (NotificationBellUI.isOpen && drawer && !drawer.contains(e.target) && !clickedBell) {
                 NotificationBellUI.toggle(false);
             }
         });
@@ -2562,7 +2732,7 @@ const NotificationBellUI = {
             NotificationBellUI.renderList(notifs);
         });
 
-        // Poll the real API every 60 seconds to surface new alerts automatically
+        // Poll the real API every 60 seconds
         this._pollInterval = setInterval(() => {
             NotificationManager._fetchFromAPI();
         }, 60000);
@@ -2579,6 +2749,30 @@ const NotificationBellUI = {
         }
     },
 
+    navigateToAlert(notifId, targetUrl, event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        NotificationManager.markAsRead(notifId);
+        NotificationBellUI.toggle(false);
+
+        const notif = NotificationManager._notifications.find(n => n.id === notifId);
+        const roadId = notif?.road_id || '';
+        const computedUrl = targetUrl || `Alerts.html?alert_id=${encodeURIComponent(notifId)}${roadId ? `&road_id=${encodeURIComponent(roadId)}` : ''}`;
+
+        // If currently on Alerts.html, handle dynamically without full page reload
+        if (window.location.pathname.endsWith('Alerts.html') || window.location.href.includes('Alerts.html')) {
+            if (typeof window.selectAlertByRef === 'function') {
+                window.selectAlertByRef(notifId, roadId);
+                try { window.history.replaceState(null, '', computedUrl); } catch (_) {}
+                return;
+            }
+        }
+
+        window.location.href = computedUrl;
+    },
+
     setTab(tab, btnEl) {
         this.activeFilter = tab;
         document.querySelectorAll('.notif-filter-tab').forEach(b => {
@@ -2593,16 +2787,16 @@ const NotificationBellUI = {
     },
 
     updateBadge(unreadCount) {
-        const badge = document.getElementById('nav-bell-badge');
+        const badges = document.querySelectorAll('#nav-bell-badge, .mobile-bell-badge');
         const pill = document.getElementById('drawer-unread-pill');
-        if (badge) {
+        badges.forEach(badge => {
             if (unreadCount > 0) {
                 badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
                 badge.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
             }
-        }
+        });
         if (pill) {
             pill.textContent = `${unreadCount} Unread`;
         }
@@ -2670,8 +2864,12 @@ const NotificationBellUI = {
                 bgSeverity = 'bg-yellow-950/15';
             }
 
+            const roadParam = n.road_id ? `&road_id=${encodeURIComponent(n.road_id)}` : '';
+            const targetUrl = n.action?.url || `Alerts.html?alert_id=${encodeURIComponent(n.id)}${roadParam}`;
+
             return `
-                <div class="p-3 rounded-xl ${borderAccent} ${bgSeverity} hover:bg-white/5 transition-all ${n.unread ? 'border border-white/10' : 'opacity-65'}">
+                <div class="cursor-pointer p-3 rounded-xl ${borderAccent} ${bgSeverity} hover:bg-white/10 hover:border-secondary transition-all ${n.unread ? 'border border-white/10 ring-1 ring-secondary/20' : 'opacity-65'}"
+                     onclick="NotificationBellUI.navigateToAlert('${n.id}', '${targetUrl}', event)">
                     <div class="flex items-start justify-between gap-2">
                         <div class="flex items-center gap-1.5">
                             <span class="material-symbols-outlined text-[17px] ${iconColor}">${icon}</span>
@@ -2679,7 +2877,7 @@ const NotificationBellUI = {
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="text-[10px] font-label-sm text-on-surface-variant whitespace-nowrap">${n.time}</span>
-                            <button onclick="NotificationManager.dismiss('${n.id}')" class="text-on-surface-variant hover:text-error p-0.5" title="Dismiss">
+                            <button onclick="event.stopPropagation(); NotificationManager.dismiss('${n.id}')" class="text-on-surface-variant hover:text-error p-0.5" title="Dismiss">
                                 <span class="material-symbols-outlined text-[13px]">close</span>
                             </button>
                         </div>
@@ -2690,13 +2888,13 @@ const NotificationBellUI = {
                     </div>
                     <p class="text-xs text-on-surface-variant mt-1.5 leading-relaxed font-body-md">${n.message}</p>
                     <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-white/5">
-                        <a href="${n.action?.url || 'Alerts.html'}" onclick="NotificationManager.markAsRead('${n.id}')" class="text-[11px] font-label-sm font-semibold text-secondary hover:text-white flex items-center gap-1 transition-all">
+                        <a href="${targetUrl}" onclick="NotificationBellUI.navigateToAlert('${n.id}', '${targetUrl}', event)" class="text-[11px] font-label-sm font-semibold text-secondary hover:text-white flex items-center gap-1 transition-all">
                             <span>${n.action?.label || 'Inspect'}</span>
                             <span class="material-symbols-outlined text-[13px]">open_in_new</span>
                         </a>
                         <div class="flex items-center gap-2">
                             ${n.unread ? `
-                                <button onclick="NotificationManager.markAsRead('${n.id}')" class="text-[10px] font-label-sm text-on-surface-variant hover:text-emerald-300 transition-colors flex items-center gap-0.5">
+                                <button onclick="event.stopPropagation(); NotificationManager.markAsRead('${n.id}')" class="text-[10px] font-label-sm text-on-surface-variant hover:text-emerald-300 transition-colors flex items-center gap-0.5">
                                     <span class="material-symbols-outlined text-[12px]">check</span>
                                     <span>Acknowledge</span>
                                 </button>
@@ -2773,50 +2971,55 @@ const ThemeManager = {
 
     ensureStyles() {
         if (typeof document === 'undefined' || !document.head) return;
-        if (document.getElementById('tv-theme-global-styles')) return;
-        const style = document.createElement('style');
-        style.id = 'tv-theme-global-styles';
+        let style = document.getElementById('tv-theme-global-styles');
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'tv-theme-global-styles';
+            document.head.appendChild(style);
+        }
         style.textContent = `
             /* Smooth theme transition */
-            body, header, nav, .glass-panel, .glass-card, input, select, textarea, button {
+            body, header, aside, nav, .glass-panel, .glass-card, input, select, textarea, button {
                 transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
             }
 
-            /* Light theme overrides for entire TrafficVision suite */
+            /* Light theme root canvas & typography */
             html.light body {
-                background-color: #f1f5f9 !important;
+                background-color: #f8fafc !important;
+                background-image: radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.04) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.04) 0px, transparent 50%) !important;
                 color: #0f172a !important;
             }
 
-            /* Header */
+            /* Left Sidebar in Light Mode */
+            html.light #app-sidebar,
+            html.light aside#app-sidebar,
             html.light header {
-                background-color: rgba(255, 255, 255, 0.92) !important;
+                background-color: rgba(255, 255, 255, 0.95) !important;
                 border-color: #e2e8f0 !important;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+                box-shadow: 4px 0 24px rgba(15, 23, 42, 0.06) !important;
             }
-            html.light header nav {
-                background-color: #f8fafc !important;
-                border-color: #e2e8f0 !important;
-            }
-            html.light header nav a:not(.bg-secondary\\/15) {
+            html.light #app-sidebar nav a:not(.bg-secondary\\/15):not(.text-secondary) {
                 color: #475569 !important;
             }
-            html.light header nav a:not(.bg-secondary\\/15):hover {
+            html.light #app-sidebar nav a:not(.bg-secondary\\/15):not(.text-secondary):hover {
                 color: #0f172a !important;
-                background-color: #e2e8f0 !important;
+                background-color: #f1f5f9 !important;
             }
-            html.light header nav a.bg-secondary\\/15,
-            html.light header nav a.text-secondary {
-                background-color: #e0f2fe !important;
-                color: #0284c7 !important;
-                border-color: #bae6fd !important;
+            html.light #app-sidebar nav a.bg-secondary\\/15,
+            html.light #app-sidebar nav a.text-secondary {
+                background-color: #eff6ff !important;
+                color: #1d4ed8 !important;
+                border-color: #bfdbfe !important;
+                box-shadow: 0 2px 10px rgba(37, 99, 235, 0.12) !important;
             }
+            html.light #app-sidebar button,
             html.light header button,
             html.light .theme-toggle-btn {
-                background-color: #f1f5f9 !important;
+                background-color: #f8fafc !important;
                 border-color: #cbd5e1 !important;
                 color: #475569 !important;
             }
+            html.light #app-sidebar button:hover,
             html.light header button:hover,
             html.light .theme-toggle-btn:hover {
                 background-color: #e2e8f0 !important;
@@ -2825,13 +3028,36 @@ const ThemeManager = {
             html.light #nav-user-name {
                 color: #0f172a !important;
             }
+            html.light #nav-user-role {
+                color: #0284c7 !important;
+            }
+
+            /* High Contrast Brand Accent Colors in Light Mode */
+            html.light .text-primary {
+                color: #1d4ed8 !important;
+            }
+            html.light .text-secondary {
+                color: #0284c7 !important;
+            }
+            html.light .text-on-surface {
+                color: #0f172a !important;
+            }
+            html.light .text-on-surface-variant {
+                color: #475569 !important;
+            }
+            html.light .text-glow {
+                text-shadow: 0 0 10px rgba(2, 132, 199, 0.25) !important;
+            }
+            html.light .text-glow-rose {
+                text-shadow: 0 0 10px rgba(225, 29, 72, 0.25) !important;
+            }
 
             /* Panels, Cards & Containers */
             html.light .glass-panel,
             html.light .glass-card {
-                background: #ffffff !important;
+                background: rgba(255, 255, 255, 0.92) !important;
                 border-color: #e2e8f0 !important;
-                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06) !important;
+                box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02) !important;
                 color: #0f172a !important;
             }
             html.light .bg-surface-container,
@@ -2839,18 +3065,15 @@ const ThemeManager = {
             html.light .bg-surface-container-highest,
             html.light .bg-surface-container-low,
             html.light .bg-surface-variant {
-                background-color: #f8fafc !important;
+                background-color: #f1f5f9 !important;
+                border-color: #e2e8f0 !important;
+            }
+            html.light .bg-surface-container-lowest {
+                background-color: #ffffff !important;
                 border-color: #e2e8f0 !important;
             }
 
-            html.light .text-on-surface {
-                color: #0f172a !important;
-            }
-            html.light .text-on-surface-variant {
-                color: #475569 !important;
-            }
-
-            /* Inputs & Controls */
+            /* Buttons & Inputs */
             html.light input:not([type="checkbox"]):not([type="radio"]),
             html.light select,
             html.light textarea {
@@ -2861,13 +3084,33 @@ const ThemeManager = {
             html.light input::placeholder {
                 color: #94a3b8 !important;
             }
+            html.light select option {
+                background-color: #ffffff !important;
+                color: #0f172a !important;
+            }
 
-            /* Mobile Bottom Bar */
+            /* Status & Severity Badges in Light Mode */
+            html.light .text-yellow-300 {
+                color: #b45309 !important;
+            }
+            html.light .text-rose-400,
+            html.light .text-rose-300 {
+                color: #be123c !important;
+            }
+            html.light .text-emerald-400,
+            html.light .text-emerald-300 {
+                color: #047857 !important;
+            }
+            html.light .text-error {
+                color: #dc2626 !important;
+            }
+
+            /* Mobile Bottom Bar in Light Mode */
             html.light nav.fixed.bottom-0,
             html.light nav.md\\:hidden {
                 background-color: rgba(255, 255, 255, 0.95) !important;
                 border-color: #e2e8f0 !important;
-                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06) !important;
+                box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.06) !important;
             }
             html.light nav.fixed.bottom-0 a,
             html.light nav.md\\:hidden a {
@@ -2875,15 +3118,15 @@ const ThemeManager = {
             }
             html.light nav.fixed.bottom-0 a.text-secondary,
             html.light nav.md\\:hidden a.text-secondary {
-                color: #0284c7 !important;
-                background-color: #e0f2fe !important;
+                color: #1d4ed8 !important;
+                background-color: #eff6ff !important;
             }
 
             /* Notification Drawer */
             html.light #notification-drawer {
                 background: #ffffff !important;
                 border-color: #e2e8f0 !important;
-                box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12) !important;
+                box-shadow: 0 16px 48px rgba(15, 23, 42, 0.12) !important;
                 color: #0f172a !important;
             }
             html.light .notification-item:hover {
@@ -2900,8 +3143,10 @@ const ThemeManager = {
             html.light .border-outline-variant {
                 border-color: #cbd5e1 !important;
             }
+            html.light .divide-white\\/5 > :not([hidden]) ~ :not([hidden]) {
+                border-color: #e2e8f0 !important;
+            }
         `;
-        document.head.appendChild(style);
     },
 
     apply(theme) {
@@ -2926,6 +3171,11 @@ const ThemeManager = {
                 icon.textContent = isDark ? 'light_mode' : 'dark_mode';
             }
         });
+
+        // Dispatch themechange event for reactive UI (charts, maps, etc.)
+        try {
+            window.dispatchEvent(new CustomEvent('themechange', { detail: { theme, isDark } }));
+        } catch (_) {}
     },
 
     init() {

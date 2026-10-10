@@ -183,105 +183,134 @@
     AuthManager.guardPage();
 })();
 </script>
-<!-- Top Navigation Bar -->
-<header class="fixed top-0 left-0 w-full z-50 bg-[#131b2e]/80 dark:bg-[#131b2e]/80 backdrop-blur-2xl border-b border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.35)] flex items-center justify-between px-4 sm:px-6 md:px-8 h-16 transition-all duration-300">
-    <!-- Brand / Logo -->
-    <div class="flex items-center gap-3">
-        <a class="nav-home-link flex items-center gap-3 group focus:outline-none" href="#">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-container via-primary-container/80 to-secondary-container/40 flex items-center justify-center border border-white/15 shadow-[0_0_15px_rgba(0,175,254,0.25)] group-hover:shadow-[0_0_22px_rgba(141,205,255,0.5)] transition-all">
-                <span class="material-symbols-outlined text-secondary text-[24px]" style="font-variation-settings: 'FILL' 1;">analytics</span>
-            </div>
-            <div class="flex flex-col">
-                <span class="font-headline-lg text-[18px] md:text-[20px] font-bold tracking-tight text-on-surface flex items-center gap-1.5 leading-none">
-                    TrafficVision <span class="text-secondary font-black tracking-normal">AI</span>
-                </span>
-                <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest hidden sm:inline-block mt-1">Autonomous Traffic Grid</span>
-            </div>
-        </a>
-    </div>
+<!-- Left Navigation Sidebar -->
+<aside id="app-sidebar" class="hidden md:flex fixed left-0 top-0 bottom-0 w-64 h-screen z-40 bg-[#131b2e]/90 dark:bg-[#131b2e]/90 backdrop-blur-2xl border-r border-white/10 shadow-[4px_0_24px_rgba(0,0,0,0.35)] flex-col justify-between p-4 transition-all duration-300">
+    <!-- Top Brand & Telemetry Badge -->
+    <div class="flex flex-col gap-3">
+        <div class="flex items-center justify-between px-1 pt-1">
+            <a class="nav-home-link flex items-center gap-2.5 group focus:outline-none" href="#">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-container via-primary-container/80 to-secondary-container/40 flex items-center justify-center border border-white/15 shadow-[0_0_15px_rgba(0,175,254,0.25)] group-hover:shadow-[0_0_22px_rgba(141,205,255,0.5)] transition-all flex-shrink-0">
+                    <span class="material-symbols-outlined text-secondary text-[24px]" style="font-variation-settings: 'FILL' 1;">analytics</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-headline-lg text-[17px] font-bold tracking-tight text-on-surface flex items-center gap-1 leading-tight">
+                        TrafficVision <span class="text-secondary font-black tracking-normal">AI</span>
+                    </span>
+                    <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider">Autonomous Grid</span>
+                </div>
+            </a>
 
-    <!-- Desktop Navigation Links -->
-    <nav class="hidden md:flex items-center gap-1.5 lg:gap-2 bg-surface-container/70 p-1.5 rounded-2xl border border-white/5 shadow-inner">
-        <!-- Dashboard Tab -->
-        <a class="nav-home-link px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="#">
-            <span class="material-symbols-outlined text-[18px]">dashboard</span>
-            <span>Dashboard</span>
-        </a>
-        <!-- Live Traffic Tab (Active for live maps) -->
-        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-semibold text-secondary bg-secondary/15 border border-secondary/30 shadow-[0_0_15px_rgba(141,205,255,0.2)] flex items-center gap-2 transition-all" href="live maps.html">
-            <span class="material-symbols-outlined text-[18px]">traffic</span>
-            <span>Live Traffic</span>
-        </a>
-        <!-- Route Analysis Tab -->
-        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="route-analysis.html">
-            <span class="material-symbols-outlined text-[18px]">alt_route</span>
-            <span>Route Analysis</span>
-        </a>
-        <!-- Alerts Tab -->
-        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="Alerts.html">
-            <span class="material-symbols-outlined text-[18px]">warning</span>
-            <span>Alerts</span>
-        </a>
-        <!-- Analytics Tab -->
-        <a class="px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="analytics.html">
-            <span class="material-symbols-outlined text-[18px]">monitoring</span>
-            <span>Analytics</span>
-        </a>
-        <!-- Admin Console Tab (Visible to admin) -->
-        <a class="nav-admin-only hidden px-3.5 py-1.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-2 transition-all" href="admin dashboard.html">
-            <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
-            <span>Admin</span>
-        </a>
-    </nav>
-
-    <!-- Right Utility Controls & User Profile -->
-    <div class="flex items-center gap-2.5 sm:gap-3.5">
-        <!-- Live Stream Badge -->
-        <div class="hidden xl:flex items-center gap-2 px-3 py-1 bg-surface-container-high/60 border border-white/5 rounded-full font-label-sm text-[11px] text-on-surface-variant">
-            <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span>Grid Live</span>
-        </div>
-
-        <!-- Notification Bell Button -->
-        <div class="relative flex items-center">
-            <button id="nav-notification-bell-btn" class="relative w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all focus:outline-none" title="Notifications & Incident Alerts">
+            <!-- Notification Bell (Top Position) -->
+            <button id="nav-notification-bell-btn" class="relative w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all focus:outline-none flex-shrink-0 cursor-pointer shadow-sm" title="Notifications & Incident Alerts">
                 <span class="material-symbols-outlined text-[20px]">notifications</span>
                 <span id="nav-bell-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#e11d48] text-white text-[10px] font-bold flex items-center justify-center border-2 border-[#0b1326] shadow-[0_0_8px_rgba(225,29,72,0.6)] animate-pulse">0</span>
             </button>
         </div>
 
-        <!-- Theme Toggle -->
-        <button id="theme-toggle-btn" class="theme-toggle-btn w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all cursor-pointer" onclick="ThemeManager.toggle()" title="Toggle Theme">
-            <span class="material-symbols-outlined text-[19px]">light_mode</span>
-        </button>
+        <!-- Live Stream Telemetry Badge -->
+        <div class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-high/60 border border-white/5 rounded-xl font-label-sm text-[11px] text-on-surface-variant mx-1">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span class="font-medium text-emerald-400">Grid Live</span>
+            <span class="text-[10px] text-on-surface-variant/70 ml-auto">Active Telemetry</span>
+        </div>
+    </div>
 
-        <!-- Logout Button -->
-        <button class="w-9 h-9 rounded-xl bg-surface-container-high/80 hover:bg-error/20 hover:border-error/40 border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-error transition-all" onclick="logout()" title="Logout">
-            <span class="material-symbols-outlined text-[19px]">logout</span>
-        </button>
+    <!-- Navigation Links -->
+    <nav class="flex flex-col gap-1.5 my-4 flex-1 overflow-y-auto pr-1">
+        <!-- Dashboard Tab -->
+        <a class="nav-home-link px-3.5 py-2.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-3 transition-all" href="#">
+            <span class="material-symbols-outlined text-[20px]">dashboard</span>
+            <span>Dashboard</span>
+        </a>
+        <!-- Live Traffic Tab (Active for live maps) -->
+        <a class="px-3.5 py-2.5 rounded-xl font-label-sm text-[13px] font-semibold text-secondary bg-secondary/15 border border-secondary/30 shadow-[0_0_15px_rgba(141,205,255,0.2)] flex items-center gap-3 transition-all" href="live maps.html">
+            <span class="material-symbols-outlined text-[20px]">traffic</span>
+            <span>Live Traffic</span>
+        </a>
+        <!-- Route Analysis Tab -->
+        <a class="px-3.5 py-2.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-3 transition-all" href="route-analysis.html">
+            <span class="material-symbols-outlined text-[20px]">alt_route</span>
+            <span>Route Analysis</span>
+        </a>
+        <!-- Alerts Tab -->
+        <a class="px-3.5 py-2.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-3 transition-all" href="Alerts.html">
+            <span class="material-symbols-outlined text-[20px]">warning</span>
+            <span>Alerts</span>
+        </a>
+        <!-- Analytics Tab -->
+        <a class="px-3.5 py-2.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-3 transition-all" href="analytics.html">
+            <span class="material-symbols-outlined text-[20px]">monitoring</span>
+            <span>Analytics</span>
+        </a>
+        <!-- Admin Console Tab -->
+        <a class="nav-admin-only hidden px-3.5 py-2.5 rounded-xl font-label-sm text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/5 border border-transparent flex items-center gap-3 transition-all" href="admin dashboard.html">
+            <span class="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+            <span>Admin</span>
+        </a>
+    </nav>
 
-        <!-- User Profile Avatar & Role -->
-        <div class="flex items-center gap-2.5 pl-2 border-l border-white/10">
-            <div class="w-9 h-9 rounded-xl overflow-hidden border border-secondary/30 bg-surface-container-high flex items-center justify-center shadow-inner">
+    <!-- Bottom Controls & User Profile -->
+    <div class="flex flex-col gap-3 pt-3 border-t border-white/10">
+        <!-- Quick Action Utility Row -->
+        <div class="flex items-center justify-between px-1 gap-2">
+            <!-- Theme Toggle -->
+            <button id="theme-toggle-btn" class="theme-toggle-btn flex-1 h-9 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-white/10 flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface transition-all cursor-pointer font-label-sm text-xs" onclick="ThemeManager.toggle()" title="Toggle Theme">
+                <span class="material-symbols-outlined text-[18px]">light_mode</span>
+                <span>Theme</span>
+            </button>
+
+            <!-- Logout -->
+            <button class="flex-1 h-9 rounded-xl bg-surface-container-high/80 hover:bg-error/20 hover:border-error/40 border border-white/10 flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-error transition-all font-label-sm text-xs" onclick="logout()" title="Logout">
+                <span class="material-symbols-outlined text-[18px]">logout</span>
+                <span>Logout</span>
+            </button>
+        </div>
+
+        <!-- User Profile Card -->
+        <div class="flex items-center gap-3 p-2 bg-surface-container-high/50 rounded-xl border border-white/5">
+            <div class="w-9 h-9 rounded-xl overflow-hidden border border-secondary/30 bg-surface-container-high flex items-center justify-center shadow-inner flex-shrink-0">
                 <img id="nav-user-avatar" class="w-full h-full object-cover" alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLpHS_T91cL3faZWJnIl81dTWaXyDwPk140zz3Y2PeubUzLpFrdYMMzNnBHM5q7hEKMn6YxDmMMVWmGNKnZPV_oxy-_MplLQcms1bO39V7hfuwDfaAuXBnWq-JMK8iEeGkWavbnLYED4Xe4euv6fUNa40_gl8x9fcupazjpMaBWTtxq-YnIpRE1rj3Td2hmxQ5N4PGtqTaygvofVy583LkEjup0FrAiwpbIP6kMXLpLrF_RPKEnonK"/>
             </div>
-            <div class="hidden lg:flex flex-col text-left">
-                <span id="nav-user-name" class="font-body-md text-[13px] font-semibold text-on-surface leading-tight">Operator</span>
-                <span id="nav-user-role" class="font-label-sm text-[10px] text-secondary uppercase tracking-wider leading-none">OPERATOR</span>
+            <div class="flex flex-col text-left overflow-hidden">
+                <span id="nav-user-name" class="font-body-md text-[13px] font-semibold text-on-surface leading-tight truncate">Operator</span>
+                <span id="nav-user-role" class="font-label-sm text-[10px] text-secondary uppercase tracking-wider leading-none mt-0.5">OPERATOR</span>
             </div>
         </div>
     </div>
+</aside>
+
+<!-- Mobile Top Header Bar -->
+<header class="md:hidden sticky top-0 left-0 w-full z-40 bg-[#131b2e]/90 backdrop-blur-2xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
+    <a class="nav-home-link flex items-center gap-2.5" href="#">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-container via-primary-container/80 to-secondary-container/40 flex items-center justify-center border border-white/15">
+            <span class="material-symbols-outlined text-secondary text-[18px]">analytics</span>
+        </div>
+        <span class="font-headline-lg text-base font-bold text-on-surface">TrafficVision <span class="text-secondary">AI</span></span>
+    </a>
+    <div class="flex items-center gap-2">
+        <button class="mobile-notification-bell-btn relative w-8 h-8 rounded-lg bg-surface-container-high border border-white/10 flex items-center justify-center text-on-surface-variant hover:text-on-surface" onclick="NotificationBellUI.toggle()" title="Notifications">
+            <span class="material-symbols-outlined text-[18px]">notifications</span>
+            <span class="mobile-bell-badge hidden absolute -top-1 -right-1 min-w-[15px] h-[15px] px-0.5 rounded-full bg-[#e11d48] text-white text-[9px] font-bold flex items-center justify-center border border-[#0b1326] animate-pulse">0</span>
+        </button>
+        <button class="theme-toggle-btn w-8 h-8 rounded-lg bg-surface-container-high border border-white/10 flex items-center justify-center text-on-surface-variant" onclick="ThemeManager.toggle()" title="Toggle Theme">
+            <span class="material-symbols-outlined text-[17px]">light_mode</span>
+        </button>
+        <button class="w-8 h-8 rounded-lg bg-surface-container-high border border-white/10 flex items-center justify-center text-on-surface-variant" onclick="logout()" title="Logout">
+            <span class="material-symbols-outlined text-[17px]">logout</span>
+        </button>
+    </div>
 </header>
+
 <!-- Main Content Canvas -->
-<main class="h-screen w-full relative pt-16 md:pt-16 pb-20 md:pb-0">
+<main class="h-[calc(100vh-57px)] md:h-screen w-full md:w-[calc(100vw-16rem)] relative md:ml-64 pb-20 md:pb-0 overflow-hidden">
 <!-- Leaflet Interactive Map Canvas -->
 <div id="live-leaflet-map" class="absolute inset-0 z-0 w-full h-full bg-[#070d1d]"></div>
 
 <!-- Overlay Map Controls -->
-<div class="absolute right-container-padding-mobile md:right-container-padding-desktop bottom-24 md:bottom-container-padding-desktop flex flex-col gap-base z-30 pointer-events-auto">
+<div class="absolute right-4 md:right-8 bottom-20 md:bottom-8 flex flex-col gap-2 z-30 pointer-events-auto">
 <button class="w-11 h-11 glass-panel rounded-2xl flex items-center justify-center text-on-surface hover:text-secondary hover:border-secondary transition-all shadow-xl" title="Zoom In" onclick="zoomMapIn()">
 <span class="material-symbols-outlined text-[20px]">add</span>
 </button>
@@ -296,7 +325,7 @@
 </a>
 </div>
 <!-- UI Overlay: Top KPI Carousel (Ticker) -->
-<div class="absolute top-16 md:top-20 left-0 md:left-[432px] right-0 md:right-8 z-10 px-container-padding-mobile md:px-0 pointer-events-none">
+<div class="absolute top-16 md:top-6 left-4 md:left-[424px] right-4 md:right-8 z-10 pointer-events-none">
 <div class="flex gap-gutter overflow-x-auto pb-4 pt-2 pointer-events-auto snap-x snap-mandatory scrollbar-hide">
 <!-- KPI Card 1 -->
 <div class="glass-panel rounded-3xl p-5 min-w-[220px] flex-shrink-0 snap-start">
@@ -325,15 +354,29 @@
 </div>
 </div>
 <!-- Side Panel: Traffic Feed & Controls -->
-<aside class="absolute left-container-padding-mobile md:left-container-padding-desktop top-[180px] md:top-20 bottom-24 md:bottom-container-padding-desktop w-[calc(100%-32px)] md:w-96 glass-panel rounded-3xl flex flex-col z-20 overflow-hidden shadow-24px-blur">
+<aside class="absolute left-4 md:left-6 top-[180px] md:top-6 bottom-20 md:bottom-6 w-[calc(100%-32px)] md:w-96 glass-panel rounded-3xl flex flex-col z-20 overflow-hidden shadow-24px-blur">
 <!-- Header & Search -->
 <div class="p-5 border-b border-white/10 shrink-0">
-<div class="flex items-center justify-between mb-4">
+<div class="flex items-center justify-between mb-3">
 <div class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-semibold">Live Traffic</div>
-<div class="bg-surface-container-high rounded-full p-1 flex">
-<button class="px-3 py-1 text-sm font-medium rounded-full bg-secondary text-on-secondary transition-colors" id="tab-feed">Feed</button>
-<button class="px-3 py-1 text-sm font-medium rounded-full text-on-surface-variant hover:text-on-surface transition-colors" onclick="syncLiveTraffic()">Sync</button>
+<div class="bg-surface-container-high rounded-full p-1 flex items-center shadow-inner" id="sync-segmented-toggle">
+<button id="btn-toggle-feed" class="px-3 py-1 text-xs font-semibold rounded-full bg-secondary text-on-secondary shadow transition-all flex items-center gap-1 cursor-pointer" onclick="toggleSyncMode('feed')">
+    <span class="material-symbols-outlined text-[15px]">rss_feed</span>
+    <span>Feed</span>
+</button>
+<button id="btn-toggle-sync" class="px-3 py-1 text-xs font-medium rounded-full text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1 cursor-pointer" onclick="toggleSyncMode('sync')">
+    <span class="material-symbols-outlined text-[15px]" id="sync-spin-icon">sync</span>
+    <span id="sync-toggle-label">Sync</span>
+</button>
 </div>
+</div>
+<!-- Live Telemetry Status Bar -->
+<div class="flex items-center justify-between text-[11px] font-label-sm text-on-surface-variant px-2.5 mb-3 bg-surface-container-low/40 py-1.5 rounded-xl border border-white/5">
+    <span class="flex items-center gap-1.5" id="sync-status-indicator">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" id="sync-dot"></span>
+        <span id="sync-mode-status">Live Auto-Sync (10s)</span>
+    </span>
+    <span id="sync-timestamp" class="text-[10px] opacity-75">Synced just now</span>
 </div>
 <div class="relative mb-3">
 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
@@ -462,6 +505,30 @@ function getCongestionBadgeInfo(level, density) {
     return { borderClass: 'severity-green', badgeBg: 'bg-emerald-900/30 text-emerald-200 border-emerald-500', icon: 'check_circle', level: 'Low', badgeClass: 'text-emerald-400', colorHex: '#4ade80' };
 }
 
+let isAutoSync = true;
+let autoSyncTimer = null;
+let currentTileLayer = null;
+
+function updateMapTileTheme() {
+    if (!liveLeafletMap) return;
+    const isLight = document.documentElement.classList.contains('light');
+    if (currentTileLayer) {
+        liveLeafletMap.removeLayer(currentTileLayer);
+    }
+    const mapEl = document.getElementById('live-leaflet-map');
+    if (mapEl) {
+        mapEl.style.backgroundColor = isLight ? '#f1f5f9' : '#070d1d';
+    }
+    const tileUrl = isLight 
+        ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+        : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+    
+    currentTileLayer = L.tileLayer(tileUrl, {
+        attribution: isLight ? '&copy; CartoDB' : 'Tiles &copy; Esri',
+        maxZoom: 20
+    }).addTo(liveLeafletMap);
+}
+
 function initLiveMap() {
     if (liveLeafletMap) return;
     const center = ROAD_NETWORK_GEOMETRY.center;
@@ -474,12 +541,7 @@ function initLiveMap() {
         attributionControl: false
     });
 
-    // ESRI World Street Map — free, no API key required, no watermarks
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
-        maxZoom: 20
-    }).addTo(liveLeafletMap);
-
+    updateMapTileTheme();
     mapMarkersGroup = L.layerGroup().addTo(liveLeafletMap);
 }
 
@@ -578,7 +640,52 @@ function renderMapNetwork() {
     });
 }
 
-async function syncLiveTraffic() {
+function toggleSyncMode(targetMode) {
+    const feedBtn = document.getElementById('btn-toggle-feed');
+    const syncBtn = document.getElementById('btn-toggle-sync');
+    const statusText = document.getElementById('sync-mode-status');
+    const statusDot = document.getElementById('sync-dot');
+
+    if (targetMode === 'feed') {
+        isAutoSync = false;
+        if (autoSyncTimer) {
+            clearInterval(autoSyncTimer);
+            autoSyncTimer = null;
+        }
+
+        if (feedBtn) feedBtn.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-secondary text-on-secondary shadow transition-all flex items-center gap-1 cursor-pointer';
+        if (syncBtn) syncBtn.className = 'px-3 py-1 text-xs font-medium rounded-full text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1 cursor-pointer';
+        
+        if (statusText) statusText.textContent = 'Manual Feed Mode';
+        if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-slate-400';
+        
+        if (typeof showToast === 'function') {
+            showToast('Auto-sync paused — manual feed view', 'info');
+        }
+    } else {
+        isAutoSync = true;
+        if (feedBtn) feedBtn.className = 'px-3 py-1 text-xs font-medium rounded-full text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1 cursor-pointer';
+        if (syncBtn) syncBtn.className = 'px-3 py-1 text-xs font-semibold rounded-full bg-secondary text-on-secondary shadow transition-all flex items-center gap-1 cursor-pointer';
+        
+        if (statusText) statusText.textContent = 'Live Auto-Sync (10s)';
+        if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+
+        // Trigger immediate sync with feedback
+        syncLiveTraffic(true);
+        
+        if (autoSyncTimer) clearInterval(autoSyncTimer);
+        autoSyncTimer = setInterval(() => syncLiveTraffic(false), 10000);
+        
+        if (typeof showToast === 'function') {
+            showToast('Live telemetry auto-sync enabled (10s interval)', 'success');
+        }
+    }
+}
+
+async function syncLiveTraffic(isManual = false) {
+    const syncIcon = document.getElementById('sync-spin-icon');
+    if (syncIcon) syncIcon.classList.add('animate-spin');
+
     try {
         const [roads, density] = await Promise.all([
             trafficAPI.getLiveTraffic(),
@@ -590,22 +697,49 @@ async function syncLiveTraffic() {
         // Update KPIs
         const severeCount = density.severe_congestion_roads ?? 0;
         const highCount = density.high_congestion_roads ?? 0;
-        document.getElementById('kpi-incidents-count').textContent = density.congested_segments ?? (severeCount + highCount);
-        document.getElementById('kpi-network-density').textContent = density.average_density ?? density.average_network_density ?? 8.95;
-        document.getElementById('kpi-vehicle-count').textContent = density.total_vehicle_count ?? 171;
+        const congestedCount = density.congested_segments ?? (severeCount + highCount);
+        
+        const kpiIncidents = document.getElementById('kpi-incidents-count');
+        const kpiDensity = document.getElementById('kpi-network-density');
+        const kpiVehicles = document.getElementById('kpi-vehicle-count');
+
+        if (kpiIncidents) kpiIncidents.textContent = congestedCount;
+        if (kpiDensity) kpiDensity.textContent = density.average_density ?? density.average_network_density ?? 8.95;
+        if (kpiVehicles) kpiVehicles.textContent = density.total_vehicle_count ?? 171;
 
         filterTrafficFeed();
         renderMapNetwork();
+
+        // Update last sync timestamp
+        const timeEl = document.getElementById('sync-timestamp');
+        if (timeEl) {
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            timeEl.textContent = `Synced ${timeStr}`;
+        }
 
         // Check for URL query search parameter
         const urlParams = new URLSearchParams(window.location.search);
         const searchQuery = urlParams.get('search');
         if (searchQuery) {
-            document.getElementById('traffic-search-input').value = searchQuery;
-            filterTrafficFeed();
+            const searchInput = document.getElementById('traffic-search-input');
+            if (searchInput && !searchInput.value) {
+                searchInput.value = searchQuery;
+                filterTrafficFeed();
+            }
+        }
+
+        if (isManual && typeof showToast === 'function') {
+            showToast('Live traffic grid synchronized', 'success');
         }
     } catch (e) {
         console.error('Error syncing live traffic:', e);
+        if (isManual && typeof showToast === 'function') {
+            showToast(`Sync error: ${e.message}`, 'error');
+        }
+    } finally {
+        setTimeout(() => {
+            if (syncIcon) syncIcon.classList.remove('animate-spin');
+        }, 500);
     }
 }
 
@@ -754,6 +888,26 @@ function resetMapView() {
 document.addEventListener('DOMContentLoaded', () => {
     initLiveMap();
     syncLiveTraffic();
+    
+    // Invalidate map size after layout stabilizes
+    setTimeout(() => {
+        if (liveLeafletMap) liveLeafletMap.invalidateSize();
+    }, 250);
+
+    // Auto-sync polling every 10 seconds
+    autoSyncTimer = setInterval(() => {
+        if (isAutoSync) syncLiveTraffic(false);
+    }, 10000);
+
+    // Resize handler to keep Leaflet synchronized with container
+    window.addEventListener('resize', () => {
+        if (liveLeafletMap) liveLeafletMap.invalidateSize();
+    });
+
+    // Dynamic tile theme adaptation
+    window.addEventListener('themechange', () => {
+        updateMapTileTheme();
+    });
 });
 </script>
 </body></html>

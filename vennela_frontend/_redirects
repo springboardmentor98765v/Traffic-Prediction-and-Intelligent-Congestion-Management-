@@ -1,0 +1,16 @@
+# TrafficVision AI - Netlify Routing & Proxy Rules
+# Milestone 4 Production Release
+
+# Clean Multi-Page Routing
+/login               /Login.html                200
+/admin               /admin%20dashboard.html    200
+/operator            /operator%20dashboard.html 200
+/dashboard           /public%20dashboard.html   200
+/maps                /live%20maps.html          200
+/routes              /route-analysis.html       200
+/alerts              /Alerts.html               200
+/analytics           /analytics.html            200
+
+# Default Fallback
+/                    /Login.html                301!
+/*                   /Login.html                200
