@@ -82,6 +82,7 @@ class TrafficRecord(Base):
     )
     vehicle_count = Column(Integer, nullable=False)
     density = Column(Float, nullable=False)
+    average_speed_kmh = Column(Float, nullable=True)
     congestion_level = Column(String(50), nullable=False)
     recorded_at = Column(
         DateTime,

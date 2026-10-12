@@ -17,6 +17,7 @@ class TrafficHistoryItem(BaseModel):
     vehicle_count: int
     density: float
     congestion_level: str
+    average_speed_kmh: float | None = None
 
 
 class TrafficRoadResponse(BaseModel):

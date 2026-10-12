@@ -61,7 +61,7 @@ export const NotificationBell: React.FC = () => {
         }
 
         const response = await fetch(
-          'http://localhost:8002/api/v1/alerts/my',
+          'http://127.0.0.1:8002/api/v1/alerts/my',
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -150,7 +150,7 @@ export const NotificationBell: React.FC = () => {
       }
 
       await fetch(
-        `http://localhost:8002/api/v1/alerts/${id}/read`,
+        `http://127.0.0.1:8002/api/v1/alerts/${id}/read`,
         {
           method: 'POST',
           headers: {

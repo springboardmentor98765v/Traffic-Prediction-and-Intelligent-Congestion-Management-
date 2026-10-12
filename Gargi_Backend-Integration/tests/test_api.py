@@ -706,7 +706,7 @@ def test_m3_trends_invalid_range():
         "/api/v1/analytics/trends",
         params={
             "road_id": 1,
-            "range": "month",
+            "range": "year",
         },
     )
 

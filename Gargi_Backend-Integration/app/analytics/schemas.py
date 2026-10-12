@@ -8,6 +8,7 @@ class TrendPoint(BaseModel):
     vehicle_count: float
     density: float
     congestion_level: str
+    average_speed_kmh: float | None = None
 
 
 class TrendsResponse(BaseModel):

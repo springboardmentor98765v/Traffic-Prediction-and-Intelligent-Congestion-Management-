@@ -27,39 +27,6 @@ export interface RouteOption {
  * This same data will also be available to the Dashboard
  * through localStorage.
  */
-const predictionData = [
-  {
-    time: '10 AM',
-    traffic: 'Low',
-    travelTime: 13,
-    congestion: 25,
-  },
-  {
-    time: '11 AM',
-    traffic: 'Moderate',
-    travelTime: 15,
-    congestion: 45,
-  },
-  {
-    time: '12 PM',
-    traffic: 'Moderate',
-    travelTime: 17,
-    congestion: 55,
-  },
-  {
-    time: '1 PM',
-    traffic: 'Heavy',
-    travelTime: 22,
-    congestion: 75,
-  },
-  {
-    time: '2 PM',
-    traffic: 'Heavy',
-    travelTime: 25,
-    congestion: 85,
-  },
-];
-
 export default function RouteAnalysisPage() {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
@@ -67,6 +34,8 @@ export default function RouteAnalysisPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [role, setRole] = useState<string>('User');
+  const [predictionData, setPredictionData] = useState<any[]>([]);
+  const API_BASE = 'http://127.0.0.1:8002/api/v1';
 
   const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string>('');
@@ -95,7 +64,7 @@ export default function RouteAnalysisPage() {
     try {
       const originRes = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          origin + ', Pune'
+          origin
         )}`
       );
 
@@ -103,7 +72,7 @@ export default function RouteAnalysisPage() {
 
       const destRes = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          destination + ', Pune'
+          destination
         )}`
       );
 
@@ -111,7 +80,7 @@ export default function RouteAnalysisPage() {
 
       if (!originData.length || !destData.length) {
         throw new Error(
-          'Location not found. Please try another location in or around Pune.'
+          'Location not found. Please enter a more specific location.'
         );
       }
 
@@ -237,6 +206,92 @@ export default function RouteAnalysisPage() {
       setRoutes(calculatedRoutes);
 
       setSelectedRouteId('route-1');
+
+      // Load hourly congestion predictions from the backend.
+      try {
+        const nodesResponse = await fetch(`${API_BASE}/traffic/nodes`, {
+          cache: 'no-store',
+        });
+
+        if (!nodesResponse.ok) throw new Error('Road API unavailable');
+
+        const nodesPayload = await nodesResponse.json();
+        const nodes = Array.isArray(nodesPayload)
+          ? nodesPayload
+          : nodesPayload.value ?? nodesPayload.nodes ?? [];
+
+        const midpoint = mainGeometry[Math.floor(mainGeometry.length / 2)];
+
+        const nearestRoad = nodes
+          .filter((node: any) =>
+            Number.isFinite(Number(node.lat)) &&
+            Number.isFinite(Number(node.lng ?? node.lon))
+          )
+          .sort((a: any, b: any) => {
+            const distance = (node: any) =>
+              Math.hypot(
+                Number(node.lat) - midpoint[0],
+                Number(node.lng ?? node.lon) - midpoint[1]
+              );
+            return distance(a) - distance(b);
+          })[0];
+
+        if (nearestRoad) {
+          const roadId = Number(nearestRoad.id);
+          const now = new Date();
+
+          const outcomes = await Promise.allSettled(
+            Array.from({ length: 5 }, async (_, index) => {
+              const forecastTime = new Date(now.getTime() + index * 60 * 60 * 1000);
+              const localTime = new Date(
+                forecastTime.getTime() - forecastTime.getTimezoneOffset() * 60000
+              ).toISOString().slice(0, 19);
+
+              const response = await fetch(
+                `${API_BASE}/predict/congestion?road_id=${roadId}&time=${encodeURIComponent(localTime)}`,
+                { cache: 'no-store' }
+              );
+
+              if (!response.ok) throw new Error('Prediction unavailable');
+
+              const result = await response.json();
+              const level = String(result.predicted_level ?? '').toUpperCase();
+
+              const traffic =
+                level === 'LOW' ? 'Low' :
+                ['MEDIUM', 'MODERATE'].includes(level) ? 'Moderate' :
+                ['HIGH', 'HEAVY', 'CONGESTED'].includes(level) ? 'Heavy' : null;
+
+              if (!traffic) throw new Error('Unrecognized prediction level');
+
+              // UI severity index derived from the category, not a model-predicted percentage.
+              const congestion = traffic === 'Low' ? 25 : traffic === 'Moderate' ? 55 : 85;
+
+              return {
+                time: forecastTime.toLocaleTimeString([], {
+                  hour: 'numeric',
+                  hour12: true,
+                }),
+                traffic,
+                travelTime: baseTime,
+                congestion,
+              };
+            })
+          );
+
+          const liveForecasts = outcomes
+            .filter((item): item is PromiseFulfilledResult<any> => item.status === 'fulfilled')
+            .map(item => item.value);
+
+          if (liveForecasts.length > 0) {
+            setPredictionData(liveForecasts);
+          } else {
+            console.warn('No hourly backend predictions were available.');
+          }
+        }
+      } catch (predictionError) {
+        console.warn('Backend route forecast unavailable:', predictionError);
+      }
     } catch (err: any) {
       setErrorMsg(
         err.message || 'Error processing route calculation.'
@@ -640,11 +695,11 @@ export default function RouteAnalysisPage() {
               </p>
 
               <p className="text-xl font-bold text-emerald-400 mt-2">
-                Low Traffic
+                {predictionData[0] ? `${predictionData[0].traffic} Traffic` : 'Unavailable'}
               </p>
 
               <p className="text-xs text-gray-500 mt-1">
-                Expected around 10 AM
+                {predictionData[0] ? `Expected around ${predictionData[0].time}` : 'No live forecast available'}
               </p>
 
             </div>
@@ -656,7 +711,7 @@ export default function RouteAnalysisPage() {
               </p>
 
               <p className="text-xl font-bold text-red-400 mt-2">
-                Heavy
+                {predictionData.length ? predictionData.reduce((a, b) => a.congestion >= b.congestion ? a : b).traffic : 'Unavailable'}
               </p>
 
               <p className="text-xs text-gray-500 mt-1">
@@ -668,15 +723,15 @@ export default function RouteAnalysisPage() {
             <div className="bg-[#0d1117] border border-[#30363d] rounded-xl p-4">
 
               <p className="text-[10px] text-gray-500 uppercase tracking-wider">
-                Maximum Congestion
+                Relative Severity Index
               </p>
 
               <p className="text-xl font-bold text-white mt-2">
-                85%
+                {predictionData.length ? `${Math.max(...predictionData.map(p => p.congestion))}/100` : 'Unavailable'}
               </p>
 
               <p className="text-xs text-gray-500 mt-1">
-                Predicted at 2 PM
+                {predictionData.length ? 'Derived from the predicted traffic category' : 'No live forecast available'}
               </p>
 
             </div>
@@ -801,11 +856,7 @@ export default function RouteAnalysisPage() {
                   Peak Congestion Expected
                 </p>
 
-                <p className="text-xs text-gray-300 mt-1">
-                  Heavy traffic is predicted between 1 PM and
-                  2 PM. Consider using the alternative route to
-                  reduce travel delay.
-                </p>
+                <p className="text-xs text-gray-300 mt-1">{predictionData.length ? `The highest predicted category is ${predictionData.reduce((a, b) => a.congestion >= b.congestion ? a : b).traffic}, around ${predictionData.reduce((a, b) => a.congestion >= b.congestion ? a : b).time}. The severity index is derived from the category, not a model-predicted percentage.` : 'No live backend predictions are available. Check the backend and try analyzing the route again.'}</p>
 
               </div>
 

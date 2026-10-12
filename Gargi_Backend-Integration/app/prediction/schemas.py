@@ -1,6 +1,14 @@
 from pydantic import BaseModel
 
 
+class VehicleCountPredictionResponse(BaseModel):
+    junction: int
+    prediction_time: str
+    predicted_vehicle_count: float
+    traffic_condition: str
+    model_version: str
+
+
 class CongestionPredictionResponse(BaseModel):
     road_id: int
     predicted_level: str

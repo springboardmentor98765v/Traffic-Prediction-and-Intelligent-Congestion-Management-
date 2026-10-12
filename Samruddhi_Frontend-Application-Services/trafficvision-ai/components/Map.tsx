@@ -110,7 +110,7 @@ export default function Map({
   return (
     <div className="h-full w-full">
       <MapContainer
-  key={`${startCoords?.join('-')}-${endCoords?.join('-')}`}
+
         center={[18.5204, 73.8567]}
         zoom={12}
         scrollWheelZoom={true}

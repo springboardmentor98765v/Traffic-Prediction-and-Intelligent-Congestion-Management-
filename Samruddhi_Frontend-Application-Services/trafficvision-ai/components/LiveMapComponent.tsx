@@ -73,7 +73,7 @@ export const LiveMapComponent: React.FC = () => {
   useEffect(() => {
     const fetchBackendNodes = async () => {
       try {
-const res = await fetch('http://localhost:8002/api/v1/traffic/nodes');
+const res = await fetch('http://127.0.0.1:8002/api/v1/traffic/nodes');
         if (res.ok) {
           const data: RoadNode[] = await res.json();
 

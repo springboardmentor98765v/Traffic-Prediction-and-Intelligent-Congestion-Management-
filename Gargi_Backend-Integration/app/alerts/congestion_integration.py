@@ -1,10 +1,11 @@
+import os
 import requests
 from sqlalchemy.orm import Session
 
 from app.alerts.service import create_alert
-from app.database.models import Alert
+from app.database.models import Alert, Road
 
-SHARMILA_ALERTS_URL = "http://host.docker.internal:8000/analytics/alerts"
+SHARMILA_ALERTS_URL = os.getenv("SHARMILA_ALERTS_URL", "http://127.0.0.1:8000/analytics/alerts")
 
 
 def sync_congestion_alerts(db: Session):
@@ -21,6 +22,10 @@ def sync_congestion_alerts(db: Session):
         severity = "high"
         road_id = int(breach["road_id"])
         message = breach["message"]
+
+        if not db.query(Road).filter(Road.id == road_id).first():
+            skipped += 1
+            continue
 
         existing_alert = (
             db.query(Alert)
@@ -56,6 +61,3 @@ def sync_congestion_alerts(db: Session):
         "alerts_created": created,
         "alerts_skipped": skipped,
     }
-
-
-

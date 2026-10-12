@@ -44,12 +44,14 @@ def create_traffic_record(
     vehicle_count: int,
     density: float,
     congestion_level: str,
+    average_speed_kmh: float | None = None,
 ):
     record = TrafficRecord(
         road_id=road_id,
         vehicle_count=vehicle_count,
         density=density,
         congestion_level=congestion_level,
+        average_speed_kmh=average_speed_kmh,
     )
 
     db.add(record)

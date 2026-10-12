@@ -14,8 +14,13 @@ PUBLIC_ALERT_TYPES = {
     "accident",
     "possible_incident",
     "road_closure",
+    "road closure",
     "closure",
     "delay",
+    "road work",
+    "heavy congestion",
+    "signal failure",
+    "vehicle breakdown",
 }
 
 

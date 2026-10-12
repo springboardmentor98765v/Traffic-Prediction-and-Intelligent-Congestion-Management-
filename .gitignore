@@ -1,1 +1,25 @@
 *.pkl
+# Local Python and temporary files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+.env.*
+!.env.example
+*.bak
+*.backup
+*.before_*
+*.before-*
+*backup_before_*
+*road4_backup*
+whitespace_backup_*/
+.next/
+node_modules/
+
+# Timestamped and named local backup files
+*.backup*
+*.integration-backup
+*backup-*
+*backup_*

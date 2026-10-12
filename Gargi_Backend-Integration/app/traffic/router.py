@@ -42,6 +42,9 @@ def get_traffic_nodes(
     nodes = []
 
     for road in roads:
+        if road.id == 4:
+            continue
+
         record = (
             db.query(TrafficRecord)
             .filter(TrafficRecord.road_id == road.id)
@@ -97,6 +100,9 @@ def get_traffic_history(
     end: datetime,
     db: Session = Depends(get_db),
 ):
+    if road_id == 4:
+        raise HTTPException(status_code=404, detail="Road 4 is not available.")
+
     if start >= end:
         raise HTTPException(
             status_code=400,
@@ -121,6 +127,7 @@ def get_traffic_history(
             "vehicle_count": record.vehicle_count,
             "density": record.density,
             "congestion_level": record.congestion_level,
+            "average_speed_kmh": record.average_speed_kmh,
         }
         for record in records
     ]
@@ -135,6 +142,9 @@ def get_traffic_aggregate(
     granularity: str,
     db: Session = Depends(get_db),
 ):
+    if road_id == 4:
+        raise HTTPException(status_code=404, detail="Road 4 is not available.")
+
     if granularity not in ["hour", "day"]:
         raise HTTPException(
             status_code=400,
@@ -195,16 +205,21 @@ def record_traffic(
     vehicle_count: int,
     density: float,
     congestion_level: str,
+    average_speed_kmh: float | None = None,
     current_user=Depends(
         require_role("admin", "operator")
     ),
     db: Session = Depends(get_db),
 ):
+    if road_id == 4:
+        raise HTTPException(status_code=404, detail="Road 4 is not available.")
+
     record = TrafficRecord(
         road_id=road_id,
         vehicle_count=vehicle_count,
         density=density,
         congestion_level=congestion_level,
+        average_speed_kmh=average_speed_kmh,
         recorded_at=datetime.now(timezone.utc),
     )
 

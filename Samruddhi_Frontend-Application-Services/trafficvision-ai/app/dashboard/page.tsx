@@ -49,6 +49,13 @@ interface RouteAnalysisData {
 export default function DashboardPage() {
   const [role, setRole] = useState('Public');
   const [username, setUsername] = useState('USER');
+  const API_BASE = 'http://127.0.0.1:8002/api/v1';
+  const [apiCongestion, setApiCongestion] = useState<string | null>(null);
+  const [apiConfidence, setApiConfidence] = useState<number | null>(null);
+  const [apiPeakWindows, setApiPeakWindows] = useState<Array<{start: string; end: string}>>([]);
+  const [apiDelay, setApiDelay] = useState<number | null>(null);
+  const [activeIncidentCount, setActiveIncidentCount] = useState<number | null>(null);
+  const [dashboardWarning, setDashboardWarning] = useState<string | null>(null);
 
   const [routeAnalysis, setRouteAnalysis] =
     useState<RouteAnalysisData | null>(null);
@@ -89,6 +96,100 @@ export default function DashboardPage() {
     };
   }, []);
 
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDashboardData() {
+      const errors: string[] = [];
+
+      try {
+        const response = await fetch(`${API_BASE}/traffic/nodes`);
+        if (!response.ok) throw new Error(`Roads API: HTTP ${response.status}`);
+
+        const payload = await response.json();
+        const roads = Array.isArray(payload) ? payload : payload.value;
+        if (!Array.isArray(roads) || roads.length === 0) {
+          throw new Error('No roads returned by the backend.');
+        }
+
+        const roadId = Number(roads[0].id);
+        const time = new Date().toISOString().slice(0, 19);
+
+        const results = await Promise.allSettled([
+          fetch(`${API_BASE}/predict/congestion?road_id=${roadId}&time=${encodeURIComponent(time)}`)
+            .then(async r => {
+              if (!r.ok) throw new Error(`Congestion: HTTP ${r.status}`);
+              return r.json();
+            }),
+          fetch(`${API_BASE}/predict/delay?road_id=${roadId}`)
+            .then(async r => {
+              if (!r.ok) throw new Error(`Delay: HTTP ${r.status}`);
+              return r.json();
+            }),
+          fetch(`${API_BASE}/alerts/active`, {
+            headers: localStorage.getItem('access_token')
+              ? { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
+              : {}
+          }).then(async r => {
+            if (!r.ok) throw new Error(r.status === 401 ? 'Sign in to view incidents.' : `Alerts: HTTP ${r.status}`);
+            return r.json();
+          }),
+          fetch(`${API_BASE}/predict/peak-hours?road_id=${roadId}`)
+            .then(async r => {
+              if (!r.ok) throw new Error(`Peak hours: HTTP ${r.status}`);
+              return r.json();
+            })
+        ]);
+
+        if (cancelled) return;
+
+        if (results[0].status === 'fulfilled') {
+          setApiCongestion(String(results[0].value.predicted_level ?? 'Unavailable'));
+          const confidence = Number(results[0].value.confidence);
+          setApiConfidence(Number.isFinite(confidence) ? confidence : null);
+        } else {
+          errors.push('Congestion prediction unavailable.');
+        }
+
+        if (results[1].status === 'fulfilled') {
+          const delay = Number(results[1].value.estimated_delay_minutes);
+          if (Number.isFinite(delay)) setApiDelay(delay);
+          else errors.push('Invalid delay response.');
+        } else {
+          errors.push('Delay prediction unavailable.');
+        }
+
+        if (results[2].status === 'fulfilled') {
+          const data = results[2].value;
+          const alerts = Array.isArray(data) ? data : data.value ?? data.alerts;
+          if (Array.isArray(alerts)) setActiveIncidentCount(alerts.length);
+          else errors.push('Unexpected incidents response format.');
+        } else {
+          errors.push(results[2].reason instanceof Error
+            ? results[2].reason.message
+            : 'Incidents unavailable.');
+        }
+
+        if (results[3].status === 'fulfilled') {
+          const windows = results[3].value.peak_windows;
+          setApiPeakWindows(Array.isArray(windows) ? windows : []);
+        } else {
+          errors.push('Peak-hour prediction unavailable.');
+        }
+
+        setDashboardWarning(errors.length ? errors.join(' ') : null);
+      } catch (error) {
+        if (!cancelled) {
+          setDashboardWarning(error instanceof Error ? error.message : 'Dashboard API unavailable.');
+        }
+      }
+    }
+
+    loadDashboardData();
+    const refreshId = window.setInterval(loadDashboardData, 60000);
+    return () => { cancelled = true; window.clearInterval(refreshId); };
+  }, []);
   const selectedRoute = routeAnalysis?.selectedRoute;
 
   const alternativeRoute =
@@ -173,20 +274,22 @@ export default function DashboardPage() {
               value={
                 selectedRoute
                   ? `${selectedRoute.trafficLevel} Traffic`
-                  : 'Moderate (42%)'
+                  : apiCongestion
+                    ? `${apiCongestion} Traffic`
+                    : 'Loading...'
               }
               valueColor={
                 selectedRoute
-                  ? getTrafficColor(
-                      selectedRoute.trafficLevel
-                    )
-                  : 'text-amber-400'
+                  ? getTrafficColor(selectedRoute.trafficLevel)
+                  : apiCongestion
+                    ? getTrafficColor(apiCongestion === 'LOW' ? 'Low' : apiCongestion === 'MEDIUM' ? 'Moderate' : apiCongestion === 'HIGH' ? 'Heavy' : undefined)
+                    : 'text-amber-400'
               }
             />
 
             <Card
               title="Active Road Incidents"
-              value="2 Reported"
+              value={activeIncidentCount !== null ? `${activeIncidentCount} Reported` : 'Loading...'}
               valueColor="text-rose-500"
             />
 
@@ -195,7 +298,9 @@ export default function DashboardPage() {
               value={
                 selectedRoute
                   ? `+${selectedRoute.estimatedDelay} mins`
-                  : '+8 mins'
+                  : apiDelay !== null
+                    ? `+${apiDelay} mins`
+                    : 'Loading...'
               }
               valueColor="text-cyan-400"
             />
@@ -303,7 +408,7 @@ export default function DashboardPage() {
                   {routeAnalysis.origin}
 
                   <span className="text-cyan-400 mx-2">
-                    →
+                    â†’
                   </span>
 
                   {routeAnalysis.destination}
@@ -330,15 +435,13 @@ export default function DashboardPage() {
                     currentPrediction?.traffic
                   )}`}
                 >
-                  {currentPrediction?.traffic ||
-                    'Low'}
+                  {currentPrediction?.traffic || (apiCongestion === 'LOW' ? 'Low' : apiCongestion === 'MEDIUM' ? 'Moderate' : apiCongestion === 'HIGH' ? 'Heavy' : 'Unavailable')}
                   {' Traffic'}
                 </p>
 
                 <p className="text-xs text-gray-500 mt-1">
                   Expected around{' '}
-                  {currentPrediction?.time ||
-                    '10 AM'}
+                  {currentPrediction?.time || (apiCongestion ? 'Latest backend prediction' : 'Prediction unavailable')}
                 </p>
 
               </div>
@@ -357,33 +460,31 @@ export default function DashboardPage() {
                     peakPrediction?.traffic
                   )}`}
                 >
-                  {peakPrediction?.traffic ||
-                    'Heavy'}
+                  {peakPrediction?.traffic || (apiCongestion === 'LOW' ? 'Low' : apiCongestion === 'MEDIUM' ? 'Moderate' : apiCongestion === 'HIGH' ? 'Heavy' : 'Unavailable')}
                 </p>
 
                 <p className="text-xs text-gray-500 mt-1">
                   Expected around{' '}
-                  {peakPrediction?.time ||
-                    '1–2 PM'}
+                  {peakPrediction?.time || (apiPeakWindows.length ? apiPeakWindows.map(window => `${window.start}-${window.end}`).join('  ') : 'Peak hours unavailable')}
                 </p>
 
               </div>
 
 
-              {/* Maximum Congestion */}
+              {/* {peakPrediction ? 'Maximum Congestion' : 'Model Confidence'} */}
 
               <div className="bg-[#0d1117] p-4 rounded-xl border border-[#30363d]">
 
                 <p className="text-xs text-gray-400 uppercase font-bold">
-                  Maximum Congestion
+                  {peakPrediction ? 'Maximum Congestion' : 'Model Confidence'}
                 </p>
 
                 <p className="text-xl font-bold text-orange-400 mt-2">
-                  {peakPrediction?.congestion || 85}%
+                  {peakPrediction ? `${peakPrediction.congestion}%` : apiConfidence !== null ? `${Math.round(apiConfidence * 100)}%` : 'Unavailable'}
                 </p>
 
                 <p className="text-xs text-gray-500 mt-1">
-                  Predicted peak
+                  {peakPrediction ? 'Predicted peak from route analysis' : 'Backend model confidence'}
                 </p>
 
               </div>
@@ -580,7 +681,7 @@ export default function DashboardPage() {
 
               <div className="space-y-4">
 
-                {/* Origin → Destination */}
+                {/* Origin â†’ Destination */}
 
                 <div className="bg-[#0d1117] border border-[#30363d] rounded-xl p-5">
 
@@ -873,9 +974,9 @@ export default function DashboardPage() {
                     </h4>
 
                     <p className="text-xs text-gray-400 mt-2">
-                      {selectedRoute.distance_km} km ·{' '}
+                      {selectedRoute.distance_km} km Â·{' '}
                       {selectedRoute.estimated_minutes}{' '}
-                      mins ·{' '}
+                      mins Â·{' '}
                       {selectedRoute.trafficLevel} Traffic
                     </p>
 
@@ -897,9 +998,9 @@ export default function DashboardPage() {
                       </h4>
 
                       <p className="text-xs text-gray-400 mt-2">
-                        {alternativeRoute.distance_km} km ·{' '}
+                        {alternativeRoute.distance_km} km Â·{' '}
                         {alternativeRoute.estimated_minutes}{' '}
-                        mins ·{' '}
+                        mins Â·{' '}
                         {alternativeRoute.trafficLevel}{' '}
                         Traffic
                       </p>

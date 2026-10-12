@@ -46,7 +46,13 @@ def get_traffic_pattern(hour, road_id, weekday):
     else:
         congestion_level = "LOW"
 
-    return vehicle_count, round(density, 2), congestion_level
+    # Synthetic demo estimate only; not a measured traffic speed.
+    average_speed_kmh = round(
+        max(5.0, min(60.0, 60.0 * (1.0 - density) + random.uniform(-3.0, 3.0))),
+        1,
+    )
+
+    return vehicle_count, round(density, 2), congestion_level, average_speed_kmh
 
 
 def generate_traffic_data():
@@ -84,7 +90,7 @@ def generate_traffic_data():
                 if existing_record:
                     continue
 
-                vehicle_count, density, congestion_level = get_traffic_pattern(
+                vehicle_count, density, congestion_level, average_speed_kmh = get_traffic_pattern(
                     hour,
                     road_id,
                     weekday,
@@ -95,6 +101,7 @@ def generate_traffic_data():
                     vehicle_count=vehicle_count,
                     density=density,
                     congestion_level=congestion_level,
+                    average_speed_kmh=average_speed_kmh,
                     recorded_at=timestamp,
                 )
 

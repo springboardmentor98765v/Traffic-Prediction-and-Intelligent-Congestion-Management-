@@ -29,6 +29,12 @@ def trends(
     range: str = "day",
     db: Session = Depends(get_db),
 ):
+    if road_id == 4:
+        raise HTTPException(
+            status_code=404,
+            detail="Road 4 is not available.",
+        )
+
     try:
         return get_trends(
             db=db,
@@ -122,3 +128,36 @@ def reports(
             )
         },
     )
+
+from fastapi import HTTPException
+
+from app.analytics.intelligence_service import (
+    build_recommendations,
+    evaluate_model,
+)
+
+
+@router.get("/model-evaluation")
+def model_evaluation(
+    road_id: int,
+    db: Session = Depends(get_db),
+):
+    if road_id == 4:
+        raise HTTPException(status_code=404, detail="Road 4 is not available.")
+
+    result = evaluate_model(db=db, road_id=road_id)
+    return result
+
+
+@router.get("/recommendations")
+def recommendations(
+    road_id: int = 1,
+    db: Session = Depends(get_db),
+):
+    if road_id == 4:
+        raise HTTPException(status_code=404, detail="Road 4 is not available.")
+
+    try:
+        return build_recommendations(db=db, road_id=road_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
