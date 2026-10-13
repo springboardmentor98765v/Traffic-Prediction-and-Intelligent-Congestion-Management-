@@ -1,7 +1,5 @@
 ﻿'use client';
 
-
-
 import { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -20,15 +18,15 @@ import {
 
 import { Sidebar } from '../../components/Sidebar';
 
-
-
 const roads = [
+
   'R001 - Anna Salai',
+
   'R002 - Mount Road',
+
   'R003 - GST Road',
+
 ];
-
-
 
 const baseRecommendations = [
 
@@ -40,11 +38,7 @@ const baseRecommendations = [
 
 ];
 
-
-
 const metrics = ['Density', 'Level'];
-
-
 
 const trendData = {
 
@@ -74,8 +68,6 @@ const trendData = {
 
 };
 
-
-
 type RangeType = keyof typeof trendData;
 
 type MetricType = 'Density' | 'Speed' | 'Score' | 'Level';
@@ -83,56 +75,92 @@ type MetricType = 'Density' | 'Speed' | 'Score' | 'Level';
 type Recommendation = [string, string, string, string, string, string, string, string];
 
 type BackendRecommendation = {
+
   priority: string;
+
   title: string;
+
   reason: string;
+
   suggested_action: string;
+
   road_id: number;
+
   road_name: string;
+
   basis: string;
+
 };
 
 type RecommendationResponse = {
+
   road_id: number;
+
   road_name: string;
+
   observed_level: string;
+
   observed_density: number | null;
+
   predicted_level: string | null;
+
   model_version: string | null;
+
   record_count: number;
+
   recommendations: BackendRecommendation[];
+
   generated_by: string;
+
   disclaimer: string;
+
 };
 
 type ModelEvaluationResponse = {
+
   road_id: number;
+
   status: string;
+
   message?: string;
+
   sample_count?: number;
+
   metrics?: {
+
     accuracy?: number;
+
     weighted_precision?: number;
+
     weighted_recall?: number;
+
     weighted_f1?: number;
+
   };
+
 };
 
 type TrafficRecord = {
+
   road_id?: number;
+
   timestamp: string;
+
   vehicle_count: number;
+
   density: number;
+
   average_speed_kmh?: number | null;
+
   congestion_level: string;
+
 };
 
 const API_BASE = 'http://127.0.0.1:8002/api/v1';
 
 const densityPercent = (density: number) =>
+
   Math.max(0, Math.min(100, density <= 1 ? density * 100 : density));
-
-
 
 export default function AnalyticsPage() {
 
@@ -141,7 +169,8 @@ export default function AnalyticsPage() {
   const [selectedRoad, setSelectedRoad] = useState(roads[0]);
 
   const [range, setRange] = useState<RangeType>('24 Hours');
-  const [useCustomDates, setUseCustomDates] = useState(true);
+
+  const [useCustomDates, setUseCustomDates] = useState(false);
 
   const [bucket, setBucket] = useState<'Hourly' | 'Daily'>('Hourly');
 
@@ -149,139 +178,228 @@ export default function AnalyticsPage() {
 
   const [priority, setPriority] = useState('ALL');
 
-  const [fromDate, setFromDate] = useState('2026-10-09');
+  const [fromDate, setFromDate] = useState('2026-10-12');
 
-  const [toDate, setToDate] = useState('2026-10-10');
+  const [toDate, setToDate] = useState('2026-10-13');
 
   const [scanVersion, setScanVersion] = useState(0);
 
   const [isRescanning, setIsRescanning] = useState(false);
+
   const [selectedInsight, setSelectedInsight] = useState<Recommendation | null>(null);
+
   const [recommendationData, setRecommendationData] = useState<RecommendationResponse | null>(null);
+
   const [modelEvaluation, setModelEvaluation] = useState<ModelEvaluationResponse | null>(null);
+
   const [intelligenceError, setIntelligenceError] = useState("");
 
-
-
-
   const [trendRecords, setTrendRecords] = useState<TrafficRecord[]>([]);
+
   const [heatmapRecords, setHeatmapRecords] = useState<TrafficRecord[]>([]);
+
   const [congestionPrediction, setCongestionPrediction] = useState<{
+
     predicted_level: string;
+
     confidence: number | null;
+
     model_version: string;
+
   } | null>(null);
+
   const [peakWindows, setPeakWindows] = useState<{ start: string; end: string }[]>([]);
+
   const [delayPrediction, setDelayPrediction] = useState<{
+
     estimated_delay_minutes: number;
+
     confidence: number;
+
   } | null>(null);
+
   const [vehicleCountPrediction, setVehicleCountPrediction] = useState<{
+
     junction: number;
+
     prediction_time: string;
+
     predicted_vehicle_count: number;
+
     traffic_condition: string;
+
     model_version: string;
+
   } | null>(null);
+
   const [predictionError, setPredictionError] = useState('');
 
   const [analyticsError, setAnalyticsError] = useState('');
+
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
+
   const [refreshVersion, setRefreshVersion] = useState(0);
+
   const [sidebarRole, setSidebarRole] = useState('User');
 
   useEffect(() => {
+
     const savedRole = window.localStorage.getItem('userRole');
+
     if (savedRole) setSidebarRole(savedRole);
+
   }, []);
 
   useEffect(() => {
+
     let cancelled = false;
 
     const loadAnalytics = async () => {
+
       setIsAnalyticsLoading(true);
+
       setAnalyticsError('');
 
       try {
+
         const roadId = Math.max(1, roads.indexOf(selectedRoad) + 1);
+
         const apiRange = range === '7 Days' ? 'week' : range === '1 Month' ? 'month' : 'day';
 
         const [trendResponse, heatmapResponse] = await Promise.all([
+
           fetch(`${API_BASE}/analytics/trends?road_id=${roadId}&range=${apiRange}`),
+
           fetch(`${API_BASE}/analytics/heatmap?range=${apiRange}`),
+
         ]);
 
         if (!trendResponse.ok || !heatmapResponse.ok) {
+
           throw new Error(
+
             `Analytics API request failed (trends: ${trendResponse.status}, heatmap: ${heatmapResponse.status}).`
+
           );
+
         }
 
         const trendJson = await trendResponse.json();
+
         const heatmapJson = await heatmapResponse.json();
 
         if (!cancelled) {
+
           setTrendRecords(Array.isArray(trendJson.data) ? trendJson.data : []);
+
           setHeatmapRecords(
+
             Array.isArray(heatmapJson.data) ? heatmapJson.data : []
+
           );
+
         }
+
       } catch (error) {
+
         if (!cancelled) {
+
           setTrendRecords([]);
+
           setHeatmapRecords([]);
+
           setAnalyticsError(
+
             error instanceof Error ? error.message : 'Could not load analytics.'
+
           );
+
         }
+
       } finally {
+
         if (!cancelled) {
+
           setIsAnalyticsLoading(false);
+
           setIsRescanning(false);
+
         }
+
       }
+
     };
 
     void loadAnalytics();
 
     return () => {
+
       cancelled = true;
+
     };
+
   }, [selectedRoad, range, refreshVersion]);
 
   useEffect(() => {
+
     let cancelled = false;
 
     async function loadPredictions() {
+
       setPredictionError('');
+
       setCongestionPrediction(null);
+
       setPeakWindows([]);
+
       setDelayPrediction(null);
 
       const roadId = Math.max(1, roads.indexOf(selectedRoad) + 1);
+
       const predictionTime = new Date().toISOString().slice(0, 19);
 
       const requests = await Promise.allSettled([
+
         fetch(`${API_BASE}/predict/congestion?road_id=${roadId}&time=${encodeURIComponent(predictionTime)}`)
+
           .then(async (response) => {
+
             if (!response.ok) throw new Error(`Congestion prediction: HTTP ${response.status}`);
+
             return response.json();
+
           }),
+
         fetch(`${API_BASE}/predict/peak-hours?road_id=${roadId}`)
+
           .then(async (response) => {
+
             if (!response.ok) throw new Error(`Peak hours: HTTP ${response.status}`);
+
             return response.json();
+
           }),
+
         fetch(`${API_BASE}/predict/delay?road_id=${roadId}`)
+
           .then(async (response) => {
+
             if (!response.ok) throw new Error(`Delay estimate: HTTP ${response.status}`);
+
             return response.json();
+
           }),
+
         fetch(`${API_BASE}/predict/vehicle-count?junction=${roadId}&time=${encodeURIComponent(predictionTime)}`)
+
           .then(async (response) => {
+
             if (!response.ok) throw new Error(`Vehicle-count prediction: HTTP ${response.status}`);
+
             return response.json();
+
           }),
+
       ]);
 
       if (cancelled) return;
@@ -289,103 +407,184 @@ export default function AnalyticsPage() {
       const errors: string[] = [];
 
       if (requests[0].status === 'fulfilled') {
+
         setCongestionPrediction(requests[0].value);
+
       } else {
+
         errors.push('Congestion prediction unavailable');
+
       }
 
       if (requests[1].status === 'fulfilled') {
+
         setPeakWindows(Array.isArray(requests[1].value.peak_windows) ? requests[1].value.peak_windows : []);
+
       } else {
+
         errors.push('Peak-hour prediction unavailable');
+
       }
 
       if (requests[2].status === 'fulfilled') {
+
         setDelayPrediction(requests[2].value);
+
       } else {
+
         errors.push('Delay estimate unavailable');
+
       }
 
       if (requests[3].status === 'fulfilled') {
+
         setVehicleCountPrediction(requests[3].value);
+
       } else {
+
         errors.push('Dataset-based vehicle-count estimate unavailable');
+
       }
 
       if (errors.length) setPredictionError(errors.join('. ') + '.');
+
     }
 
     void loadPredictions();
 
     return () => {
+
       cancelled = true;
+
     };
+
   }, [selectedRoad, refreshVersion]);
+
   useEffect(() => {
+
     let cancelled = false;
 
     async function loadIntelligence() {
+
       const roadId = Math.max(1, roads.indexOf(selectedRoad) + 1);
+
       setIntelligenceError("");
 
+      const token = localStorage.getItem("access_token");
+
+if (!token) {
+
+  setIntelligenceError("Please log in again.");
+
+  return;
+
+}
+
+const headers = {
+
+  Authorization: `Bearer ${token}`,
+
+};
+
       const results = await Promise.allSettled([
-        fetch(`${API_BASE}/analytics/recommendations?road_id=${roadId}`).then(async (response) => {
+
+        fetch(`${API_BASE}/analytics/recommendations?road_id=${roadId}`, { headers }).then(async (response) => {
+
           if (!response.ok) throw new Error(`Recommendations API returned ${response.status}`);
+
           return response.json() as Promise<RecommendationResponse>;
+
         }),
-        fetch(`${API_BASE}/analytics/model-evaluation?road_id=${roadId}`).then(async (response) => {
+
+        fetch(`${API_BASE}/analytics/model-evaluation?road_id=${roadId}`, { headers }).then(async (response) => {
+
           if (!response.ok) throw new Error(`Model evaluation API returned ${response.status}`);
+
           return response.json() as Promise<ModelEvaluationResponse>;
+
         }),
+
       ]);
 
       if (cancelled) return;
 
       const errors: string[] = [];
+
       if (results[0].status === 'fulfilled') {
+
         setRecommendationData(results[0].value);
+
       } else {
+
         setRecommendationData(null);
+
         errors.push('Backend recommendations are unavailable');
+
       }
 
       if (results[1].status === 'fulfilled') {
+
         setModelEvaluation(results[1].value);
+
       } else {
+
         setModelEvaluation(null);
+
         errors.push('Model evaluation is unavailable');
+
       }
 
       if (errors.length) setIntelligenceError(errors.join('. ') + '.');
+
     }
 
     void loadIntelligence();
+
     return () => {
+
       cancelled = true;
+
     };
+
   }, [selectedRoad, refreshVersion]);
 
 const aiRecommendations = useMemo<Recommendation[]>(() => {
+
     const items = recommendationData?.recommendations ?? [];
+
     return items.map((item) => {
+
       const level = item.priority.toUpperCase();
+
       const displayPriority = level === 'MEDIUM' ? 'MED' : level;
+
       const roadLabel = `R${String(item.road_id).padStart(3, '0')} - ${item.road_name}`;
+
       const density = recommendationData?.observed_density;
+
       return [
+
         displayPriority,
+
         item.title,
+
         roadLabel,
+
         'Rule-based engine',
+
         `Observed level: ${recommendationData?.observed_level ?? 'Unavailable'}`,
+
         density == null ? 'Density unavailable' : `Observed density: ${Math.round((density <= 1 ? density * 100 : density))}%`,
+
         item.reason,
+
         item.suggested_action,
+
       ] as Recommendation;
+
     });
+
   }, [recommendationData]);
-
-
 
   const filtered = useMemo(
 
@@ -399,8 +598,6 @@ const aiRecommendations = useMemo<Recommendation[]>(() => {
 
   );
 
-
-
   const matchingRoads = useMemo(() => {
 
     const query = road.trim().toLowerCase();
@@ -411,8 +608,6 @@ const aiRecommendations = useMemo<Recommendation[]>(() => {
 
   }, [road]);
 
-
-
   const selectRoad = (roadName: string) => {
 
     setSelectedRoad(roadName);
@@ -421,15 +616,11 @@ const aiRecommendations = useMemo<Recommendation[]>(() => {
 
   };
 
-
-
   const searchRoad = () => {
 
     if (matchingRoads.length > 0) selectRoad(matchingRoads[0]);
 
   };
-
-
 
   const rangeDays = useMemo(() => {
 
@@ -441,61 +632,92 @@ const aiRecommendations = useMemo<Recommendation[]>(() => {
 
   }, [fromDate, toDate]);
 
-
-
   const filteredTrendRecords = useMemo(() => {
+
     const validRecords = trendRecords.filter((record) =>
+
       Number.isFinite(new Date(record.timestamp).getTime()),
+
     );
 
     if (validRecords.length === 0) return [];
 
     if (useCustomDates) {
+
       return validRecords.filter((record) => {
+
         const date = record.timestamp.slice(0, 10);
+
         return date >= fromDate && date <= toDate;
+
       });
+
     }
 
     const latest = Math.max(...validRecords.map((record) =>
+
       new Date(record.timestamp).getTime(),
+
     ));
+
     const windowDays = range === '24 Hours' ? 1 : range === '7 Days' ? 7 : 30;
+
     const startTime = latest - windowDays * 24 * 60 * 60 * 1000;
 
     return validRecords.filter((record) => {
+
       const time = new Date(record.timestamp).getTime();
+
       return time >= startTime && time <= latest;
+
     });
+
   }, [trendRecords, fromDate, toDate, range, useCustomDates]);
 
   const filteredHeatmapRecords = useMemo(() => {
+
     const validRecords = heatmapRecords.filter((record) =>
+
       Number.isFinite(new Date(record.timestamp).getTime()),
+
     );
 
     if (validRecords.length === 0) return [];
 
     if (useCustomDates) {
+
       const startTime = new Date(`${fromDate}T00:00:00`).getTime();
+
       const endTime = new Date(`${toDate}T23:59:59.999`).getTime();
 
       return validRecords.filter((record) => {
+
         const time = new Date(record.timestamp).getTime();
+
         return time >= startTime && time <= endTime;
+
       });
+
     }
 
     const latest = Math.max(...validRecords.map((record) =>
+
       new Date(record.timestamp).getTime(),
+
     ));
+
     const windowDays = range === '24 Hours' ? 1 : range === '7 Days' ? 7 : 30;
+
     const startTime = latest - windowDays * 24 * 60 * 60 * 1000;
 
     return validRecords.filter((record) => {
+
       const time = new Date(record.timestamp).getTime();
+
       return time >= startTime && time <= latest;
+
     });
+
   }, [heatmapRecords, fromDate, toDate, range, useCustomDates]);
 
   const rangeSeed = useMemo(
@@ -506,59 +728,87 @@ const aiRecommendations = useMemo<Recommendation[]>(() => {
 
   );
 
-
-
   const heatmapSlots = useMemo(
+
     () =>
+
       [...new Set(filteredHeatmapRecords.map((record) => record.timestamp))]
+
         .sort()
+
         .slice(-12),
+
     [filteredHeatmapRecords],
+
   );
 
   const heatmapLabels = useMemo(
+
     () =>
+
       heatmapSlots.map((timestamp) => {
+
         const date = new Date(timestamp);
+
         return bucket === 'Hourly'
+
           ? date.toLocaleTimeString('en-IN', {
+
               hour: '2-digit',
+
               minute: '2-digit',
+
             })
+
           : date.toLocaleDateString('en-IN', {
+
               day: '2-digit',
+
               month: 'short',
+
             });
+
       }),
+
     [bucket, heatmapSlots],
+
   );
 
-
-
   const heat = (row: number, col: number) => {
+
     const timestamp = heatmapSlots[col];
+
     if (!timestamp) return 0;
 
     const record = filteredHeatmapRecords.find(
+
       (item) => item.road_id === row + 1 && item.timestamp === timestamp,
+
     );
+
     if (!record) return 0;
 
     if (metric === 'Density') return densityPercent(Number(record.density));
 
     if (metric === 'Level') {
+
       const level = String(record.congestion_level).toUpperCase();
+
       if (level.includes('HIGH') || level.includes('HEAVY')) return 85;
+
       if (level.includes('MEDIUM') || level.includes('MODERATE')) return 55;
+
       if (level.includes('LOW')) return 25;
+
       return 0;
+
     }
 
     // The current backend record does not provide speed or a separate score.
+
     return 0;
+
   };
-
-
 
   const getLevel = (value: number) => {
 
@@ -570,9 +820,8 @@ const aiRecommendations = useMemo<Recommendation[]>(() => {
 
   };
 
-
-
   const getHeatColor = (value: number) => {
+
     if (value <= 0) return 'bg-gray-700';
 
     if (metric === 'Speed') {
@@ -585,8 +834,6 @@ const aiRecommendations = useMemo<Recommendation[]>(() => {
 
     }
 
-
-
     if (value >= 70) return 'bg-red-500';
 
     if (value >= 45) return 'bg-yellow-500';
@@ -595,183 +842,273 @@ const aiRecommendations = useMemo<Recommendation[]>(() => {
 
   };
 
-
-
   const roadAnalysis = useMemo(() => {
+
     const records = [...filteredTrendRecords].sort(
+
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+
     );
 
     const densities = records.map((record) => densityPercent(Number(record.density)));
+
     const vehicleCounts = records.map((record) => Number(record.vehicle_count) || 0);
 
     const averageDensity = densities.length
+
       ? densities.reduce((sum, value) => sum + value, 0) / densities.length
+
       : 0;
+
     const maxDensity = densities.length ? Math.max(...densities) : 0;
+
     const vehicleCount = vehicleCounts.length
+
       ? vehicleCounts.reduce((sum, value) => sum + value, 0) / vehicleCounts.length
+
       : 0;
 
     const peakIndex = densities.indexOf(maxDensity);
+
     const peakRecord = peakIndex >= 0 ? records[peakIndex] : undefined;
+
     const peakCongestion = peakRecord
+
       ? new Date(peakRecord.timestamp).toLocaleTimeString('en-IN', {
+
           hour: '2-digit',
+
           minute: '2-digit',
+
         })
+
       : 'No data';
 
     return {
+
       vehicleCount,
+
       averageSpeed: 0,
+
       averageDensity,
+
       maxDensity,
+
       totalReadings: records.length,
+
       peakCongestion,
+
       congestionScore: Math.round(averageDensity),
+
     };
+
   }, [filteredTrendRecords]);
 
   const congestionLevel = getLevel(roadAnalysis.congestionScore);
 
   const congestionDistribution = useMemo(() => {
+
     const counts = { Low: 0, Moderate: 0, Heavy: 0 };
 
     for (const record of filteredTrendRecords) {
+
       const level = getLevel(densityPercent(Number(record.density)));
+
       counts[level] += 1;
+
     }
 
     const total = counts.Low + counts.Moderate + counts.Heavy;
 
     return {
+
       counts,
+
       total,
+
       lowPercent: total ? (counts.Low / total) * 100 : 0,
+
       moderatePercent: total ? (counts.Moderate / total) * 100 : 0,
+
       heavyPercent: total ? (counts.Heavy / total) * 100 : 0,
+
     };
+
   }, [filteredTrendRecords]);
-
-
 
   const handleFromDateChange = (value: string) => {
 
     setFromDate(value);
+
     setUseCustomDates(true);
 
     if (value > toDate) setToDate(value);
 
   };
 
-
-
   const handleToDateChange = (value: string) => {
 
     setToDate(value);
+
     setUseCustomDates(true);
 
     if (value < fromDate) setFromDate(value);
 
   };
 
-
-
   const downloadReport = async () => {
+
     try {
+
       const apiRange = range === '7 Days' ? 'week' : range === '1 Month' ? 'month' : 'day';
+
       const response = await fetch(
+
         `${API_BASE}/analytics/reports?range=${apiRange}&format=csv`,
+
       );
 
       if (!response.ok) {
+
         throw new Error(`Report request failed (${response.status}).`);
+
       }
 
       const blob = await response.blob();
+
       const url = URL.createObjectURL(blob);
+
       const anchor = document.createElement('a');
+
       anchor.href = url;
+
       anchor.download = `trafficvision-report-${apiRange}.csv`;
+
       document.body.appendChild(anchor);
+
       anchor.click();
+
       anchor.remove();
+
       URL.revokeObjectURL(url);
+
     } catch (error) {
+
       setAnalyticsError(
+
         error instanceof Error ? error.message : 'Could not download report.'
+
       );
+
     }
+
   };
-
-
 
   const rescanNetwork = () => {
+
     if (isRescanning || isAnalyticsLoading) return;
+
     setIsRescanning(true);
+
     setRefreshVersion((previous) => previous + 1);
+
   };
 
-
-
-
 const speedReadings = filteredTrendRecords
+
   .filter(
+
     (record) =>
+
       record.average_speed_kmh != null &&
+
       Number.isFinite(Number(record.average_speed_kmh)) &&
+
       Number(record.average_speed_kmh) >= 0,
+
   )
+
   .map((record) => Number(record.average_speed_kmh));
 
 const averageSpeedLabel =
+
   speedReadings.length > 0
+
     ? `${(
+
         speedReadings.reduce((sum, speed) => sum + speed, 0) /
+
         speedReadings.length
+
       ).toFixed(1)} km/h`
+
     : "Not available";
 
 const currentTrend = useMemo(() => {
+
   const records = [...filteredTrendRecords].sort(
+
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+
   );
 
   return {
+
     labels: records.map((record) => {
+
       const timestamp = new Date(record.timestamp);
+
       const timeLabel = timestamp.toLocaleTimeString('en-IN', {
+
         hour: '2-digit',
+
         minute: '2-digit',
+
       });
 
       if (range !== '24 Hours' && fromDate === toDate) return timeLabel;
 
       const dateLabel = timestamp.toLocaleDateString('en-IN', {
+
         day: '2-digit',
+
         month: 'short',
+
       });
 
       return `${dateLabel} ${timeLabel}`;
+
     }),
+
     values: records.map((record) =>
+
       Math.max(0, Number(record.vehicle_count) || 0),
+
     ),
+
     details: records.map((record) => ({
+
       density: densityPercent(Number(record.density)),
+
       congestion: record.congestion_level,
+
     })),
+
   };
+
 }, [filteredTrendRecords, fromDate, toDate, range]);
+
 const peakValue = currentTrend.values.length
+
     ? Math.max(...currentTrend.values)
+
     : 0;
+
   const peakLabel = currentTrend.values.length
+
     ? currentTrend.labels[currentTrend.values.indexOf(peakValue)]
+
     : 'No data';
-
-
 
   return (
 
@@ -786,8 +1123,6 @@ const peakValue = currentTrend.values.length
         </div>
 
       </aside>
-
-
 
       <main
 
@@ -815,8 +1150,6 @@ const peakValue = currentTrend.values.length
 
           </div>
 
-
-
           <button
 
             type="button"
@@ -834,8 +1167,6 @@ const peakValue = currentTrend.values.length
           </button>
 
         </div>
-
-
 
         <div className="mt-5 flex flex-wrap gap-2">
 
@@ -879,8 +1210,6 @@ const peakValue = currentTrend.values.length
 
             </div>
 
-
-
             {road.trim() !== '' && (
 
               <div className="absolute left-0 top-full z-50 mt-1 w-full overflow-hidden rounded-lg border border-gray-700 bg-[#0c1424] shadow-xl">
@@ -923,15 +1252,16 @@ const peakValue = currentTrend.values.length
 
           </div>
 
-
-
           <select
 
             aria-label="Trend range"
 
             value={range}
 
-            onChange={(event) => { setRange(event.target.value as RangeType); }}
+            onChange={(event) => {
+                setRange(event.target.value as RangeType);
+                setUseCustomDates(false);
+              }}
 
             className="rounded-lg border border-gray-700 bg-[#0c1424] px-3 text-sm"
 
@@ -944,8 +1274,6 @@ const peakValue = currentTrend.values.length
             <option>1 Month</option>
 
           </select>
-
-
 
           <select
 
@@ -969,15 +1297,11 @@ const peakValue = currentTrend.values.length
 
         </div>
 
-
-
         <div className="mt-3 text-xs text-cyan-400">
 
           Selected road: <span className="font-semibold">{selectedRoad}</span>
 
         </div>
-
-
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
@@ -990,13 +1314,21 @@ const peakValue = currentTrend.values.length
             ['PEAK DELAY DELTA', delayPrediction ? `${delayPrediction.estimated_delay_minutes.toFixed(1)} min` : 'Unavailable', delayPrediction ? `Estimated delay | ${Math.round(delayPrediction.confidence * 100)}% confidence` : 'Prediction API unavailable'],
 
             [
+
               'PREDICTION ACCURACY',
+
               modelEvaluation?.metrics?.accuracy != null
+
                 ? `${(modelEvaluation.metrics.accuracy * 100).toFixed(1)}%`
+
                 : 'Not available',
+
               modelEvaluation
+
               ? `${modelEvaluation.status === 'preliminary_chronological_holdout' ? 'Preliminary evaluation' : modelEvaluation.status} | ${modelEvaluation.sample_count ?? 0} samples`
+
               : 'Evaluation API unavailable',
+
             ],
 
           ].map(([title, value, sub]) => (
@@ -1015,74 +1347,138 @@ const peakValue = currentTrend.values.length
 
         </div>
 
-
-
         <section className="mt-5 rounded-xl border border-gray-800 bg-[#0c1424] p-5">
+
           <div className="flex flex-wrap items-center justify-between gap-2">
+
             <h2 className="font-semibold">Backend Prediction Results</h2>
+
             <span className="text-xs text-cyan-400">
+
               {congestionPrediction ? `Model: ${congestionPrediction.model_version}` : 'Model prediction unavailable'}
+
             </span>
+
           </div>
+
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
             <div className="rounded-lg border border-gray-800 p-4">
+
               <p className="text-xs text-gray-500">Predicted congestion level</p>
+
               <p className="mt-2 text-lg font-semibold text-white">
+
                 {congestionPrediction ? congestionPrediction.predicted_level : 'Unavailable'}
+
               </p>
+
               <p className="mt-1 text-xs text-gray-400">
+
                 {congestionPrediction && congestionPrediction.confidence !== null
+
                   ? `Model confidence: ${Math.round(congestionPrediction.confidence * 100)}%`
+
                   : 'No prediction confidence returned'}
+
               </p>
+
             </div>
+
             <div className="rounded-lg border border-gray-800 p-4">
+
               <p className="text-xs text-gray-500">Predicted peak-hour windows</p>
+
               {peakWindows.length ? (
+
                 <ul className="mt-2 space-y-1 text-sm text-white">
+
                   {peakWindows.map((window, index) => (
+
                     <li key={`${window.start}-${window.end}-${index}`}>
+
                       {window.start} – {window.end}
+
                     </li>
+
                   ))}
+
                 </ul>
+
               ) : (
+
                 <p className="mt-2 text-sm text-gray-400">No peak windows returned</p>
+
               )}
+
             </div>
+
             <div className="rounded-lg border border-cyan-900/60 bg-cyan-950/20 p-4">
+
               <p className="text-xs text-gray-400">Dataset-based predicted vehicle count</p>
+
               <p className="mt-2 text-2xl font-semibold text-white">
+
                 {vehicleCountPrediction
+
                   ? vehicleCountPrediction.predicted_vehicle_count.toFixed(1)
+
                   : 'Unavailable'}
+
               </p>
+
               <p className="mt-1 text-sm text-cyan-300">
+
                 {vehicleCountPrediction
+
                   ? vehicleCountPrediction.traffic_condition
+
                   : 'No estimate available'}
+
               </p>
+
               <p className="mt-2 text-xs text-gray-400">
+
                 Provisional mapping: selected road number to dataset junction number.
+
                 This is a model estimate, not a live sensor count.
+
               </p>
+
               <p className="mt-1 break-words text-xs text-gray-500">
+
                 {vehicleCountPrediction
+
                   ? `Junction ${vehicleCountPrediction.junction} | Model: ${vehicleCountPrediction.model_version}`
+
                   : 'Vehicle-count model unavailable'}
+
               </p>
+
             </div>
+
           </div>
+
           {delayPrediction && (
+
             <p className="mt-3 text-xs text-gray-400">
+
               Estimated delay: {delayPrediction.estimated_delay_minutes.toFixed(1)} minutes.
+
               Confidence: {Math.round(delayPrediction.confidence * 100)}%.
+
               This is a backend estimate, not a measured travel delay.
+
             </p>
+
           )}
+
           {predictionError && (
+
             <p role="status" className="mt-3 text-xs text-amber-400">{predictionError}</p>
+
           )}
+
         </section>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-3">
@@ -1103,49 +1499,71 @@ const peakValue = currentTrend.values.length
 
             </div>
 
-
-
             <div className="mt-6 overflow-x-auto">
+
   {currentTrend.values.length > 0 ? (
+
     <div className="flex h-52 w-full items-end gap-3">
+
       {currentTrend.values.map((value, index) => (
+
         <div key={`${currentTrend.labels[index]}-${index}`} className="flex h-full min-w-0 flex-1 flex-col justify-end">
+
           <div className="flex h-full items-end">
+
             <div
+
               className="w-full rounded-t bg-cyan-500/80 transition-all hover:bg-cyan-400"
+
               style={{
+
                 height: `${value > 0 ? Math.max(3, value / Math.max(1, ...currentTrend.values) * 100) : 0}%`,
+
               }}
+
               title={`${currentTrend.labels[index]} | Vehicles: ${value} | Density: ${currentTrend.details[index].density.toFixed(0)}% | Congestion: ${currentTrend.details[index].congestion}`}
+
             />
+
           </div>
+
           <p className="mt-1 text-center text-[10px] font-medium text-gray-300">
+
             {currentTrend.labels[index]}
+
           </p>
+
         </div>
+
       ))}
+
     </div>
+
   ) : (
+
     <p className="py-12 text-center text-sm text-gray-400">
+
       No traffic records available for this period.
+
     </p>
+
   )}
+
 </div>
 
 <div className="mt-3 flex flex-wrap gap-5 text-[10px] font-medium text-gray-300">
+
   <span className="text-cyan-300">Observed Vehicles</span>
+
   <span>Hover over a bar for density and congestion details</span>
+
 </div>
+
 <div className="mt-3 flex flex-wrap gap-5 text-[10px] font-medium text-gray-300">
-
-
-
 
             </div>
 
           </section>
-
-
 
           <section className="rounded-xl border border-gray-800 bg-[#0c1424] p-5">
 
@@ -1153,13 +1571,16 @@ const peakValue = currentTrend.values.length
 
             <p className="text-xs text-gray-500">Congestion distribution</p>
 
-
-
             <div className="mx-auto mt-8 h-36 w-36 rounded-full p-8"
+
               style={{
+
                 background: congestionDistribution.total
+
                   ? `conic-gradient(#22c55e 0% ${congestionDistribution.lowPercent}%, #f59e0b ${congestionDistribution.lowPercent}% ${congestionDistribution.lowPercent + congestionDistribution.moderatePercent}%, #ef4444 ${congestionDistribution.lowPercent + congestionDistribution.moderatePercent}% 100%)`
+
                   : "#374151",
+
               }}>
 
               <div className="flex h-full items-center justify-center rounded-full bg-[#0c1424] text-center text-xs">
@@ -1170,29 +1591,39 @@ const peakValue = currentTrend.values.length
 
             </div>
 
-
-
             <div className="mt-5 space-y-2 text-xs text-gray-400">
+
               <p className="flex justify-between">
+
                 <span>Low</span>
+
                 <span>{congestionDistribution.counts.Low} ({congestionDistribution.total ? congestionDistribution.lowPercent.toFixed(1) : '0.0'}%)</span>
+
               </p>
+
               <p className="flex justify-between">
+
                 <span>Moderate</span>
+
                 <span>{congestionDistribution.counts.Moderate} ({congestionDistribution.total ? congestionDistribution.moderatePercent.toFixed(1) : '0.0'}%)</span>
+
               </p>
+
               <p className="flex justify-between">
+
                 <span>Heavy</span>
+
                 <span>{congestionDistribution.counts.Heavy} ({congestionDistribution.total ? congestionDistribution.heavyPercent.toFixed(1) : '0.0'}%)</span>
+
               </p>
+
               {!congestionDistribution.total && <p>No records available for this selection.</p>}
+
             </div>
 
           </section>
 
         </div>
-
-
 
         <section className="mt-5 rounded-xl border border-gray-800 bg-[#0c1424] p-5">
 
@@ -1211,8 +1642,6 @@ const peakValue = currentTrend.values.length
               <p className="mt-1 text-xs text-gray-500">{analyticsError || (isAnalyticsLoading ? "Loading backend traffic records..." : `${currentTrend.values.length} backend records | ${range === "7 Days" ? "week" : range === "1 Month" ? "month" : "day"} API window`)}</p>
 
             </div>
-
-
 
             <div className="relative flex gap-2">
 
@@ -1240,13 +1669,11 @@ const peakValue = currentTrend.values.length
 
               </button>
 
-              <button type="button" onClick={() => setRange('24 Hours')} aria-label="Reset trend" className="rounded border border-gray-700 px-2">
+              <button type="button" onClick={() => { setRange('24 Hours'); setUseCustomDates(false); }} aria-label="Reset trend" className="rounded border border-gray-700 px-2">
 
                 <RefreshCw size={14} />
 
               </button>
-
-
 
               {road.trim() !== '' && (
 
@@ -1270,11 +1697,7 @@ const peakValue = currentTrend.values.length
 
           </div>
 
-
-
           <p className="mt-4 text-xs text-cyan-400">{selectedRoad}</p>
-
-
 
           <div className="mt-4 overflow-x-auto">
 
@@ -1304,8 +1727,6 @@ const peakValue = currentTrend.values.length
 
           </div>
 
-
-
           <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
 
             {[
@@ -1334,8 +1755,6 @@ const peakValue = currentTrend.values.length
 
         </section>
 
-
-
         <section className="mt-5 rounded-xl border border-gray-800 bg-[#0c1424] p-5">
 
           <div className="flex flex-wrap justify-between gap-3">
@@ -1347,8 +1766,6 @@ const peakValue = currentTrend.values.length
               <p className="text-xs text-gray-500">Backend traffic records; grey cells indicate missing data. Speed and separate score values are not supplied by this API.</p>
 
             </div>
-
-
 
             <div className="flex flex-wrap items-center gap-2">
 
@@ -1374,11 +1791,7 @@ const peakValue = currentTrend.values.length
 
               </label>
 
-
-
               <span className="text-xs text-gray-600">to</span>
-
-
 
               <label className="flex items-center gap-1">
 
@@ -1402,8 +1815,6 @@ const peakValue = currentTrend.values.length
 
               </label>
 
-
-
               <select
 
                 aria-label="Heatmap bucket"
@@ -1421,8 +1832,6 @@ const peakValue = currentTrend.values.length
                 <option>Daily</option>
 
               </select>
-
-
 
               {metrics.map((item) => (
 
@@ -1452,8 +1861,6 @@ const peakValue = currentTrend.values.length
 
           </div>
 
-
-
           <div className="mt-4 rounded border border-cyan-500/20 bg-cyan-500/5 px-3 py-2 text-xs">
 
             <span className="text-gray-400">Selected date range:</span>
@@ -1468,8 +1875,6 @@ const peakValue = currentTrend.values.length
 
           </div>
 
-
-
           <div className="mt-2 rounded border border-gray-800 bg-[#101a2c] px-3 py-2 text-xs">
 
             <span className="text-gray-400">Metric:</span>
@@ -1479,8 +1884,6 @@ const peakValue = currentTrend.values.length
             {metric === 'Level' && <span className="ml-2 text-gray-500">Low / Moderate / Heavy</span>}
 
           </div>
-
-
 
           <div className="mt-5 overflow-x-auto">
 
@@ -1498,13 +1901,9 @@ const peakValue = currentTrend.values.length
 
               </div>
 
-
-
               {roads.map((item, row) => {
 
                 const isSelected = item === selectedRoad;
-
-
 
                 return (
 
@@ -1527,8 +1926,6 @@ const peakValue = currentTrend.values.length
                       {item}
 
                     </button>
-
-
 
                     <div
 
@@ -1572,8 +1969,6 @@ const peakValue = currentTrend.values.length
 
           </div>
 
-
-
           <div className="mt-5 rounded-lg border border-gray-800 bg-[#101a2c] p-4">
 
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -1587,8 +1982,6 @@ const peakValue = currentTrend.values.length
                 <p className="mt-1 text-xs text-gray-500">Current metric: {metric}</p>
 
               </div>
-
-
 
               <div className="min-w-[180px] rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-5 py-3 text-right">
 
@@ -1607,8 +2000,6 @@ const peakValue = currentTrend.values.length
               </div>
 
             </div>
-
-
 
             <div className="mt-4 grid grid-cols-2 gap-4 border-t border-gray-800 pt-4 md:grid-cols-3 lg:grid-cols-6">
 
@@ -1639,8 +2030,6 @@ const peakValue = currentTrend.values.length
               ))}
 
             </div>
-
-
 
             {metric === 'Level' && (
 
@@ -1675,8 +2064,6 @@ const peakValue = currentTrend.values.length
                   </span>
 
                 </div>
-
-
 
                 <p className="mt-3 text-xs leading-6 text-gray-400">
 
@@ -1720,8 +2107,6 @@ const peakValue = currentTrend.values.length
 
         </section>
 
-
-
         <section className="mt-5 rounded-xl border border-purple-500/20 bg-[#0c1424] p-5">
 
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -1735,7 +2120,9 @@ const peakValue = currentTrend.values.length
                 <h2 className="font-semibold">AI Tactical Recommendations Copilot</h2>
 
                 <span className="rounded bg-purple-500/10 px-2 py-1 text-[9px] font-semibold text-purple-400">
+
                   {recommendationData?.generated_by === 'rule_based' ? 'BACKEND RULE-BASED' : 'BACKEND'}
+
                 </span>
 
               </div>
@@ -1747,8 +2134,6 @@ const peakValue = currentTrend.values.length
               </p>
 
             </div>
-
-
 
             <button
 
@@ -1778,8 +2163,6 @@ const peakValue = currentTrend.values.length
 
           </div>
 
-
-
           <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-purple-500/10 bg-purple-500/5 px-4 py-3">
 
             <div className="flex items-center gap-2">
@@ -1799,8 +2182,6 @@ const peakValue = currentTrend.values.length
            <span className="text-[10px] font-medium text-gray-300">Road: {recommendationData?.road_name ?? 'Loading'} | Recent records considered: {recommendationData?.record_count ?? 0}</span>
 
           </div>
-
-
 
           <div className="my-4 flex flex-wrap gap-2">
 
@@ -1830,8 +2211,6 @@ const peakValue = currentTrend.values.length
 
           </div>
 
-
-
           <div className="grid gap-4 md:grid-cols-3">
 
             {filtered.map((item) => (
@@ -1860,8 +2239,6 @@ const peakValue = currentTrend.values.length
 
                 </div>
 
-
-
                 <h3 className="mt-3 font-semibold">{item[1]}</h3>
 
                 <p className="mt-2 text-xs text-gray-500">
@@ -1869,8 +2246,6 @@ const peakValue = currentTrend.values.length
                   Target corridor: <span className="text-gray-300">{item[2]}</span>
 
                 </p>
-
-
 
                 <div className="mt-4 flex justify-between gap-2 text-xs">
 
@@ -1880,15 +2255,16 @@ const peakValue = currentTrend.values.length
 
                 </div>
 
-
-
                 <button
 
                   type="button"
 
                   onClick={() => {
+
                     selectRoad(item[2]);
+
                     setSelectedInsight(item);
+
                   }}
 
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded border border-gray-700 py-2 text-xs transition hover:border-purple-500/50 hover:bg-purple-500/10"
@@ -1908,58 +2284,107 @@ const peakValue = currentTrend.values.length
           </div>
 
           {selectedInsight && (
+
             <div className="mt-5 rounded-xl border border-purple-500/30 bg-purple-500/5 p-5">
+
               <div className="flex flex-wrap items-start justify-between gap-3">
+
                 <div>
+
                   <p className="text-xs font-semibold uppercase tracking-wider text-purple-400">
+
                     Selected Road Insight
+
                   </p>
+
                   <h3 className="mt-2 text-lg font-bold text-white">
+
                     {selectedInsight[2]}
+
                   </h3>
+
                   <p className="mt-1 text-sm text-gray-400">
+
                     {selectedInsight[1]}
+
                   </p>
+
                 </div>
+
                 <button
+
                   type="button"
+
                   onClick={() => setSelectedInsight(null)}
+
                   className="rounded border border-gray-700 px-3 py-1 text-xs text-gray-300 hover:bg-gray-800"
+
                 >
+
                   Close
+
                 </button>
+
               </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
+
                 <div className="rounded-lg border border-gray-800 bg-[#101a2c] p-3">
+
                   <p className="text-xs text-gray-500">Priority</p>
+
                   <p className="mt-1 font-semibold text-white">{selectedInsight[0]}</p>
+
                 </div>
+
                 <div className="rounded-lg border border-gray-800 bg-[#101a2c] p-3">
+
                   <p className="text-xs text-gray-500">Generation method</p>
+
                   <p className="mt-1 font-semibold text-purple-400">{selectedInsight[3]}</p>
+
                 </div>
+
                 <div className="rounded-lg border border-gray-800 bg-[#101a2c] p-3">
+
                   <p className="text-xs text-gray-500">Observed traffic evidence</p>
+
                   <p className="mt-1 font-semibold text-green-400">{selectedInsight[5]}</p>
+
                 </div>
+
               </div>
 
               <div className="mt-4 rounded-lg bg-[#101a2c] p-4">
+
                 <p className="text-xs font-medium text-gray-500">Reason</p>
+
                 <p className="mt-1 text-sm leading-6 text-gray-400">
+
                   {selectedInsight[6]}
+
                 </p>
+
                 <p className="mt-3 text-sm font-semibold text-white">Suggested action</p>
+
                 <p className="mt-1 text-sm leading-6 text-gray-400">
+
                   {selectedInsight[7]}
+
                 </p>
+
                 <p className="mt-3 text-xs text-yellow-400">
+
                   {recommendationData?.disclaimer ?? 'Backend-generated decision support; verify local conditions before acting.'}
+
                 </p>
+
               </div>
+
             </div>
+
           )}
+
         </section>
 
         <footer className="mt-5 border-t border-gray-800 py-4 text-xs text-gray-500">

@@ -223,7 +223,7 @@ def send_possible_incident_alert(anomaly):
     POST http://localhost:8000/api/v1/alerts
     """
 
-    alert_url = "http://localhost:8002/api/v1/alerts"
+    alert_url = "http://localhost:8000/api/v1/alerts"
 
     payload = {
         "type": "possible_incident",
