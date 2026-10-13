@@ -1,5 +1,44 @@
 # TrafficVision AI — Deployment Guide (Milestone 4)
 
+## Live deployment (current)
+
+Everything runs as **one Render web service**, `https://trafficvision-ai-i8e2.onrender.com`,
+built from `Backend_Iswarya/` in `deekshuu09-sudo/TrafficVision-AI` (`main`, Docker,
+auto-deploy on push):
+
+| Path          | What                                              | Code in `Backend_Iswarya/`        |
+| ------------- | ------------------------------------------------- | --------------------------------- |
+| `/`           | Web app (redirects to `/Login.html`)              | `Front-end/` (copy of `Frontend_Vennela`) |
+| `/api/v1/...` | Gateway: Auth, Monitoring, Prediction, Route, Alerts | `app/`                         |
+| `/analytics`  | Analytics (Intern 2)                              | `services/analytics/`             |
+| `/ai-engine`  | AI Engine (Intern 3)                              | `ai-engine/`                      |
+| `/docs`       | Swagger UI (also `/analytics/docs`, `/ai-engine/docs`) |                              |
+
+Why one service: the free tier gives one URL per service and the frontend already calls
+Analytics and the AI Engine through `<gateway>/analytics` and `<gateway>/ai-engine`.
+`app/subapps.py` mounts both apps unchanged. On startup the backend creates any missing
+tables and loads reference data when they are empty (`app/bootstrap.py`,
+`prepare_analytics_data` — same steps as `QA/milestone4/day3/setup_production_db.py`), so a
+fresh Postgres needs no manual seeding. Memory ≈ 230 MB of the 512 MB limit.
+
+Render environment variables: `DATABASE_URL` (External URL + `?sslmode=require`),
+`JWT_SECRET_KEY`, `ALERT_SERVICE_KEY`, `CORS_ALLOWED_ORIGINS=https://trafficvision-ai-i8e2.onrender.com`,
+`PORT=8000`; `REDIS_URL` optional.
+
+Run the live suites against it:
+
+```powershell
+$env:BACKEND_URL="https://trafficvision-ai-i8e2.onrender.com"
+$env:WEB_URL=$env:BACKEND_URL
+$env:ANALYTICS_URL="$env:BACKEND_URL/analytics"
+$env:AI_URL="$env:BACKEND_URL/ai-engine"
+```
+
+The multi-service layout below (`render.yaml`, one service per intern) is the original
+plan and still works if the team moves to a paid plan.
+
+---
+
 Production runs entirely on free tiers:
 
 | Part                                   | Where                                | Notes                                                 |
@@ -45,7 +84,7 @@ can't add secrets there. Deploy from a fork:
 2. Check what was migrated — this changes nothing:
    ```powershell
    pip install psycopg2-binary pandas python-dotenv
-   $env:DATABASE_URL="postgresql://USER:PASS@HOST.singapore-postgres.render.com/DB?sslmode=require"
+   $env:DATABASE_URL="postgresql://USER:PASS@HOST.oregon-postgres.render.com/DB?sslmode=require"
    python QA/milestone4/day3/setup_production_db.py --check
    ```
 3. If it reports missing tables/columns or empty tables (for example `traffic_readings`,
@@ -58,7 +97,7 @@ can't add secrets there. Deploy from a fork:
 ### 1.3 Redis (Upstash)
 
 [console.upstash.com](https://console.upstash.com) → Create database → region
-**ap-southeast-1 (Singapore)** → copy the **`rediss://` URL** (Connect → Redis URL).
+**us-west-2 (Oregon)** → copy the **`rediss://` URL** (Connect → Redis URL).
 
 ### 1.4 Render services
 
@@ -111,10 +150,10 @@ the run summary and as an artifact (commit the ones you keep into `QA/milestone4
 Or locally (PowerShell):
 
 ```powershell
-$env:BACKEND_URL="https://tv-team1-backend.onrender.com"
-$env:ANALYTICS_URL="https://tv-team1-analytics.onrender.com"
-$env:AI_URL="https://tv-team1-ai.onrender.com"
-$env:WEB_URL="https://tv-team1-web.onrender.com"
+$env:BACKEND_URL="https://trafficvision-ai-i8e2.onrender.com"
+$env:ANALYTICS_URL="https://trafficvision-ai-i8e2.onrender.com/analytics"
+$env:AI_URL="https://trafficvision-ai-i8e2.onrender.com/ai-engine"
+$env:WEB_URL="https://trafficvision-ai-i8e2.onrender.com"
 $env:ALERT_SERVICE_KEY="<from Render>"; $env:DATABASE_URL="<production URL>"
 pip install selenium psycopg2-binary
 

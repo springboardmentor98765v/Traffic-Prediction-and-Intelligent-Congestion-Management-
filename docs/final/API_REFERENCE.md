@@ -1,12 +1,14 @@
 # TrafficVision AI — API Reference (production)
 
-Base URLs (Render; replace if your subdomains differ):
+Base URLs (one Render web service; the backend mounts Analytics and the AI Engine at
+gateway paths and serves the web app at `/`):
 
-| Service   | Base URL                                  | Interactive docs  |
-| --------- | ----------------------------------------- | ----------------- |
-| Gateway   | `https://tv-team1-backend.onrender.com`   | `/docs`, `/redoc` |
-| Analytics | `https://tv-team1-analytics.onrender.com` | `/docs`           |
-| AI Engine | `https://tv-team1-ai.onrender.com`        | `/docs`           |
+| Service   | Base URL                                               | Interactive docs  |
+| --------- | ------------------------------------------------------ | ----------------- |
+| Web app   | `https://trafficvision-ai-i8e2.onrender.com`           | `/` → Login page  |
+| Gateway   | `https://trafficvision-ai-i8e2.onrender.com`           | `/docs`, `/redoc` |
+| Analytics | `https://trafficvision-ai-i8e2.onrender.com/analytics` | `/docs`           |
+| AI Engine | `https://trafficvision-ai-i8e2.onrender.com/ai-engine` | `/docs`           |
 
 Auth: `Authorization: Bearer <access_token>` from `/api/v1/auth/login`.
 🔒 = token required. 🔑 = alert service key (`X-Alert-Service-Key`) or operator/admin token.

@@ -9,9 +9,9 @@
 // = { GATEWAY_URL, ANALYTICS_URL, AI_ENGINE_URL } in a script loaded before api.js.
 const INJECTED_CONFIG = window.__TRAFFICVISION_CONFIG__ || {};
 const PRODUCTION_URLS = {
-  BACKEND: INJECTED_CONFIG.GATEWAY_URL || 'https://tv-team1-backend.onrender.com',
-  ANALYTICS: INJECTED_CONFIG.ANALYTICS_URL || 'https://tv-team1-analytics.onrender.com',
-  AI_ENGINE: INJECTED_CONFIG.AI_ENGINE_URL || 'https://tv-team1-ai.onrender.com',
+  BACKEND: INJECTED_CONFIG.GATEWAY_URL || 'https://trafficvision-ai-i8e2.onrender.com',
+  ANALYTICS: INJECTED_CONFIG.ANALYTICS_URL || 'https://trafficvision-ai-i8e2.onrender.com/analytics',
+  AI_ENGINE: INJECTED_CONFIG.AI_ENGINE_URL || 'https://trafficvision-ai-i8e2.onrender.com/ai-engine',
 };
 
 const IS_LOCAL_FRONTEND = ['', 'localhost', '127.0.0.1'].includes(window.location.hostname);

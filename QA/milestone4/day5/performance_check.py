@@ -13,7 +13,7 @@ the report (priority by how far over it is), ready to copy into the defect track
 
     python QA/milestone4/day5/performance_check.py --report QA/milestone4/day5/performance_report.md
 
-Thresholds (agreed for the free tier: 0.1 CPU / 512 MB per service, Singapore region):
+Thresholds (agreed for the free tier: 0.1 CPU / 512 MB per service, Oregon region):
     API p95 (warm, sequential)  <= 1000 ms     heavy AI/ML endpoints <= 2500 ms
     API p95 under 10 users      <= 3000 ms
     Page delivery               <= 2000 ms

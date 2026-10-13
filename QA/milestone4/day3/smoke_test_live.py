@@ -92,15 +92,22 @@ def main():
     local = any(host in web for host in ("127.0.0.1", "localhost"))
     status, js, _, _ = call(web + "/api.js")
     js = js if isinstance(js, str) else ""
+    # When the backend serves the pages itself, api.js resolves the API from
+    # window.location.origin, so the backend URL needn't appear in the file.
+    same_origin = web == b and "window.location.origin" in js
     r.add(
         "Frontend",
         "api.js points at production backend",
-        None if local else b in js,
+        None if local else (b in js or same_origin),
         b,
         (
             "local run"
             if local
-            else ("found" if b in js else "not found: fix PRODUCTION_URLS in api.js")
+            else (
+                "found"
+                if b in js
+                else "same origin" if same_origin else "not found: fix PRODUCTION_URLS in api.js"
+            )
         ),
     )
 

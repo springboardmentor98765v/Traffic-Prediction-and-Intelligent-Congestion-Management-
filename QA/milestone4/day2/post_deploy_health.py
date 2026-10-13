@@ -5,9 +5,9 @@ Polls every deployed service until it answers 200 or the timeout runs out:
     python QA/milestone4/day2/post_deploy_health.py --host <vm-ip-or-dns> [--timeout 180]
     python QA/milestone4/day2/post_deploy_health.py --scheme https --host api.example.com
     python QA/milestone4/day2/post_deploy_health.py --timeout 300
-        --url backend=https://tv-team1-backend.onrender.com
-        --url analytics=https://tv-team1-analytics.onrender.com
-        --url ai=https://tv-team1-ai.onrender.com
+        --url backend=https://trafficvision-ai-i8e2.onrender.com
+        --url analytics=https://trafficvision-ai-i8e2.onrender.com/analytics
+        --url ai=https://trafficvision-ai-i8e2.onrender.com/ai-engine
 
 With --url (Render / any per-service URL; one command line) the same checks run against
 each service's own base URL instead of host:port.

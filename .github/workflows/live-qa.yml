@@ -27,10 +27,10 @@ jobs:
     environment: production
     timeout-minutes: 45
     env:
-      BACKEND_URL: ${{ vars.BACKEND_URL || 'https://tv-team1-backend.onrender.com' }}
-      ANALYTICS_URL: ${{ vars.ANALYTICS_URL || 'https://tv-team1-analytics.onrender.com' }}
-      AI_URL: ${{ vars.AI_URL || 'https://tv-team1-ai.onrender.com' }}
-      WEB_URL: ${{ vars.WEB_URL || 'https://tv-team1-web.onrender.com' }}
+      BACKEND_URL: ${{ vars.BACKEND_URL || 'https://trafficvision-ai-i8e2.onrender.com' }}
+      ANALYTICS_URL: ${{ vars.ANALYTICS_URL || 'https://trafficvision-ai-i8e2.onrender.com/analytics' }}
+      AI_URL: ${{ vars.AI_URL || 'https://trafficvision-ai-i8e2.onrender.com/ai-engine' }}
+      WEB_URL: ${{ vars.WEB_URL || 'https://trafficvision-ai-i8e2.onrender.com' }}
       # Optional: alert producer checks and operator/admin test accounts.
       ALERT_SERVICE_KEY: ${{ secrets.ALERT_SERVICE_KEY }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}

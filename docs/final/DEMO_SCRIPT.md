@@ -2,8 +2,15 @@
 
 ## T-10 minutes: warm-up (free tier sleeps after 15 min idle)
 
-1. Open in tabs: the frontend, `…backend…/health`, `…analytics…/`, `…ai…/health`. Wait for
-   all four to answer (first one can take ~60 s).
+1. Open in tabs (all one Render service, so waking one wakes all):
+   - App: https://trafficvision-ai-i8e2.onrender.com (opens the login page)
+   - API docs: https://trafficvision-ai-i8e2.onrender.com/docs
+   - Health: https://trafficvision-ai-i8e2.onrender.com/health,
+     https://trafficvision-ai-i8e2.onrender.com/analytics/,
+     https://trafficvision-ai-i8e2.onrender.com/ai-engine/health
+
+   Wait for all to answer (the first can take ~60 s), then click through every page once so
+   the AI caches are warm.
 2. GitHub → Actions → **Live QA** → `smoke` → Run. Keep the green run open as evidence.
 3. Have three accounts ready: a public user, an operator and an admin
    (register in the UI; promote with `UPDATE users SET role='operator' WHERE email='…'`).
@@ -12,7 +19,7 @@
 
 | #   | Time  | Who speaks | Show                                                                                                                              | Say                                                         |
 | --- | ----- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| 1   | 0:00  | Team lead  | Architecture diagram (`docs/final/ARCHITECTURE.md`)                                                                               | 4 services on Render free tier, Postgres, Redis, CI/CD      |
+| 1   | 0:00  | Team lead  | Architecture diagram (`docs/final/ARCHITECTURE.md` §1.1)                                                                          | 4 services in one Render free web service, Postgres, CI/CD  |
 | 2   | 1:00  | Intern 4   | Login page on desktop, then phone width (DevTools)                                                                                | Responsive, CAPTCHA, role tabs                              |
 | 3   | 2:00  | Intern 1   | Sign in as **public** → public dashboard with live roads                                                                          | JWT auth, role-based landing page                           |
 | 4   | 3:00  | Intern 2   | Live maps → congestion colours; Analytics page → trends, heatmap, **download CSV report**                                         | Live data from Postgres, Redis cache, 4 weeks of history    |

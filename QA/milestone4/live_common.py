@@ -2,10 +2,10 @@
 
 Service URLs come from the environment (defaults are the Render names in render.yaml):
 
-    BACKEND_URL    https://tv-team1-backend.onrender.com
-    ANALYTICS_URL  https://tv-team1-analytics.onrender.com
-    AI_URL         https://tv-team1-ai.onrender.com
-    WEB_URL        https://tv-team1-web.onrender.com
+    BACKEND_URL    https://trafficvision-ai-i8e2.onrender.com
+    ANALYTICS_URL  https://trafficvision-ai-i8e2.onrender.com/analytics
+    AI_URL         https://trafficvision-ai-i8e2.onrender.com/ai-engine
+    WEB_URL        https://trafficvision-ai-i8e2.onrender.com
 
 Optional:
     ALERT_SERVICE_KEY  producer key for POST /api/v1/alerts/ (Render env group value)
@@ -38,10 +38,10 @@ for _stream in (sys.stdout, sys.stderr):
         _stream.reconfigure(encoding="utf-8", errors="replace")
 
 DEFAULT_URLS = {
-    "backend": "https://tv-team1-backend.onrender.com",
-    "analytics": "https://tv-team1-analytics.onrender.com",
-    "ai": "https://tv-team1-ai.onrender.com",
-    "web": "https://tv-team1-web.onrender.com",
+    "backend": "https://trafficvision-ai-i8e2.onrender.com",
+    "analytics": "https://trafficvision-ai-i8e2.onrender.com/analytics",
+    "ai": "https://trafficvision-ai-i8e2.onrender.com/ai-engine",
+    "web": "https://trafficvision-ai-i8e2.onrender.com",
 }
 
 # Liveness path per service, used to wake free-tier services before measuring anything.
@@ -182,13 +182,14 @@ class Results:
         return ok
 
     def check(self, area, name, url, expect=200, method="GET", body=None, token=None, headers=None):
-        """Call `url`; PASS when the status matches `expect`. Returns the payload."""
+        """Call `url`; PASS when the status matches `expect`. Returns the payload, or None
+        on a failed check so callers' `... or {}` fallbacks hold when a service is down."""
         status, payload, ms, _ = call(url, method, body, token, headers)
         detail = ""
         if status != expect:
             detail = (payload if isinstance(payload, str) else json.dumps(payload))[:160]
         self.add(area, name, status == expect, expect, status, ms, detail)
-        return payload
+        return payload if status == expect else None
 
     def counts(self):
         return {

@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    },
+    {
+      "source": "/api.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, must-revalidate"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/api/v1/:path*", "destination": "https://trafficvision-ai-i8e2.onrender.com/api/v1/:path*" },
+    { "source": "/", "destination": "/Login.html" },
+    { "source": "/login", "destination": "/Login.html" },
+    { "source": "/admin", "destination": "/admin dashboard.html" },
+    { "source": "/operator", "destination": "/operator dashboard.html" },
+    { "source": "/dashboard", "destination": "/public dashboard.html" },
+    { "source": "/maps", "destination": "/live maps.html" },
+    { "source": "/routes", "destination": "/route-analysis.html" },
+    { "source": "/alerts", "destination": "/Alerts.html" },
+    { "source": "/analytics", "destination": "/analytics.html" }
+  ]
+}

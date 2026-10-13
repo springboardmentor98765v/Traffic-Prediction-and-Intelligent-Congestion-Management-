@@ -17,6 +17,8 @@
 #
 # Free-tier limits that matter: 512 MB RAM per service, services sleep after 15 min
 # idle (~1 min to wake), 750 instance-hours per month for the whole workspace.
+# Region: oregon, the same region as the production Postgres (Intern 2), so every
+# query stays inside one data centre instead of crossing from Asia to the US.
 
 envVarGroups:
   - name: trafficvision-shared
@@ -46,7 +48,7 @@ services:
     type: web
     runtime: docker
     plan: free
-    region: singapore
+    region: oregon
     dockerfilePath: './backend_updated/backend/Intern_AI AND ML/Dockerfile'
     dockerContext: './backend_updated/backend/Intern_AI AND ML'
     dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips=*
@@ -61,7 +63,7 @@ services:
     type: web
     runtime: docker
     plan: free
-    region: singapore
+    region: oregon
     # Intern 2 ships no Dockerfile; the backend one (pip install -r requirements.txt +
     # COPY . .) works with the analytics folder as context, same as docker-compose.prod.yml.
     dockerfilePath: './backend_updated/backend/Intern_AI AND ML/Dockerfile'
@@ -84,7 +86,7 @@ services:
     type: web
     runtime: docker
     plan: free
-    region: singapore
+    region: oregon
     dockerfilePath: './TrafficVision-AI m3/TrafficVision-AI/ai-engine/Dockerfile'
     dockerContext: './TrafficVision-AI m3/TrafficVision-AI'
     dockerCommand: uvicorn app:app --host 0.0.0.0 --port 8010 --proxy-headers --forwarded-allow-ips=*
