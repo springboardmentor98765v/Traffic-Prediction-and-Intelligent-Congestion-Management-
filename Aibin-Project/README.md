@@ -1,120 +1,101 @@
-# TrafficVision AI Backend - Beginner's Guide
+# TrafficVision AI — Backend & API Gateway
 
-Welcome to the **TrafficVision AI Backend** project! If you are new to backend development, **FastAPI**, or the concept of an **API Gateway**, you are in the right place. This document is written specifically for beginners to help you understand exactly what this codebase is doing, file by file.
+TrafficVision AI is an intelligent smart-city platform for real-time traffic monitoring, machine learning congestion forecasting, route optimization, incident alerting, and urban mobility analytics.
 
----
-
-## 1. Important Concepts to Know
-
-### What is FastAPI?
-FastAPI is a modern, fast, and highly popular framework for building APIs (Application Programming Interfaces) in Python. 
-Think of an API as a waiter in a restaurant. You (the client/frontend) tell the waiter what you want, the waiter takes your order to the kitchen (the backend server/database), and then brings your food (data) back to you. FastAPI makes building this "waiter" extremely quick and provides automatic, interactive documentation right out of the box.
-
-### What is an API Gateway?
-Imagine you run a massive restaurant with different specialized kitchens: one for pizza, one for sushi, and one for drinks. Instead of a customer having to go to three different kitchens, they go to a **front desk**. The front desk checks their ID (authentication) and then routes their order to the correct kitchen. 
-In modern application architecture (called microservices), an **API Gateway** acts as this front desk. It sits in front of all your other services (like a traffic monitoring service and a prediction service) and handles central tasks like user login, security, and routing requests to the correct place.
-
-### What have we created here?
-We have built an **API Gateway** for "TrafficVision AI" using **FastAPI**. 
-This gateway does three main things:
-1. **User Management (Auth):** Handles user registration, secure login, and issuing digital tokens.
-2. **Security (RBAC):** Ensures only certain users (like admins) can access specific areas. This is called Role-Based Access Control.
-3. **Routing (Proxy):** Takes requests for "traffic" or "prediction" data and silently forwards them to other backend services.
+This repository (`aibin-backend`) contains the **Central API Gateway**, the **Route Analysis Microservice**, the **Alert & Incident Management Microservice**, along with the production containerization, CI/CD, and integration tooling for the entire platform.
 
 ---
 
-## 2. Codebase Structure: Folder by Folder
+## 1. Quick-Start (Local Development)
 
-Here is a comprehensive breakdown of every folder and file in this project and what it does.
+### 1.1 Prerequisites
+- Python 3.11+
+- Virtual environment (`venv`)
+- PostgreSQL 16 (or local SQLite for lightweight testing)
+- Redis 7 (optional for local dev, recommended for caching)
 
-### The Root Folder
-This is the main folder (`trafficvision-backend/`). It holds the overarching configurations for the project.
+### 1.2 Setup & Run
+```bash
+# 1. Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate       # On Linux/macOS
+# or .venv\Scripts\activate     # On Windows
 
-- **`.env.example`**: This is a template for environment variables. Environment variables are secret keys and settings (like database passwords or API keys) that you don't want to write directly into your Python code. You usually copy this to a file named `.env` and fill in your actual secrets.
-- **`requirements.txt`**: This file lists all the third-party Python packages this project needs to run (like `fastapi`, `sqlalchemy` for databases, `uvicorn` to run the server, etc.). You install them using `pip install -r requirements.txt`.
-- **`README.md`**: The file you are reading right now! It explains the project.
-- **`Dockerfile`**: A set of instructions for "Docker". Docker packages this entire application into an isolated container so it can run smoothly on any computer in the world without setup issues.
-- **`test_auth.db` & `test_rbac.db`**: These are small, local SQLite databases created automatically when running our automated tests. You can usually ignore them.
+# 2. Install dependencies
+pip install -r requirements.txt
+pip install -r alert_service/requirements.txt
+pip install -r route_analysis/requirements.txt
 
----
+# 3. Configure local environment
+cp .env.example .env
 
-### The `app/` Folder
-This is where the actual heart of the application code lives.
+# 4. Start the API Gateway
+uvicorn app.main:app --port 8080 --reload
+```
 
-- **`app/main.py`**: This is the **Starting Point** of the app. When you start the server, this is the file that runs first. It creates the FastAPI application object and glues all the different routes (URLs) together.
-- **`app/config.py`**: This file reads your `.env` file and loads your secret configurations into Python variables so the rest of the application can access them securely.
-- **`app/database.py`**: This file is responsible for talking to your database (like SQLite or PostgreSQL). It sets up the "Engine" (the connection line) and the "Session" (the active conversation with the database).
-- **`app/models.py`**: This file defines your **Database Tables**. Using a tool called SQLAlchemy, we write normal Python classes (like a `User` class), and SQLAlchemy automatically translates that into an actual database table with columns like `email` and `password`.
-- **`app/schemas.py`**: This file defines the **Data Shapes**. When a user sends data to us (like filling out a registration form), we use a tool called "Pydantic" in this file to validate that the email is a real email format and the password isn't empty. It ensures bad data never reaches our database.
-
----
-
-### The `app/auth/` Folder
-This folder manages everything related to Authentication (logging in) and Authorization (checking permissions).
-
-- **`app/auth/router.py`**: This file defines the actual URLs (endpoints) for authentication. For example, it contains the code that executes when a user visits `POST /api/v1/auth/login` or `POST /api/v1/auth/register`.
-- **`app/auth/security.py`**: The toolkit for security. It contains functions to securely "hash" (scramble) passwords before saving them to the database. It also contains functions to create JWTs (JSON Web Tokens). A JWT is like a digital VIP wristband we give users after they log in, proving who they are for future requests.
-- **`app/auth/dependencies.py`**: FastAPI uses "dependencies" to share and reuse logic. This file has functions that run *before* a route does. For example, a function here will intercept a user's request, look at their VIP wristband (JWT token), figure out who they are, and block them if they aren't an "Admin".
-- **`app/auth/__init__.py`**: An empty file that simply tells Python, "Treat this folder as a module you can import from."
+Interactive OpenAPI Swagger UI is available at:
+👉 **http://localhost:8080/docs**
 
 ---
 
-### The `app/gateway/` Folder
-This folder contains the logic that makes this application an "API Gateway" (the front desk).
+## 2. Production Deployment Summary (Milestone 4)
 
-- **`app/gateway/traffic_proxy.py`**: When a user asks our gateway for traffic data, this file intercepts the request. It then acts as a middleman, sending a *new* request to the actual backend Traffic Service (which might be running on a different port or a totally different computer), gets the response, and sends it back to the user.
-- **`app/gateway/prediction_proxy.py`**: Works exactly the same as the traffic proxy, but it forwards requests to the AI Prediction Service instead.
-- **`app/gateway/__init__.py`**: Tells Python this folder is a module.
+In Milestone 4, the platform was containerized and hardened for free-tier cloud environments (e.g., Ubuntu 22.04 LTS on AWS EC2 / Render / Railway):
+
+- **Architecture:** Single public entry point via API Gateway (`port 8080`), routing internally across an isolated Docker bridge network.
+- **Database:** Managed Cloud PostgreSQL (e.g., Supabase / Neon / RDS) via `DATABASE_URL` with pre-configured connection pooling and heartbeat pre-ping.
+- **Security:** Strict CORS allow-list (`CORS_ALLOWED_ORIGINS`), dual-tier sliding window rate limiting (600 global / 60 auth per min), security headers (`nosniff`, `DENY`), and non-root rootless containers (`python:3.11-slim`).
+- **Resilience:** GZip response compression (>1 KB), health/readiness probes (`/health`, `/ready`), and automated graceful shutdown handling.
+
+### 2.1 Production Docker Compose Launch
+```bash
+# 1. Provision production environment configuration (no committed secrets)
+cp .env.production.example .env.production
+# Fill in real cloud secrets in .env.production
+
+# 2. Validate configuration
+docker compose -f docker-compose.prod.yml config
+
+# 3. Build and launch all services in background
+docker compose -f docker-compose.prod.yml up --build -d
+
+# 4. Run automated smoke tests
+./scripts/smoke-test.sh http://localhost:8080
+```
 
 ---
 
-### The `tests/` Folder
-This folder contains automated scripts to test our code and ensure it works without having to click around manually.
+## 3. Milestone 4 Documentation Index
 
-- **`tests/test_auth.py`**: A Python script that acts like a fake user. It automatically tries to register, log in, and access secure pages to ensure our authentication logic is working perfectly.
-- **`tests/test_rbac.py`**: A script that tests Role-Based Access Control (RBAC). It ensures that a normal "public" user gets blocked (Error 403 Forbidden) if they try to access an Admin-only page.
+All Milestone 4 engineering documentation is located under `docs/deployment/`:
+
+| Document | Description |
+| :--- | :--- |
+| **[DISCOVERY.md](docs/deployment/DISCOVERY.md)** | Initial code discovery, ports, service boundaries, and contract analysis. |
+| **[M4_DEPLOYMENT_PLAN.md](docs/deployment/M4_DEPLOYMENT_PLAN.md)** | Mermaid architecture diagram, cloud target comparison, team responsibilities, and startup order. |
+| **[ENV_VARS.md](docs/deployment/ENV_VARS.md)** | Unified environment variable contract across all 5 teammates. |
+| **[GATEWAY_PRODUCTION.md](docs/deployment/GATEWAY_PRODUCTION.md)** | API Gateway production hardening, CORS, rate limiting, and security header specs. |
+| **[CLOUD_DEPLOY_RUNBOOK.md](docs/deployment/CLOUD_DEPLOY_RUNBOOK.md)** | Step-by-step VM setup, Docker deployment, SSL termination, and rollback runbook. |
+| **[INTEGRATION_NOTES.md](docs/deployment/INTEGRATION_NOTES.md)** | Cross-repo partner alignment notes and runtime mitigations (Intern 2, 3, 4). |
+| **[WORKFLOW_VALIDATION_REPORT.md](docs/deployment/WORKFLOW_VALIDATION_REPORT.md)** | End-to-end 22-step validation suite results across all integrated services. |
+| **[PERFORMANCE_REPORT.md](docs/deployment/PERFORMANCE_REPORT.md)** | Real latency & throughput measurements (p50, p95, p99, RPS) and GZip benchmarks. |
+| **[DEFECT_LOG.md](docs/deployment/DEFECT_LOG.md)** | Defect tracking table and resolution records for TV-DEF-001 through TV-DEF-007. |
+| **[BACKEND_FINAL_DOCS.md](docs/deployment/BACKEND_FINAL_DOCS.md)** | Final comprehensive backend overview, architecture, security, and troubleshooting. |
+| **[DEMO_SUPPORT.md](docs/deployment/DEMO_SUPPORT.md)** | Pre-flight checklist and talking points for live multi-service presentation. |
 
 ---
 
-## 3. How to Run This Project Locally
+## 4. Automated Testing & Verification Tooling
 
-If you want to run this code on your own machine and play around with it, follow these steps in your terminal:
+- **`scripts/test-gateway.sh` / `scripts/test_gateway.py`**: Validates Gateway health, readiness, CORS allow/deny rules, and 429 rate limiter.
+- **`scripts/smoke-test.sh` / `scripts/smoke_test.py`**: Rapid 7-check health probe verifying all services are up.
+- **`scripts/validate-workflows.sh` / `scripts/validate-workflows.py`**: Complete 22-step end-to-end test verifying the full user journey (Auth -> Monitoring -> Prediction -> Route -> Alerts -> Analytics).
+- **`scripts/perf-check.sh` / `scripts/perf_check.py`**: Latency and throughput benchmarking tool with GZip verification.
 
-1. **Create a Virtual Environment:**
-   A virtual environment is a clean, isolated bubble for this project's Python packages so they don't mess with your system's global Python.
-   ```bash
-   python -m venv venv
-   ```
+---
 
-2. **Activate the Virtual Environment:**
-   ```bash
-   # On Linux/Mac:
-   source venv/bin/activate
-   # On Windows:
-   venv\Scripts\activate
-   ```
+## 5. Change Control Policy
 
-3. **Install the Requirements:**
-   Download all the tools this project needs to function.
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Set Up the Environment File:**
-   Copy the example settings to create your local settings file.
-   ```bash
-   cp .env.example .env
-   ```
-
-5. **Start the FastAPI Server:**
-   This command uses `uvicorn` (a lightning-fast server program) to run our `app/main.py` file. The `--reload` flag is awesome—it means the server will automatically restart and update if you edit any code!
-   ```bash
-   uvicorn app.main:app --reload
-   ```
-
-6. **View the Magic (Interactive Documentation):**
-   FastAPI automatically generates beautiful documentation. Once the server is running, open your web browser and go to:
-   
-   👉 [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-   
-   You will see an interactive webpage where you can test all the endpoints directly. You can click on `/api/v1/auth/register`, click "Try it out", enter some test data, and see the response!
+> **IMPORTANT:**  
+> Once the TrafficVision AI platform is deployed live to production (Milestone 4, Day 3 onwards), **all production updates must go exclusively through the CI/CD pipeline** (`.github/workflows/backend-ci.yml`).  
+> Direct manual edits, ad-hoc patching on production servers, or hot-patching running containers are strictly prohibited to ensure stability, reproducibility, and auditability.

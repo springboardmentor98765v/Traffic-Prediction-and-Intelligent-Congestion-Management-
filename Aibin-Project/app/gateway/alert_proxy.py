@@ -5,11 +5,12 @@ from ..auth.dependencies import get_current_user
 
 router = APIRouter()
 
-ALERT_SERVICE_URL = "http://127.0.0.1:8003" # Or use env var
+def get_alert_service_url() -> str:
+    return settings.ALERT_SERVICE_URL
 
 async def _forward_request(method: str, path: str, request: Request, user):
     """Helper to forward requests and preserve status codes."""
-    url = f"{ALERT_SERVICE_URL}/api/v1/alerts{path}"
+    url = f"{get_alert_service_url()}/api/v1/alerts{path}"
     headers = {"x-user-id": str(user.id), "x-user-role": user.role}
     
     async with httpx.AsyncClient() as client:
@@ -57,7 +58,7 @@ class AlertCreateProxy(BaseModel):
 @router.post("")
 async def create_alert(alert: AlertCreateProxy, request: Request, user=Depends(get_current_user)):
     """Internal endpoint: called by threshold/anomaly feeds to create an alert."""
-    url = f"{ALERT_SERVICE_URL}/api/v1/alerts"
+    url = f"{get_alert_service_url()}/api/v1/alerts"
     headers = {"x-user-id": str(user.id), "x-user-role": user.role}
     
     async with httpx.AsyncClient() as client:

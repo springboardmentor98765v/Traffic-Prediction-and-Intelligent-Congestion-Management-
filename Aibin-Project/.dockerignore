@@ -1,0 +1,52 @@
+# Git and version control
+.git
+.gitignore
+.gitattributes
+
+# Environment secrets (Strictly exclude local secrets from Docker context)
+.env
+.env*.local
+.env.production
+.env.development
+.env.staging
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+/coverage
+
+# Local Databases & storage dumps
+*.db
+*.sqlite3
+dump.rdb
+alerts.db
+test_auth.db
+test_rbac.db
+
+# Frontend assets & node packages
+node_modules/
+frontend/
+.next/
+
+# Documentation & Scratch Notebooks
+docs/
+Documentation/
+*.md
+*.ipynb
+scratch/
+.vscode/
+.idea/

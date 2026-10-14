@@ -1,0 +1,45 @@
+# ==============================================================================
+# TrafficVision AI — Traffic Monitoring & Analytics Service (Reference Dockerfile)
+# Role: Intern 2 (anmol-data)
+# Provided by: Intern 1 (Team Lead / Backend & Integration)
+# ==============================================================================
+
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir --user \
+    fastapi>=0.110.0 \
+    uvicorn>=0.28.0 \
+    "psycopg[binary]>=3.1.18" \
+    redis>=5.0.0
+
+FROM python:3.11-slim AS runner
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    APP_ENV=production \
+    PATH=/home/appuser/.local/bin:$PATH
+
+RUN groupadd -g 10001 appuser \
+    && useradd -u 10001 -g appuser -s /bin/bash -m appuser
+
+COPY --from=builder /root/.local /home/appuser/.local
+
+# Copy Api directory from anmol-data
+COPY --chown=appuser:appuser Api /app/Api
+
+USER appuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/')" || exit 1
+
+CMD ["uvicorn", "Api.traffic_api:app", "--host", "0.0.0.0", "--port", "8000"]

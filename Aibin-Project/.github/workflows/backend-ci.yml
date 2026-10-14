@@ -1,0 +1,85 @@
+name: Backend CI & Container Validation
+
+on:
+  push:
+    branches: [ "main", "aibin-backend-and-Integration", "master" ]
+  pull_request:
+    branches: [ "main", "aibin-backend-and-Integration", "master" ]
+
+jobs:
+  test:
+    name: Backend Unit Tests & Gateway Hardening
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r alert_service/requirements.txt
+          pip install -r route_analysis/requirements.txt
+
+      - name: Run Pytest Suite
+        env:
+          DATABASE_URL: sqlite:///./test.db
+          JWT_SECRET_KEY: ci_test_secret_key_trafficvision_ai_32chars
+          APP_ENV: test
+        run: |
+          python -m pytest tests/test_auth.py tests/test_congestion.py -v
+
+      - name: Validate Gateway Production Middlewares (CORS, Rate Limit, Health)
+        run: |
+          python scripts/test_gateway.py
+
+  docker-validate:
+    name: Dockerfile & Compose Schema Validation
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Production Docker Compose Config
+        env:
+          DATABASE_URL: postgresql://postgres:dummy@mock-db.com:5432/postgres
+          JWT_SECRET_KEY: ci_secret_key_trafficvision_32_chars_long
+          CORS_ALLOWED_ORIGINS: http://localhost:3000
+          DB_HOST: mock-db.com
+          DB_PASSWORD: dummy
+        run: |
+          docker compose -f docker-compose.prod.yml config
+
+      - name: Build API Gateway Docker Image
+        run: |
+          docker build -t trafficvision-gateway:test -f Dockerfile .
+
+      - name: Build Route Analysis Docker Image
+        run: |
+          docker build -t trafficvision-route:test -f route_analysis/Dockerfile .
+
+      - name: Build Alert Service Docker Image
+        run: |
+          docker build -t trafficvision-alert:test -f alert_service/Dockerfile .
+
+# ==============================================================================
+# NOTE FOR INTERN 5 (DevOps & CI/CD Lead):
+# The testing and Docker image verification stages for the backend are fully automated above.
+# To complete the automated CD pipeline, please configure the following in GitHub Secrets:
+# - DOCKER_USERNAME & DOCKER_PASSWORD (for pushing images to Docker Hub / GHCR)
+# - PROD_SERVER_HOST, PROD_SERVER_USER, PROD_SERVER_SSH_KEY (for deployment to Cloud VM)
+# Then append the SSH deployment trigger to pull the latest images and run:
+#   docker compose -f docker-compose.prod.yml up -d
+# ==============================================================================
