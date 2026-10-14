@@ -1,0 +1,26 @@
+{
+  "backend": {
+    "url": "http://127.0.0.1:8000/health",
+    "status": 200,
+    "error": "",
+    "ms": 34
+  },
+  "analytics": {
+    "url": "http://127.0.0.1:8001/",
+    "status": 200,
+    "error": "",
+    "ms": 759
+  },
+  "ai": {
+    "url": "http://127.0.0.1:8010/health",
+    "status": 200,
+    "error": "",
+    "ms": 38
+  },
+  "backend-live-traffic": {
+    "url": "http://127.0.0.1:8000/api/v1/traffic/live",
+    "status": 200,
+    "error": "",
+    "ms": 7
+  }
+}

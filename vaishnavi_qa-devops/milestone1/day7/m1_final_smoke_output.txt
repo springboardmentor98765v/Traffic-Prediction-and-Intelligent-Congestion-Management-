@@ -1,0 +1,14 @@
+[PASS] gateway /health
+[PASS] register -> 201  (201)
+[PASS] login -> 200 with tokens
+[PASS] me -> PUBLIC  (200)
+[PASS] refresh -> 200  (200)
+[PASS] traffic/live -> non-empty list  (6 roads)
+[PASS] traffic/road/R001 -> 200  (200)
+[PASS] traffic/density -> 200  (200)
+[PASS] gateway predict/congestion -> 200  ({"road_id":"R001","predicted_level":"Low","confidence":0.9167,"model_version":"model-v1"})
+[PASS] AI engine stub -> heuristic-v0  ({"road_id":"R001","predicted_level":"Low","confidence":0.85,"generated_by":"heuristic-v0"})
+[PASS] RBAC: public POST /alerts -> 403  (403)
+[SKIP] RBAC allow path: set OPERATOR_EMAIL / OPERATOR_PASSWORD
+
+11/11 checks passed

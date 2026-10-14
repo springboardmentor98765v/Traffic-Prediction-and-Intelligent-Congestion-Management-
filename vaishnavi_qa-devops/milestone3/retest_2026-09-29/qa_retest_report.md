@@ -8,15 +8,15 @@ Prepared by: Intern 5 (QA, DevOps & Release Engineering)
 
 ## Fresh Execution Results
 
-| Check | Result | Evidence |
-|---|---|---|
-| Root pytest suite | **27 passed, 46 skipped, 0 failed**; 114 warnings | `python -m pytest -q` from repo root |
-| Backend tests | **9 passed, 0 failed**; 108 warnings | `python -m pytest -q "backend_updated/backend/Intern AI AND ML/tests"` |
-| Data/Analytics tests | **60 passed, 0 failed**; 62 warnings | `python -m pytest -q tests` from `daa/M3_Day6_Traffic_Monitoring_` |
-| Congestion watcher tests | **7 passed, 0 failed** | `python -m pytest -q backend_updated/backend/Intern AI AND ML/tests/test_m3_day2_congestion_threshold_watcher.py` |
-| Frontend inline JavaScript | **8 HTML pages parsed successfully** | `node QA/tools/check_inline_js.js` with all HTML files in `Front-end(m-3) (1)/Front-end` |
-| Black / Flake8 on changed QA Python files | **Passed** | `conftest.py` and backend `tests/test_route_analysis.py` |
-| Integration runner imports | **Passed**; resolved backend and frontend directories exist | Python import smoke check for `integration_cycle` and `frontend_e2e` |
+| Check                                     | Result                                                      | Evidence                                                                                                          |
+| ----------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Root pytest suite                         | **27 passed, 46 skipped, 0 failed**; 114 warnings           | `python -m pytest -q` from repo root                                                                              |
+| Backend tests                             | **9 passed, 0 failed**; 108 warnings                        | `python -m pytest -q "backend_updated/backend/Intern AI AND ML/tests"`                                            |
+| Data/Analytics tests                      | **60 passed, 0 failed**; 62 warnings                        | `python -m pytest -q tests` from `daa/M3_Day6_Traffic_Monitoring_`                                                |
+| Congestion watcher tests                  | **7 passed, 0 failed**                                      | `python -m pytest -q backend_updated/backend/Intern AI AND ML/tests/test_m3_day2_congestion_threshold_watcher.py` |
+| Frontend inline JavaScript                | **8 HTML pages parsed successfully**                        | `node QA/tools/check_inline_js.js` with all HTML files in `Front-end(m-3) (1)/Front-end`                          |
+| Black / Flake8 on changed QA Python files | **Passed**                                                  | `conftest.py` and backend `tests/test_route_analysis.py`                                                          |
+| Integration runner imports                | **Passed**; resolved backend and frontend directories exist | Python import smoke check for `integration_cycle` and `frontend_e2e`                                              |
 
 The root pytest skips are service-dependent: Alert API checks require `http://127.0.0.1:8000`, and Analytics checks require `http://127.0.0.1:8001`. The AI endpoint on port 8010 was also unavailable.
 

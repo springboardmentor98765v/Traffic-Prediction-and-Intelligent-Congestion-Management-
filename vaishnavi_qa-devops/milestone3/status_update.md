@@ -1,17 +1,18 @@
 ## QA Fixes Applied 2026-09-30
+
 # Milestone 3 Status Update
 
 ## QA Fixes Applied — 2026-09-30
 
 The following issues were fixed directly from the QA/DevOps side (Intern 5):
 
-| Fix | File | What changed |
-|-----|------|--------------|
-| docker-compose.dev.yml — wrong analytics default path | `docker-compose.dev.yml` | `./Data/M3_Day6_Traffic_Monitoring_` → `./daa/M3_Day6_Traffic_Monitoring_` (directory never existed as `Data/`) |
-| docker-compose.yml — stale production compose | `docker-compose.yml` | Updated backend build context from `./backend` (deleted) to `./backend_updated/backend/Intern_AI AND ML`; added analytics service; removed `version:` key; added healthchecks |
-| .env.dev.example — ANALYTICS_DIR commented out | `.env.dev.example` | Uncommented `ANALYTICS_DIR=./daa/M3_Day6_Traffic_Monitoring_` |
-| DEF-M3-022 regression test (HIST-001/002/005) | `QA/milestone3/day6/regression_m1_m2.py` | HIST-001 relaxed from exact-5-rows to ≥1; HIST-002 and HIST-005 redirected to analytics service (port 8001) which holds 4-week historical data — gateway only holds live `traffic_readings` |
-| Dead code in maps_wrapper.py | `backend_updated/.../app/services/maps_wrapper.py` | Removed unreachable `return [...]` after `return 18.5` in `get_travel_duration` |
+| Fix                                                   | File                                               | What changed                                                                                                                                                                                |
+| ----------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| docker-compose.dev.yml — wrong analytics default path | `docker-compose.dev.yml`                           | `./Data/M3_Day6_Traffic_Monitoring_` → `./daa/M3_Day6_Traffic_Monitoring_` (directory never existed as `Data/`)                                                                             |
+| docker-compose.yml — stale production compose         | `docker-compose.yml`                               | Updated backend build context from `./backend` (deleted) to `./backend_updated/backend/Intern_AI AND ML`; added analytics service; removed `version:` key; added healthchecks               |
+| .env.dev.example — ANALYTICS_DIR commented out        | `.env.dev.example`                                 | Uncommented `ANALYTICS_DIR=./daa/M3_Day6_Traffic_Monitoring_`                                                                                                                               |
+| DEF-M3-022 regression test (HIST-001/002/005)         | `QA/milestone3/day6/regression_m1_m2.py`           | HIST-001 relaxed from exact-5-rows to ≥1; HIST-002 and HIST-005 redirected to analytics service (port 8001) which holds 4-week historical data — gateway only holds live `traffic_readings` |
+| Dead code in maps_wrapper.py                          | `backend_updated/.../app/services/maps_wrapper.py` | Removed unreachable `return [...]` after `return 18.5` in `get_travel_duration`                                                                                                             |
 
 These fixes do not change the NO-GO verdict — Docker is still unavailable and full integration has not been rerun. They do resolve four of the five regression failures attributed to DEF-M3-022 and clean up DevOps configuration errors that would prevent `docker compose up` from starting the analytics service.
 
@@ -41,15 +42,15 @@ The current frontend files pass `node QA/tools/check_inline_js.js` when invoked 
 
 ## Day-by-day completion
 
-| Day | QA work status | Milestone result |
-| --- | --- | --- |
-| Day 1 | Complete: baseline, scope, plan, and defect tracker recorded. | Baseline defects identified; milestone not yet functionally complete. |
-| Day 2 | Complete: Compose setup and smoke testing documented. | Gateway and Analytics are integrated; AI service is not included in the current Compose file. |
-| Day 3 | Complete: test cases prepared against available contracts. | AI Insights contract/service was not available when cases were prepared. |
-| Day 4 | Complete: alert and analytics test execution recorded. | Initial suites exposed alert RBAC and analytics defects; later fixes are tracked in the September 26 retest. |
-| Day 5 | Complete: API integration and browser E2E run and evidence saved. | Full integration failed; the later September 26 run improved results but still failed gates and blocked AI checks. |
-| Day 6 | Complete: regression and code-quality reports produced. | Stability criterion not met. Latest integrated regression is 47/53; functional operator-dashboard checks still need rerunning. |
-| Day 7 | Complete: final validation and QA sign-off report produced. | No-go. QA sign-off remains withheld pending exit criteria and a successful rerun. |
+| Day   | QA work status                                                    | Milestone result                                                                                                               |
+| ----- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Day 1 | Complete: baseline, scope, plan, and defect tracker recorded.     | Baseline defects identified; milestone not yet functionally complete.                                                          |
+| Day 2 | Complete: Compose setup and smoke testing documented.             | Gateway and Analytics are integrated; AI service is not included in the current Compose file.                                  |
+| Day 3 | Complete: test cases prepared against available contracts.        | AI Insights contract/service was not available when cases were prepared.                                                       |
+| Day 4 | Complete: alert and analytics test execution recorded.            | Initial suites exposed alert RBAC and analytics defects; later fixes are tracked in the September 26 retest.                   |
+| Day 5 | Complete: API integration and browser E2E run and evidence saved. | Full integration failed; the later September 26 run improved results but still failed gates and blocked AI checks.             |
+| Day 6 | Complete: regression and code-quality reports produced.           | Stability criterion not met. Latest integrated regression is 47/53; functional operator-dashboard checks still need rerunning. |
+| Day 7 | Complete: final validation and QA sign-off report produced.       | No-go. QA sign-off remains withheld pending exit criteria and a successful rerun.                                              |
 
 ## Latest defect position
 
@@ -77,13 +78,13 @@ Important qualifications (open-defect counts below are the September 26 integrat
 
 ## Team roles for current follow-up
 
-| Intern | Responsibility |
-| --- | --- |
+| Intern   | Responsibility                          |
+| -------- | --------------------------------------- |
 | Intern 1 | AI / AI-backend service and integration |
 | Intern 2 | Data / Analytics and congestion watcher |
-| Intern 3 | Backend / gateway and Alert API |
-| Intern 4 | Frontend |
-| Intern 5 | QA |
+| Intern 3 | Backend / gateway and Alert API         |
+| Intern 4 | Frontend                                |
+| Intern 5 | QA                                      |
 
 ## Requests to send
 
@@ -133,6 +134,7 @@ Test results:
 The integration runner was also corrected to compare `/me` role casing as returned by the API. DEF-M3-024 (Critical alert visibility/role escalation) passed the promoted API cases and is verified fixed; the related DEF-M3-007 High-accident visibility issue remains open. Milestone 3 is **not signed off**: root tests pass with 3 known xfails, 6 API integration failures remain, 2 AI checks are blocked, and frontend/regression failures remain.
 
 ## Intern updates checked later 2026-09-28
+
 The following team notes reflect the 2026-09-28 snapshot. The 2026-09-29 QA retest below supersedes the backend-folder assessment: the current `backend_updated` folder contains `app/` and tests, and its isolated suite passes 9/9. The integrated service remains unverified while Docker is unavailable.
 
 **Intern 2 Data screenshot:** verified against the shared `Data/M3_Day6_Traffic_Monitoring_/` checkout. `test_m3_day2_congestion_threshold_watcher.py` contains 6 tests and passes **6/6** (the screenshot reports 7/7 from a separate Downloads checkout); `test_m3_day5_cache.py` passes **2/2**; full Data `pytest -q tests/` passes **59/59** with 62 deprecation warnings (the screenshot reports 60/60). The reported numbers are valid for the tested copy, but that exact copy/commit is not yet reflected in this workspace. Ask Intern 2 to share the commit or sync the exact tested files so QA can reconcile the one-test difference.

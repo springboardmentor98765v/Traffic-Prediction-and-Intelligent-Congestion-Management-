@@ -57,6 +57,7 @@ def get_an(path):
     import urllib.error as _ue
     import json as _json
     import time as _time
+
     t0 = _time.monotonic()
     try:
         req = _ur.Request(ic.AN + path)
@@ -151,7 +152,9 @@ def m1_api():
 
 def hist():
     s, body, ms = get("/api/v1/traffic/history?road_id=R001&limit=5")
-    rows = body if isinstance(body, list) else body.get("data", []) if isinstance(body, dict) else []
+    rows = (
+        body if isinstance(body, list) else body.get("data", []) if isinstance(body, dict) else []
+    )
     rec(
         "HIST-001",
         "M2 Historical",
@@ -162,7 +165,7 @@ def hist():
         ms=ms,
     )
 
-    # HIST-002: historical aggregate lives in analytics service (port 8001), not gateway (port 8000).
+    # HIST-002: historical aggregate lives in analytics (port 8001), not the gateway (port 8000).
     s, body, ms = get_an(
         "/api/v1/traffic/aggregate?road_id=R001&start_time=2026-08-01&end_time=2026-08-07"
     )
