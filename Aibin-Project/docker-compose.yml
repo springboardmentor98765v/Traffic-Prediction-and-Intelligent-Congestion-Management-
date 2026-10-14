@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # 1. API Gateway & Authentication Service (Intern 1)
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trafficvision-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://postgres:A@postgres:5432/postgres
+      - DATA_ENGINEERING_URL=http://anmol-data:8000
+      - AI_ENGINE_URL=http://saksham-aiml:8001
+      - ROUTE_ANALYSIS_URL=http://route-analysis:8002
+      - JWT_SECRET_KEY=dev_secret_key_trafficvision_ai_2026
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+    depends_on:
+      - postgres
+
+  # 2. Route Analysis Microservice (Intern 1 - Milestone 2)
+  route-analysis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trafficvision-route-analysis
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - OSRM_BASE_URL=https://router.project-osrm.org
+      - AI_ENGINE_URL=http://saksham-aiml:8001
+    command: ["uvicorn", "route_analysis.main:app", "--host", "0.0.0.0", "--port", "8002"]
+
+  # 3. Alert Microservice (Intern 1 - Milestone 3)
+  alert-service:
+    build:
+      context: ./alert_service
+      dockerfile: Dockerfile
+    container_name: trafficvision-alert-service
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - DATABASE_URL=postgresql://postgres:A@postgres:5432/postgres
+    depends_on:
+      - postgres
+
+  # 4. PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: trafficvision-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=A
+      - POSTGRES_DB=postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+
+volumes:
+  pgdata:

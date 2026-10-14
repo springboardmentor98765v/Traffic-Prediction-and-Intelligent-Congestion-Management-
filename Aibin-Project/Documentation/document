@@ -1,0 +1,88 @@
+Traffic Monitoring Service Integration
+
+## 1. Objective
+
+The objective of Day 5 was to integrate the Traffic Monitoring
+Service with the shared Gateway and document the historical traffic
+data structure for the prediction team.
+
+---
+
+## 2. Traffic Monitoring Service
+
+The Traffic Monitoring Service is implemented using FastAPI.
+
+### Service
+
+- Framework: FastAPI
+- Database: PostgreSQL
+- Cache: Redis
+- Service Port: 8000
+
+### Available APIs
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /` | Service health check |
+| `GET /traffic/live` | Returns latest traffic readings |
+| `GET /traffic/density` | Returns traffic density information |
+| `GET /traffic/road/{road_id}` | Returns traffic data for a specific road |
+| `GET /traffic/history/{road_id}` | Returns historical traffic data for a road |
+
+---
+
+## 3. Gateway Integration
+
+The Traffic Monitoring Service is designed to be accessed through
+the shared Gateway.
+
+### Request Flow
+
+Client
+↓
+Shared Gateway
+↓
+Traffic Monitoring Service
+↓
+Redis / PostgreSQL
+↓
+Traffic Response
+
+The Gateway integration was tested jointly with Intern 1 to verify
+that requests can reach the Traffic Monitoring Service and return
+the expected traffic data.
+
+---
+
+## 4. Historical Data for Prediction
+
+The historical traffic endpoint is:
+
+GET /traffic/history/{road_id}
+
+It provides time-series traffic information for a particular road.
+
+### Data Fields
+
+| Field | Description |
+|---|---|
+| `reading_id` | Unique identifier of the traffic reading |
+| `road_id` | Identifier of the road |
+| `sensor_id` | Identifier of the traffic sensor |
+| `timestamp` | Time when the traffic reading was recorded |
+| `vehicle_count` | Number of vehicles detected |
+| `density` | Traffic density between 0 and 1 |
+| `congestion_level` | Current congestion category |
+
+### Example
+
+```json
+{
+    "reading_id": 101,
+    "road_id": 1,
+    "sensor_id": 5,
+    "timestamp": "2026-09-01T10:30:00",
+    "vehicle_count": 75,
+    "density": 0.63,
+    "congestion_level": "MEDIUM"
+}
