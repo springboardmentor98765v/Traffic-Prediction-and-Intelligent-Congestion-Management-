@@ -7,6 +7,7 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+
 node_modules/
 dump.rdb
 '@ | Add-Content -Path ".gitignore"
