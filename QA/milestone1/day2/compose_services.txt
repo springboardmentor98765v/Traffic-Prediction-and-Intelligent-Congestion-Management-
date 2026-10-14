@@ -1,5 +1,0 @@
-redis
-postgres
-backend
-ai
-analytics

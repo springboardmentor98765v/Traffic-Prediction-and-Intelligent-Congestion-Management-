@@ -1,5 +1,0 @@
-trafficvision-ai-dev	Up 25 seconds (healthy)
-trafficvision-backend-dev	Up 25 minutes (healthy)
-trafficvision-postgres-dev	Up 25 minutes (healthy)
-trafficvision-analytics-dev	Up 25 minutes (unhealthy)
-trafficvision-redis-dev	Up 25 minutes (healthy)
