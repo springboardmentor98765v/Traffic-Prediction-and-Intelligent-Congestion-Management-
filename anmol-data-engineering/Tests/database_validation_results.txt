@@ -1,0 +1,13 @@
+TrafficVision AI - M4 Database Validation Results
+Date: 14 October 2026
+Database: trafficvision (Docker PostgreSQL)
+
+1. Road IDs: PASS - 4 roads, 4 unique IDs, 0 missing IDs.
+2. Sensor IDs: PASS - 4 sensors, 4 unique IDs, 0 missing IDs.
+3. Traffic readings: PASS - 36,341 rows, no missing required values.
+4. Congestion history: PASS - 26,183 rows, no missing values or invalid densities.
+5. Road references: PASS - 0 orphaned congestion-history records.
+6. Sensor references: PASS - 0 orphaned traffic-reading records.
+
+Overall: All six SQL validation queries executed successfully.
+Database records were not modified by these SELECT queries.

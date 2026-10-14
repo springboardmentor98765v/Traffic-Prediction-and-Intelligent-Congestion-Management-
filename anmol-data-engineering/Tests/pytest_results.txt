@@ -1,0 +1,22 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\LENOVO\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Traffic congestion\Team-2-submit\anmol-data-engineering
+plugins: anyio-4.14.2
+collecting ... collected 13 items
+
+Tests/test_analytics.py::test_trends_day PASSED                          [  7%]
+Tests/test_analytics.py::test_trends_week PASSED                         [ 15%]
+Tests/test_analytics.py::test_trends_invalid_range PASSED                [ 23%]
+Tests/test_analytics.py::test_heatmap_week_hour PASSED                   [ 30%]
+Tests/test_analytics.py::test_heatmap_day_hour PASSED                    [ 38%]
+Tests/test_analytics.py::test_heatmap_day_bucket PASSED                  [ 46%]
+Tests/test_analytics.py::test_historical_report_json PASSED              [ 53%]
+Tests/test_congestion.py::test_low_congestion PASSED                     [ 61%]
+Tests/test_congestion.py::test_medium_congestion PASSED                  [ 69%]
+Tests/test_congestion.py::test_high_congestion PASSED                    [ 76%]
+Tests/test_congestion.py::test_severe_congestion PASSED                  [ 84%]
+Tests/test_congestion.py::test_historical_traffic_api PASSED             [ 92%]
+Tests/test_congestion.py::test_road_conditions_api PASSED                [100%]
+
+============================= 13 passed in 1.05s ==============================
