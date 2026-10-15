@@ -408,7 +408,7 @@ export default function DashboardPage() {
                   {routeAnalysis.origin}
 
                   <span className="text-cyan-400 mx-2">
-                    â†’
+                    -
                   </span>
 
                   {routeAnalysis.destination}

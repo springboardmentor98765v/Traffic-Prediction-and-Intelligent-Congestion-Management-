@@ -1,5 +1,6 @@
 import csv
 import io
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -27,6 +28,8 @@ router = APIRouter(
 def trends(
     road_id: int,
     range: str = "day",
+    start_date: date | None = None,
+    end_date: date | None = None,
     db: Session = Depends(get_db),
 ):
     if road_id == 4:
@@ -40,6 +43,8 @@ def trends(
             db=db,
             road_id=road_id,
             range_name=range,
+            start_date=start_date,
+            end_date=end_date,
         )
     except ValueError as exc:
         raise HTTPException(
@@ -54,12 +59,16 @@ def trends(
 )
 def heatmap(
     range: str = "day",
+    start_date: date | None = None,
+    end_date: date | None = None,
     db: Session = Depends(get_db),
 ):
     try:
         return get_heatmap(
             db=db,
             range_name=range,
+            start_date=start_date,
+            end_date=end_date,
         )
     except ValueError as exc:
         raise HTTPException(
@@ -74,6 +83,8 @@ def heatmap(
 def reports(
     range: str = "day",
     format: str = "json",
+    start_date: date | None = None,
+    end_date: date | None = None,
     db: Session = Depends(get_db),
 ):
     format = format.lower()
@@ -88,6 +99,8 @@ def reports(
         data = get_report_data(
             db=db,
             range_name=range,
+            start_date=start_date,
+            end_date=end_date,
         )
     except ValueError as exc:
         raise HTTPException(

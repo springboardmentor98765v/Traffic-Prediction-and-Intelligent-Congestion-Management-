@@ -108,10 +108,20 @@ class PredictionService:
             for hour, values in hourly_density.items()
         }
 
+        sorted_hourly_densities = sorted(hourly_average.values())
+        percentile_index = int(0.75 * (len(sorted_hourly_densities) - 1))
+        relative_peak_threshold = sorted_hourly_densities[percentile_index]
+        absolute_peak_threshold = 0.65
+        peak_threshold = (
+            absolute_peak_threshold
+            if sorted_hourly_densities[-1] >= absolute_peak_threshold
+            else relative_peak_threshold
+        )
+
         peak_hours = [
             hour
             for hour, density in hourly_average.items()
-            if density >= 0.65
+            if density >= peak_threshold
         ]
 
         peak_hours.sort()

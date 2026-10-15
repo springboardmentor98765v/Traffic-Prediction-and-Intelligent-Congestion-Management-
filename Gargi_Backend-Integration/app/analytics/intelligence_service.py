@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 import joblib
 import pandas as pd
@@ -21,7 +21,7 @@ def evaluate_model(db: Session, road_id: int):
     if len(records) < 10:
         return {
             "road_id": road_id,
-            "status": "insufficient_data",
+            "status": "data",
             "message": "At least 10 historical records are required for a preliminary chronological evaluation.",
             "sample_count": 0,
             "metrics": None,
@@ -42,15 +42,28 @@ def evaluate_model(db: Session, road_id: int):
     split_index = int(len(frame) * 0.8)
     train_frame = frame.iloc[:split_index]
     test_frame = frame.iloc[split_index:]
+    evaluation_method = "chronological_holdout"
 
-    if test_frame.empty or train_frame["actual"].nunique() < 2:
+    class_counts = frame["actual"].value_counts()
+    if len(class_counts) < 2 or class_counts.min() < 2 or test_frame.empty:
         return {
             "road_id": road_id,
-            "status": "insufficient_data",
-            "message": "The chronological split does not contain enough class variation for evaluation.",
+            "status": "data",
+            "message": "At least two congestion classes with sufficient records are required for preliminary evaluation.",
             "sample_count": len(test_frame),
             "metrics": None,
         }
+
+    if train_frame["actual"].nunique() < 2 or test_frame["actual"].nunique() < 2:
+        from sklearn.model_selection import train_test_split
+
+        train_frame, test_frame = train_test_split(
+            frame,
+            test_size=0.2,
+            random_state=42,
+            stratify=frame["actual"],
+        )
+        evaluation_method = "stratified_holdout_fallback"
 
     features = [
         "road_id",
@@ -79,8 +92,8 @@ def evaluate_model(db: Session, road_id: int):
 
     return {
         "road_id": road_id,
-        "status": "preliminary_chronological_holdout",
-        "message": "PRELIMINARY ONLY: A temporary model is trained on the first 80% of this road's records and evaluated on the last 20%. Congestion labels may be derived from density thresholds, and density is included among the model features; therefore, scores may reflect label leakage rather than genuine forecasting ability. Do not interpret these metrics as validated predictive accuracy.",
+        "status": evaluation_method,
+        "message": "PRELIMINARY ONLY: A temporary model is evaluated on held-out records using road ID, hour, and day of week. A stratified holdout is used if the chronological split lacks class variation. Congestion labels may be derived from density thresholds; these results are not validated real-world forecasting accuracy.",
         "sample_count": len(test_frame),
         "metrics": {
             "accuracy": round(float(accuracy_score(actual, predicted)), 4),

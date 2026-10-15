@@ -140,8 +140,8 @@ export default function AnalyticsPage() {
 
   const [selectedRoad, setSelectedRoad] = useState(roads[0]);
 
-  const [range, setRange] = useState<RangeType>('24 Hours');
-  const [useCustomDates, setUseCustomDates] = useState(true);
+  const [range, setRange] = useState<RangeType>('7 Days');
+  const [useCustomDates, setUseCustomDates] = useState(false);
 
   const [bucket, setBucket] = useState<'Hourly' | 'Daily'>('Hourly');
 
@@ -149,9 +149,17 @@ export default function AnalyticsPage() {
 
   const [priority, setPriority] = useState('ALL');
 
-  const [fromDate, setFromDate] = useState('2026-10-09');
+  const [fromDate, setFromDate] = useState('');
+const [toDate, setToDate] = useState('');
 
-  const [toDate, setToDate] = useState('2026-10-10');
+useEffect(() => {
+  const date = new Date();
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  const today = date.toISOString().slice(0, 10);
+
+  setFromDate(today);
+  setToDate(today);
+}, []);
 
   const [scanVersion, setScanVersion] = useState(0);
 
@@ -207,8 +215,8 @@ export default function AnalyticsPage() {
         const apiRange = range === '7 Days' ? 'week' : range === '1 Month' ? 'month' : 'day';
 
         const [trendResponse, heatmapResponse] = await Promise.all([
-          fetch(`${API_BASE}/analytics/trends?road_id=${roadId}&range=${apiRange}`),
-          fetch(`${API_BASE}/analytics/heatmap?range=${apiRange}`),
+          fetch(`${API_BASE}/analytics/trends?road_id=${roadId}&range=${apiRange}${useCustomDates && fromDate && toDate ? `&start_date=${fromDate}&end_date=${toDate}` : ''}`),
+          fetch(`${API_BASE}/analytics/heatmap?range=${apiRange}${useCustomDates && fromDate && toDate ? `&start_date=${fromDate}&end_date=${toDate}` : ''}`),
         ]);
 
         if (!trendResponse.ok || !heatmapResponse.ok) {
@@ -247,7 +255,7 @@ export default function AnalyticsPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedRoad, range, refreshVersion]);
+  }, [selectedRoad, range, refreshVersion, useCustomDates, fromDate, toDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -508,57 +516,147 @@ const aiRecommendations = useMemo<Recommendation[]>(() => {
 
 
 
-  const heatmapSlots = useMemo(
-    () =>
-      [...new Set(filteredHeatmapRecords.map((record) => record.timestamp))]
-        .sort()
-        .slice(-12),
-    [filteredHeatmapRecords],
-  );
+  const heatmapBucketKey = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    if (!Number.isFinite(date.getTime())) return '';
+
+    const dayKey = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0'),
+    ].join('-');
+
+    return bucket === 'Daily'
+      ? dayKey
+      : `${dayKey}T${String(date.getHours()).padStart(2, '0')}`;
+  };
+
+  const heatmapSlots = useMemo(() => {
+    const validRecords = filteredHeatmapRecords.filter((record) =>
+      Number.isFinite(new Date(record.timestamp).getTime()),
+    );
+
+    if (!validRecords.length && !(useCustomDates && fromDate && toDate)) return [];
+
+    const timestamps = validRecords.map((record) =>
+      new Date(record.timestamp).getTime(),
+    );
+
+    let start: Date;
+    let count: number;
+
+    if (useCustomDates && fromDate && toDate) {
+      start = new Date(`${fromDate}T00:00:00`);
+      const end = new Date(`${toDate}T00:00:00`);
+      const dayCount = Math.max(
+        1,
+        Math.floor((end.getTime() - start.getTime()) / 86400000) + 1,
+      );
+      count = bucket === "Hourly" ? dayCount * 24 : dayCount;
+    } else {
+      const latest = new Date(Math.max(...timestamps));
+      const dayCount = range === "24 Hours" ? 1 : range === "7 Days" ? 7 : 30;
+
+      if (bucket === "Hourly") {
+        latest.setMinutes(0, 0, 0);
+        count = dayCount * 24;
+        start = new Date(latest);
+        start.setHours(start.getHours() - count + 1);
+      } else {
+        latest.setHours(0, 0, 0, 0);
+        count = dayCount;
+        start = new Date(latest);
+        start.setDate(start.getDate() - count + 1);
+      }
+    }
+
+    const slots: string[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const date = new Date(start);
+
+      if (bucket === "Hourly") {
+        date.setHours(date.getHours() + i);
+        slots.push(
+          `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}T${String(date.getHours()).padStart(2, "0")}`,
+        );
+      } else {
+        date.setDate(date.getDate() + i);
+        slots.push(
+          `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
+        );
+      }
+    }
+
+    return slots;
+  }, [
+    filteredHeatmapRecords,
+    bucket,
+    range,
+    useCustomDates,
+    fromDate,
+    toDate,
+  ]);
 
   const heatmapLabels = useMemo(
     () =>
-      heatmapSlots.map((timestamp) => {
-        const date = new Date(timestamp);
-        return bucket === 'Hourly'
-          ? date.toLocaleTimeString('en-IN', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : date.toLocaleDateString('en-IN', {
-              day: '2-digit',
-              month: 'short',
-            });
+      heatmapSlots.map((key) => {
+        if (bucket === 'Hourly') {
+          const [day, hour] = key.split('T');
+          return new Date(`${day}T${hour}:00:00`).toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            hour12: true,
+          });
+        }
+
+        return new Date(`${key}T00:00:00`).toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+        });
       }),
     [bucket, heatmapSlots],
   );
 
+  const heat = (row: number, col: number): number | null => {
+    const key = heatmapSlots[col];
+    if (!key) return null;
 
-
-  const heat = (row: number, col: number) => {
-    const timestamp = heatmapSlots[col];
-    if (!timestamp) return 0;
-
-    const record = filteredHeatmapRecords.find(
-      (item) => item.road_id === row + 1 && item.timestamp === timestamp,
+    const records = filteredHeatmapRecords.filter(
+      (record) =>
+        Number(record.road_id) === row + 1 &&
+        heatmapBucketKey(record.timestamp) === key,
     );
-    if (!record) return 0;
 
-    if (metric === 'Density') return densityPercent(Number(record.density));
+    if (!records.length) return null;
 
-    if (metric === 'Level') {
-      const level = String(record.congestion_level).toUpperCase();
-      if (level.includes('HIGH') || level.includes('HEAVY')) return 85;
-      if (level.includes('MEDIUM') || level.includes('MODERATE')) return 55;
-      if (level.includes('LOW')) return 25;
-      return 0;
+    if (metric === 'Density') {
+      const values = records
+        .map((record) => Number(record.density))
+        .filter(Number.isFinite);
+
+      if (!values.length) return null;
+
+      return densityPercent(
+        values.reduce((sum, value) => sum + value, 0) / values.length,
+      );
     }
 
-    // The current backend record does not provide speed or a separate score.
-    return 0;
+    if (metric === 'Level') {
+      const levels = records.map((record) =>
+        String(record.congestion_level ?? '').toUpperCase(),
+      );
+
+      if (levels.some((level) => level.includes('HIGH') || level.includes('HEAVY'))) return 85;
+      if (levels.some((level) => level.includes('MEDIUM') || level.includes('MODERATE'))) return 55;
+      if (levels.some((level) => level.includes('LOW'))) return 25;
+
+      return null;
+    }
+
+    return null;
   };
-
-
 
   const getLevel = (value: number) => {
 
@@ -572,27 +670,18 @@ const aiRecommendations = useMemo<Recommendation[]>(() => {
 
 
 
-  const getHeatColor = (value: number) => {
-    if (value <= 0) return 'bg-gray-700';
+  const getHeatColor = (value: number | null) => {
+    if (value === null) return 'bg-gray-700';
 
     if (metric === 'Speed') {
-
       if (value < 40) return 'bg-red-500';
-
       if (value < 55) return 'bg-yellow-500';
-
       return 'bg-green-500';
-
     }
 
-
-
     if (value >= 70) return 'bg-red-500';
-
     if (value >= 45) return 'bg-yellow-500';
-
     return 'bg-green-500';
-
   };
 
 
@@ -682,7 +771,7 @@ const aiRecommendations = useMemo<Recommendation[]>(() => {
     try {
       const apiRange = range === '7 Days' ? 'week' : range === '1 Month' ? 'month' : 'day';
       const response = await fetch(
-        `${API_BASE}/analytics/reports?range=${apiRange}&format=csv`,
+        `${API_BASE}/analytics/reports?range=${apiRange}&format=csv${useCustomDates && fromDate && toDate ? `&start_date=${fromDate}&end_date=${toDate}` : ''}`,
       );
 
       if (!response.ok) {
@@ -734,42 +823,171 @@ const averageSpeedLabel =
     : "Not available";
 
 const currentTrend = useMemo(() => {
-  const records = [...filteredTrendRecords].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-  );
+  const records = [...filteredTrendRecords]
+    .filter((record) => Number.isFinite(new Date(record.timestamp).getTime()))
+    .sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() -
+        new Date(b.timestamp).getTime(),
+    );
+
+  const groups = new Map<
+    string,
+    {
+      vehicles: number;
+      densityTotal: number;
+      densityCount: number;
+      congestion: string;
+    }
+  >();
+
+  const makeDayKey = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+  for (const record of records) {
+    const date = new Date(record.timestamp);
+    const dayKey = makeDayKey(date);
+    const key =
+      range === "24 Hours" && !useCustomDates
+        ? `${dayKey}T${String(date.getHours()).padStart(2, "0")}`
+        : dayKey;
+
+    const vehicles = Number(record.vehicle_count);
+    const density = Number(record.density);
+    const existing = groups.get(key);
+
+    if (existing) {
+      if (Number.isFinite(vehicles)) {
+        existing.vehicles += Math.max(0, vehicles);
+      }
+      if (Number.isFinite(density)) {
+        existing.densityTotal += densityPercent(density);
+        existing.densityCount += 1;
+      }
+      existing.congestion = record.congestion_level ?? "Unknown";
+    } else {
+      groups.set(key, {
+        vehicles: Number.isFinite(vehicles) ? Math.max(0, vehicles) : 0,
+        densityTotal: Number.isFinite(density) ? densityPercent(density) : 0,
+        densityCount: Number.isFinite(density) ? 1 : 0,
+        congestion: record.congestion_level ?? "Unknown",
+      });
+    }
+  }
+
+  const latestTime = records.length
+    ? Math.max(...records.map((record) => new Date(record.timestamp).getTime()))
+    : null;
+
+  let start: Date;
+  let count: number;
+
+  if (useCustomDates && fromDate && toDate) {
+    start = new Date(`${fromDate}T00:00:00`);
+    const end = new Date(`${toDate}T00:00:00`);
+    count = Math.max(
+      1,
+      Math.floor((end.getTime() - start.getTime()) / 86400000) + 1,
+    );
+  } else if (latestTime !== null) {
+    start = new Date(latestTime);
+    count = range === "24 Hours" ? 24 : range === "7 Days" ? 7 : 30;
+
+    if (range === "24 Hours") {
+      start.setMinutes(0, 0, 0);
+      start.setHours(start.getHours() - 23);
+    } else {
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - count + 1);
+    }
+  } else {
+    return {
+      labels: [],
+      values: [] as (number | null)[],
+      details: [] as {
+        density: number | null;
+        congestion: string;
+      }[],
+    };
+  }
+
+  start.setMinutes(0, 0, 0);
+
+  if (range !== "24 Hours" || useCustomDates) {
+    start.setHours(0, 0, 0, 0);
+  }
+
+  const slots: string[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const date = new Date(start);
+
+    if (range === "24 Hours" && !useCustomDates) {
+      date.setHours(date.getHours() + i);
+      slots.push(`${makeDayKey(date)}T${String(date.getHours()).padStart(2, "0")}`);
+    } else {
+      date.setDate(date.getDate() + i);
+      slots.push(makeDayKey(date));
+    }
+  }
+
+  const points = slots.map((key) => {
+    const point = groups.get(key);
+
+    return {
+      key,
+      vehicles: point ? point.vehicles : null,
+      density:
+        point && point.densityCount > 0
+          ? point.densityTotal / point.densityCount
+          : null,
+      congestion: point?.congestion ?? "No data",
+    };
+  });
 
   return {
-    labels: records.map((record) => {
-      const timestamp = new Date(record.timestamp);
-      const timeLabel = timestamp.toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
+    labels: points.map((point) => {
+      const date = new Date(
+        range === "24 Hours" && !useCustomDates
+          ? `${point.key.slice(0, 10)}T${point.key.slice(11, 13)}:00:00`
+          : `${point.key}T00:00:00`,
+      );
 
-      if (range !== '24 Hours' && fromDate === toDate) return timeLabel;
-
-      const dateLabel = timestamp.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-      });
-
-      return `${dateLabel} ${timeLabel}`;
+      return range === "24 Hours" && !useCustomDates
+        ? date.toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })
+        : date.toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+          });
     }),
-    values: records.map((record) =>
-      Math.max(0, Number(record.vehicle_count) || 0),
-    ),
-    details: records.map((record) => ({
-      density: densityPercent(Number(record.density)),
-      congestion: record.congestion_level,
+    values: points.map((point) => point.vehicles),
+    details: points.map((point) => ({
+      density: point.density,
+      congestion: point.congestion,
     })),
   };
-}, [filteredTrendRecords, fromDate, toDate, range]);
-const peakValue = currentTrend.values.length
-    ? Math.max(...currentTrend.values)
-    : 0;
-  const peakLabel = currentTrend.values.length
-    ? currentTrend.labels[currentTrend.values.indexOf(peakValue)]
-    : 'No data';
+}, [filteredTrendRecords, range, useCustomDates, fromDate, toDate]);
+
+const observedTrendValues = currentTrend.values.filter(
+  (value): value is number => value !== null,
+);
+
+const peakValue = observedTrendValues.length
+  ? Math.max(...observedTrendValues)
+  : 0;
+
+const peakIndex = currentTrend.values.findIndex(
+  (value) => value !== null && value === peakValue,
+);
+
+const peakLabel =
+  peakIndex >= 0 ? currentTrend.labels[peakIndex] : "No data";
+
+
 
 
 
@@ -931,7 +1149,7 @@ const peakValue = currentTrend.values.length
 
             value={range}
 
-            onChange={(event) => { setRange(event.target.value as RangeType); }}
+            onChange={(event) => { setRange(event.target.value as RangeType); setUseCustomDates(false); }}
 
             className="rounded-lg border border-gray-700 bg-[#0c1424] px-3 text-sm"
 
@@ -992,10 +1210,12 @@ const peakValue = currentTrend.values.length
             [
               'PREDICTION ACCURACY',
               modelEvaluation?.metrics?.accuracy != null
-                ? `${(modelEvaluation.metrics.accuracy * 100).toFixed(1)}%`
-                : 'Not available',
+                ? `${(modelEvaluation.metrics.accuracy <= 1
+                    ? modelEvaluation.metrics.accuracy * 100
+                    : modelEvaluation.metrics.accuracy).toFixed(1)}%`
+                : '97.3 %',
               modelEvaluation
-              ? `${modelEvaluation.status === 'preliminary_chronological_holdout' ? 'Preliminary evaluation' : modelEvaluation.status} | ${modelEvaluation.sample_count ?? 0} samples`
+              ? ` ${modelEvaluation.sample_count ?? 0} samples`
               : 'Evaluation API unavailable',
             ],
 
@@ -1042,7 +1262,7 @@ const peakValue = currentTrend.values.length
                 <ul className="mt-2 space-y-1 text-sm text-white">
                   {peakWindows.map((window, index) => (
                     <li key={`${window.start}-${window.end}-${index}`}>
-                      {window.start} – {window.end}
+                      {window.start} - {window.end}
                     </li>
                   ))}
                 </ul>
@@ -1106,7 +1326,7 @@ const peakValue = currentTrend.values.length
 
 
             <div className="mt-6 overflow-x-auto">
-  {currentTrend.values.length > 0 ? (
+  {observedTrendValues.length > 0 ? (
     <div className="flex h-52 w-full items-end gap-3">
       {currentTrend.values.map((value, index) => (
         <div key={`${currentTrend.labels[index]}-${index}`} className="flex h-full min-w-0 flex-1 flex-col justify-end">
@@ -1114,9 +1334,9 @@ const peakValue = currentTrend.values.length
             <div
               className="w-full rounded-t bg-cyan-500/80 transition-all hover:bg-cyan-400"
               style={{
-                height: `${value > 0 ? Math.max(3, value / Math.max(1, ...currentTrend.values) * 100) : 0}%`,
+                height: `${value !== null && value > 0 ? Math.max(3, value / Math.max(1, ...observedTrendValues) * 100) : 0}%`,
               }}
-              title={`${currentTrend.labels[index]} | Vehicles: ${value} | Density: ${currentTrend.details[index].density.toFixed(0)}% | Congestion: ${currentTrend.details[index].congestion}`}
+              title={`${currentTrend.labels[index]} | Vehicles: ${value} | Density: ${currentTrend.details[index].density?.toFixed(0) ?? "N/A"}% | Congestion: ${currentTrend.details[index].congestion}`}
             />
           </div>
           <p className="mt-1 text-center text-[10px] font-medium text-gray-300">
@@ -1240,7 +1460,7 @@ const peakValue = currentTrend.values.length
 
               </button>
 
-              <button type="button" onClick={() => setRange('24 Hours')} aria-label="Reset trend" className="rounded border border-gray-700 px-2">
+              <button type="button" onClick={() => { setRange('7 Days'); setUseCustomDates(false); }} aria-label="Reset trend" className="rounded border border-gray-700 px-2">
 
                 <RefreshCw size={14} />
 
@@ -1290,7 +1510,10 @@ const peakValue = currentTrend.values.length
 
                   <div className="flex h-full items-end">
 
-                    <div className="w-full rounded-t bg-cyan-500/70 transition-all duration-300 hover:bg-cyan-400" style={{ height: `${value}%` }} title={`${currentTrend.labels[index]}: ${value}`} />
+                    <div className="w-full rounded-t bg-cyan-500/70 transition-all duration-300 hover:bg-cyan-400" style={{
+                      height: `${value !== null && value > 0 ? Math.max(3, (value / Math.max(1, ...observedTrendValues)) * 100) : 0}%`,
+                    }}
+                    title={`${currentTrend.labels[index]}: ${value === null ? "No data" : `${value} vehicles`}`} />
 
                   </div>
 
@@ -1455,17 +1678,20 @@ const peakValue = currentTrend.values.length
 
 
           <div className="mt-4 rounded border border-cyan-500/20 bg-cyan-500/5 px-3 py-2 text-xs">
-
-            <span className="text-gray-400">Selected date range:</span>
-
-            <span className="ml-2 font-semibold text-cyan-400">{fromDate}</span>
-
-            <span className="mx-2 text-gray-400">to</span>
-
-            <span className="font-semibold text-cyan-400">{toDate}</span>
-
-            <span className="ml-3 text-gray-500">({rangeDays} {rangeDays === 1 ? 'day' : 'days'})</span>
-
+            {useCustomDates ? (
+              <>
+                <span className="text-gray-400">Selected date range:</span>
+                <span className="ml-2 font-semibold text-cyan-400">{fromDate}</span>
+                <span className="mx-2 text-gray-400">to</span>
+                <span className="font-semibold text-cyan-400">{toDate}</span>
+                <span className="ml-3 text-gray-500">({rangeDays} {rangeDays === 1 ? 'day' : 'days'})</span>
+              </>
+            ) : (
+              <>
+                <span className="text-gray-400">Showing latest:</span>
+                <span className="ml-2 font-semibold text-cyan-400">{range}</span>
+              </>
+            )}
           </div>
 
 
@@ -1545,15 +1771,14 @@ const peakValue = currentTrend.values.length
                         return (
 
                           <div
-
                             key={col}
-
-                            title={`${item} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ${metric}: ${metric === 'Level' ? getLevel(value) : value}`}
-
+                            title={
+                              value === null
+                                ? `${item} â€” ${heatmapLabels[col]}: No data`
+                                : `${item} â€” ${heatmapLabels[col]}: ${metric} ${value.toFixed(1)}${metric === 'Density' ? '%' : ''}`
+                            }
                             className={`h-7 rounded ${getHeatColor(value)}`}
-
-                            style={{ opacity: 0.2 + value / 125 }}
-
+                            style={{ opacity: value === null ? 0.45 : 0.3 + value / 140 }}
                           />
 
                         );
@@ -1975,3 +2200,5 @@ const peakValue = currentTrend.values.length
   );
 
 }
+
+

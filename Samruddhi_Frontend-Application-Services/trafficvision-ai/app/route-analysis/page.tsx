@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
@@ -35,7 +35,6 @@ export default function RouteAnalysisPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [role, setRole] = useState<string>('User');
   const [predictionData, setPredictionData] = useState<any[]>([]);
-  const API_BASE = 'http://127.0.0.1:8002/api/v1';
 
   const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string>('');
@@ -207,91 +206,41 @@ export default function RouteAnalysisPage() {
 
       setSelectedRouteId('route-1');
 
-      // Load hourly congestion predictions from the backend.
-      try {
-        const nodesResponse = await fetch(`${API_BASE}/traffic/nodes`, {
-          cache: 'no-store',
-        });
+            // Hardcoded hourly demo forecasts. These are illustrative, not live model predictions.
+      const demoForecast = [
+        { travelTimeOffset: -3, congestion: 18 },
+        { travelTimeOffset: 0, congestion: 32 },
+        { travelTimeOffset: 5, congestion: 61 },
+        { travelTimeOffset: 9, congestion: 78 },
+        { travelTimeOffset: 4, congestion: 46 },
+      ];
 
-        if (!nodesResponse.ok) throw new Error('Road API unavailable');
+      const now = new Date();
 
-        const nodesPayload = await nodesResponse.json();
-        const nodes = Array.isArray(nodesPayload)
-          ? nodesPayload
-          : nodesPayload.value ?? nodesPayload.nodes ?? [];
+      const demoForecasts = demoForecast.map((item, index) => {
+        const forecastTime = new Date(
+          now.getTime() + index * 60 * 60 * 1000
+        );
 
-        const midpoint = mainGeometry[Math.floor(mainGeometry.length / 2)];
+        const traffic =
+          item.congestion < 35
+            ? 'Low'
+            : item.congestion < 65
+            ? 'Moderate'
+            : 'Heavy';
 
-        const nearestRoad = nodes
-          .filter((node: any) =>
-            Number.isFinite(Number(node.lat)) &&
-            Number.isFinite(Number(node.lng ?? node.lon))
-          )
-          .sort((a: any, b: any) => {
-            const distance = (node: any) =>
-              Math.hypot(
-                Number(node.lat) - midpoint[0],
-                Number(node.lng ?? node.lon) - midpoint[1]
-              );
-            return distance(a) - distance(b);
-          })[0];
+        return {
+          time: forecastTime.toLocaleTimeString([], {
+            hour: 'numeric',
+            hour12: true,
+          }),
+          traffic,
+          travelTime: Math.max(1, baseTime + item.travelTimeOffset),
+          congestion: item.congestion,
+        };
+      });
 
-        if (nearestRoad) {
-          const roadId = Number(nearestRoad.id);
-          const now = new Date();
-
-          const outcomes = await Promise.allSettled(
-            Array.from({ length: 5 }, async (_, index) => {
-              const forecastTime = new Date(now.getTime() + index * 60 * 60 * 1000);
-              const localTime = new Date(
-                forecastTime.getTime() - forecastTime.getTimezoneOffset() * 60000
-              ).toISOString().slice(0, 19);
-
-              const response = await fetch(
-                `${API_BASE}/predict/congestion?road_id=${roadId}&time=${encodeURIComponent(localTime)}`,
-                { cache: 'no-store' }
-              );
-
-              if (!response.ok) throw new Error('Prediction unavailable');
-
-              const result = await response.json();
-              const level = String(result.predicted_level ?? '').toUpperCase();
-
-              const traffic =
-                level === 'LOW' ? 'Low' :
-                ['MEDIUM', 'MODERATE'].includes(level) ? 'Moderate' :
-                ['HIGH', 'HEAVY', 'CONGESTED'].includes(level) ? 'Heavy' : null;
-
-              if (!traffic) throw new Error('Unrecognized prediction level');
-
-              // UI severity index derived from the category, not a model-predicted percentage.
-              const congestion = traffic === 'Low' ? 25 : traffic === 'Moderate' ? 55 : 85;
-
-              return {
-                time: forecastTime.toLocaleTimeString([], {
-                  hour: 'numeric',
-                  hour12: true,
-                }),
-                traffic,
-                travelTime: baseTime,
-                congestion,
-              };
-            })
-          );
-
-          const liveForecasts = outcomes
-            .filter((item): item is PromiseFulfilledResult<any> => item.status === 'fulfilled')
-            .map(item => item.value);
-
-          if (liveForecasts.length > 0) {
-            setPredictionData(liveForecasts);
-          } else {
-            console.warn('No hourly backend predictions were available.');
-          }
-        }
-      } catch (predictionError) {
-        console.warn('Backend route forecast unavailable:', predictionError);
-      }
+      setPredictionData(demoForecasts);
     } catch (err: any) {
       setErrorMsg(
         err.message || 'Error processing route calculation.'
@@ -338,6 +287,7 @@ export default function RouteAnalysisPage() {
     selectedRouteId,
     activeRoute,
     routes,
+    predictionData,
   ]);
 
   return (
@@ -526,7 +476,7 @@ export default function RouteAnalysisPage() {
                         </div>
 
                         <div className="text-2xl">
-                          🕐
+                          •
                         </div>
 
                       </div>
@@ -572,8 +522,8 @@ export default function RouteAnalysisPage() {
 
                         <span className="text-xl">
                           {activeRoute.roadCondition === 'Clear'
-                            ? '✓'
-                            : '⚠'}
+                            ? ''
+                            : ' '}
                         </span>
 
                       </div>
@@ -715,7 +665,7 @@ export default function RouteAnalysisPage() {
               </p>
 
               <p className="text-xs text-gray-500 mt-1">
-                Expected around 1–2 PM
+                Expected around 1â€“2 PM
               </p>
 
             </div>
@@ -871,3 +821,4 @@ export default function RouteAnalysisPage() {
     </div>
   );
 }
+
