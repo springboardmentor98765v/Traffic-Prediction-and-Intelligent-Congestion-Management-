@@ -304,18 +304,28 @@ def detect_traffic_anomaly(
     )
 
     if is_anomaly:
-        requests.post(
-            "http://127.0.0.1:8003/api/v1/alerts",
-            json={
-                "type": "accident",
-                "severity": "high",
-                "road_id": road_id,
-                "message": (
-                    "Possible traffic incident detected."
-                ),
-            },
-            timeout=5,
-        )
+        import os
+
+        alert_url = os.getenv(
+            "ALERT_SERVICE_URL",
+            "http://127.0.0.1:8003",
+        ).rstrip("/") + "/api/v1/alerts"
+
+        try:
+            requests.post(
+                alert_url,
+                json={
+                    "type": "accident",
+                    "severity": "high",
+                    "road_id": road_id,
+                    "message": (
+                        "Possible traffic incident detected."
+                    ),
+                },
+                timeout=5,
+            ).raise_for_status()
+        except requests.RequestException as exc:
+            print(f"WARNING: Anomaly detected, but alert delivery failed: {exc}")
 
     return {
         "road_id": road_id,
