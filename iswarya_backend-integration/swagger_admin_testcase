@@ -1,0 +1,33 @@
+##to register 
+{
+  "name": "Mahalakshmi_0327",
+  "email": "mahalakshmi_0327@gmail.com",
+  "password": "password123"
+}
+
+##to login 
+{
+  "email": "mahalakshmi_0327@gmail.com",
+  "password": "password123"
+}
+
+##details
+{
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU1ItREZDQzgzNzkiLCJ1c2VybmFtZSI6Ik1haGFsYWtzaG1pXzAzMjciLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3OTA2OTE2MzcsInRva2VuX3R5cGUiOiJhY2Nlc3MifQ.xQwoobRDDjsY7yw-d1yShd9deTf50aII1hXCuQ4NLJg",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU1ItREZDQzgzNzkiLCJ1c2VybmFtZSI6Ik1haGFsYWtzaG1pXzAzMjciLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3OTExOTQxNzgsInRva2VuX3R5cGUiOiJyZWZyZXNoIn0.zY5goW1qlBn-dgu3AyjbiNu33ucn0mIqwJSgUkZ8L1A",
+  "token_type": "bearer",
+  "role": "admin"
+}
+
+
+##test case to create alert
+{
+  "type": "congestion",
+  "severity": "Critical",
+  "road_id": "R001",
+  "message": "Severe congestion threshold breached on road R001 with high vehicle density."
+}
+
+ALERT_SERVICE_KEY=secret-service-key
+
+SECRET_KEY=super-secure-traffic-vision-jwt-secret-key-2026-production
